@@ -1,0 +1,127 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Affects Version/s,Fix Version/s,Fix Version/s,Component/s,Component/s,Due Date,Votes,Labels,Labels,Labels,Labels,Description,Environment,Work Ratio,Security Level,Outward issue link (Related to),Outward issue link (Related to),Custom field (Acceptance Test - Add?),Custom field (Acceptance Test - Entry),Custom field (Epic Link),Custom field (Expected Effort),Custom field (Ignite Forum URL),Custom field (Rank),Custom field (Support Plan Customer Issue),Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment
+Fresh installation asks for a current password,OF-1167,21440,Bug,Closed,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Blocker,Fixed,dwd,wroot,wroot,8/5/2016 20:24,12/21/2016 21:19,3/21/2020 16:11,8/12/2016 19:21,4.1.0,,,,4.1.0,,Admin Console,,,1,admin,admin_console,,,"When going through setup process of a current build, on the admin account page the Current password field is shown, although this is a fresh installation and there shouldn't be any old password (default password ""admin"" shouldn't make this field showing and 'admin' doesn't work of course).",,,,OF-1156,OF-1253,No,,,,,0|i013un:,No,"08/06/16 09:28 AM;wroot;If i do fresh install of 4.0.2 first and complete the setup and then install latest alpha code on top, it shows me either CSRF Failure error when trying to login or
+
+java.lang.NullPointerException: Null value is not allowed!
+
+	at org.jivesoftware.util.cache.DefaultCache.checkNotNull(DefaultCache.java:705)
+
+	at org.jivesoftware.util.cache.DefaultCache.put(DefaultCache.java:140)
+
+	at org.jivesoftware.util.cache.CacheWrapper.put(CacheWrapper.java:150)
+
+	at org.jivesoftware.openfire.lockout.LockOutManager.getUserLockOut(LockOutManager.java:252)
+
+	at org.jivesoftware.openfire.lockout.LockOutManager.getDisabledStatus(LockOutManager.java:152)
+
+	at org.jivesoftware.openfire.lockout.LockOutManager.isAccountDisabled(LockOutManager.java:163)
+
+	at org.jivesoftware.openfire.auth.AuthFactory.authenticate(AuthFactory.java:193)
+
+	at org.jivesoftware.openfire.admin.login_jsp._jspService(login_jsp.java:189)
+
+	at org.apache.jasper.runtime.HttpJspBase.service(HttpJspBase.java:70)
+
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:790)
+
+	at org.eclipse.jetty.servlet.ServletHolder.handle(ServletHolder.java:812)
+
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1669)
+
+	at com.opensymphony.module.sitemesh.filter.PageFilter.doFilter(PageFilter.java:39)
+
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1652)
+
+	at org.jivesoftware.util.LocaleFilter.doFilter(LocaleFilter.java:76)
+
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1652)
+
+	at org.jivesoftware.util.SetCharacterEncodingFilter.doFilter(SetCharacterEncodingFilter.java:53)
+
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1652)
+
+	at org.jivesoftware.admin.PluginFilter.doFilter(PluginFilter.java:80)
+
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1652)
+
+	at org.jivesoftware.admin.AuthCheckFilter.doFilter(AuthCheckFilter.java:162)
+
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1652)
+
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:585)
+
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:577)
+
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:223)
+
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1127)
+
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:515)
+
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1061)
+
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:215)
+
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:110)
+
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:97)
+
+	at org.eclipse.jetty.server.Server.handle(Server.java:499)
+
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:311)
+
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:257)
+
+	at org.eclipse.jetty.io.AbstractConnection$2.run(AbstractConnection.java:544)
+
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:635)
+
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:555)
+
+	at java.lang.Thread.run(Unknown Source)
+","08/12/16 07:21 PM;guus;This problem is introduced by the first solution to OF-1156. By reverting that change, this problem disappears.","08/12/16 07:25 PM;akrherz;I am fairly certain this issue does not exist on clean 4.0.3 alpha, so I removed that version from being affected",,,,,,,,,,,
+NPE in org.jivesoftware.openfire.muc.cluster.OccupantAddedEvent.<init>(OccupantAddedEvent.java:57),OF-1261,21718,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,,dwd,akrherz,akrherz,1/3/2017 20:02,1/10/2020 16:42,3/21/2020 16:11,,4.1.0,,,,4.6.0,,MUC,,,5,,,,,"Spotted this NPE with Ignite
+
+{code}
+2017.01.03 05:37:03 ERROR [Server SR - 475928546]: org.jivesoftware.openfire.muc.spi.MultiUserChatServiceImpl - Internal server error
+java.lang.NullPointerException
+        at org.jivesoftware.openfire.muc.cluster.OccupantAddedEvent.<init>(OccupantAddedEvent.java:57)
+        at org.jivesoftware.openfire.muc.spi.LocalMUCRoom.joinRoom(LocalMUCRoom.java:690)
+        at org.jivesoftware.openfire.muc.spi.LocalMUCUser.process(LocalMUCUser.java:471)
+        at org.jivesoftware.openfire.muc.spi.LocalMUCUser.process(LocalMUCUser.java:177)
+        at org.jivesoftware.openfire.muc.spi.MultiUserChatServiceImpl.processPacket(MultiUserChatServiceImpl.java:366)
+        at org.jivesoftware.openfire.component.InternalComponentManager$RoutableComponents.process(InternalComponentManager.java:606)
+        at org.jivesoftware.openfire.spi.RoutingTableImpl.routeToComponent(RoutingTableImpl.java:407)
+        at org.jivesoftware.openfire.spi.RoutingTableImpl.routePacket(RoutingTableImpl.java:249)
+        at org.jivesoftware.openfire.PresenceRouter.handle(PresenceRouter.java:131)
+        at org.jivesoftware.openfire.PresenceRouter.route(PresenceRouter.java:80)
+        at org.jivesoftware.openfire.spi.PacketRouterImpl.route(PacketRouterImpl.java:88)
+        at org.jivesoftware.openfire.net.SocketReader.processPresence(SocketReader.java:292)
+        at org.jivesoftware.openfire.net.ServerSocketReader.processPresence(ServerSocketReader.java:100)
+        at org.jivesoftware.openfire.net.SocketReader.process(SocketReader.java:215)
+        at org.jivesoftware.openfire.net.BlockingReadingMode.readStream(BlockingReadingMode.java:168)
+        at org.jivesoftware.openfire.net.BlockingReadingMode.run(BlockingReadingMode.java:76)
+        at org.jivesoftware.openfire.net.SocketReader.run(SocketReader.java:145)
+        at java.lang.Thread.run(Thread.java:745)
+{code}",,,,,,No,,,,,0|i01527:,No,"02/19/17 02:41 PM;jako;I meet the same issue, how to fix it? @Daryl Herzmann","02/20/17 12:46 PM;akrherz;@jako, Sorry, I am unable to understand why `joinRole` is null",02/21/17 03:43 AM;jako;Is this bug appear at 3.10.3? Is there any schedule to fix it? Seem like it appears frequently.,"09/18/17 03:53 PM;dgwave;This issue showed up in the following situation:
+
+Windows Clustered pair at 4.1.5 with a shared database on a MySQL server running on CentOS 7
+
+Both nodes up and Synced.  Rebooted one node.  Came back up appearing fine. Rebooted 2nd node 30 minutes later.  Now I'm getting this NPE error and the following behavior: Users are unable to rejoin the rooms they were in when the 2nd node rebooted.  Server sees ghost user entries (has 27 users in room, only 20 listed), but its pair does not see those users.  Connecting to either server does not resolve the issue.",05/14/18 11:53 AM;deaneoati;Is this ever going to get fixed? I see that it gets bumped every release and there is no activity. We are experiencing the same issue in a 4 system cluster.,,,,,,,,,

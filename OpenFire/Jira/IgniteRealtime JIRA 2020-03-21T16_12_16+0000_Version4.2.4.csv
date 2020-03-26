@@ -1,0 +1,255 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Fix Version/s,Component/s,Component/s,Due Date,Votes,Labels,Labels,Description,Environment,Work Ratio,Security Level,Outward issue link (Related to),Attachment,Attachment,Attachment,Custom field (Acceptance Test - Add?),Custom field (Acceptance Test - Entry),Custom field (Epic Link),Custom field (Expected Effort),Custom field (Ignite Forum URL),Custom field (Rank),Custom field (Support Plan Customer Issue),Comment,Comment,Comment,Comment,Comment
+Enabling clustering never completes,OF-1510,22570,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,Fixed,gdt,gdt,gdt,03/01/18 01:05 PM,03/15/18 09:15 AM,03/21/20 04:12 PM,03/15/18 09:15 AM,4.0.0,4.1.0,4.2.0,4.3.0,,,,0,,,"Steps to reproduce;
+ # Install a fresh Openfire.
+ # Deploy the hazelcast clustering plugin.
+ # Login to Openfire, navigate to the ""Clustering"" page. Select ""Enabled"", and click ""Save Settings"".
+
+Expected results
+ * The Clustering page indicates that clustering is enabled.
+
+Actual results
+ * The server stops responding. It is necessary to stop and restart Openfire, at which point the Clustering page indicates that clustering is enabled.",,,,,,,,No,,,,,"0|i01887:",No,,,,,
+LDAP auth fails with clustering plugin ,OF-1480,22541,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,Fixed,gdt,gdt,gdt,02/12/18 01:22 PM,02/13/18 03:58 PM,03/21/20 04:12 PM,02/13/18 03:58 PM,4.2.0,4.2.1,,4.2.2,Clustering,LDAP,,0,,,"From the group chat;
+
+{{2018.02.12 13:35:29 DEBUG [Jetty-QTP-AdminConsole-33]: org.jivesoftware.util.Log -}}
+{{org.jivesoftware.openfire.auth.UnauthorizedException: com.hazelcast.nio.serialization.HazelcastSerializationException: Failed to serialize 'org.jivesoftware.openfire.ldap.LdapManager$DNCacheEntry'}}
+{{at org.jivesoftware.openfire.ldap.LdapAuthProvider.authenticate(LdapAuthProvider.java:126)}}
+{{at org.jivesoftware.openfire.auth.AuthFactory.authenticate(AuthFactory.java:203)}}
+
+ 
+
+Cursory glance indicates that LdapManager$DNCacheEntry does not implement serializable ...
+
+ ",,,,OF-1306,,,,No,,,,,"0|i0181r:",No,"02/12/18 02:50 PM;gdt;Caching was introduced in 4.2.0 with OF-1306, but unfortunately the cache was not serialisable so does not work in a cluster.",,,,
+Support for SNAPSHOT plugin versions,OF-1451,22446,Bug,Closed,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,Fixed,gdt,gdt,gdt,12/08/17 03:17 PM,12/08/17 07:05 PM,03/21/20 04:12 PM,12/08/17 07:05 PM,4.2.0,,,4.2.1,Core,,,0,,,"Now that Maven can be used to build Openfire + plugins, it would be helpful to support standard versioning information in plugin versions, e.g.
+
+1.2.3-SNAPSHOT
+
+1.2.3
+
+etc.",,,,,,,,No,,,,,"0|i017pz:",No,,,,,
+S2S Connection Test - No validation on 'XMPP domain' field,OF-1405,22349,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,,dwd,jonr,jonr,10/17/17 08:26 AM,10/17/17 08:26 AM,03/21/20 04:12 PM,,4.2.0,,,,Admin Console,,,0,ws3,,"# Navigate to 'Sessions' > 'Tools' > 'S2S Connection Test'
+ # In the 'XMPP domain' field enter one of the following:
+ ## ' ' (one space)
+ ## 'jabber.at/'
+ ## '[http://jabber.at'|http://jabber.at%27/]
+ # Click 'Test'
+
+Outcome: Large exception error message displayed
+
+Expected: Validation message displayed on 'S2S Connection Test' page asking user to input in the correct format (and potentially guide the user on what the correct format is)",,,,,"10/17/17 08:26 AM;jonr;Screenshot at Oct 17 09-25-50.png;https://issues.igniterealtime.org/secure/attachment/14177/Screenshot+at+Oct+17+09-25-50.png",,,No,,,,,"0|i017a7:",No,,,,,
+PubSub Admin Console - No warning that all node config will be removed,OF-1394,22336,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,,dwd,jonr,jonr,10/09/17 03:28 PM,10/13/17 01:44 PM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,ws3,,"Prerequisite: At least one node is configured
+ # Navigate to 'Server' > 'PubSub' > 'PubSub Service'
+ # Untick 'Service Enabled'
+ # Click 'Update'
+ # Select 'Node Summary' from the left panel
+
+Outcome: All nodes and associated information has been removed
+
+Expected outcome: User is warned that all information will be lost and is asked to confirm their decision",,,,,"10/09/17 03:27 PM;jonr;Screenshot at Oct 09 16-27-19.png;https://issues.igniterealtime.org/secure/attachment/14168/Screenshot+at+Oct+09+16-27-19.png",,,No,,,,,"0|i0177b:",No,,,,,
+PubSub Admin Console - No confirmation dialogue when deleting a subscriber,OF-1387,22328,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,,dwd,jonr,jonr,10/05/17 03:29 PM,04/23/19 09:17 AM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,gsoc-teaser,ws3,"# Navigate to 'Server' > 'PubSub'
+ # Click on the subscribers count to the right of a node
+ # Click the red delete icon to the right of a subscriber
+
+Outcome: ""Deleted subscription owned by \{user} from the node."" message displayed and the subscriber has been removed from the list
+
+Expected: Confirmation dialogue displayed asking if the user is sure like when deleting an affiliate (see screenshot)",,,,,"10/05/17 03:29 PM;jonr;Screenshot at Oct 05 16-28-52.png;https://issues.igniterealtime.org/secure/attachment/14163/Screenshot+at+Oct+05+16-28-52.png",,,No,,,,,"0|i0175j:",No,,,,,
+PubSub Admin Console - No confirmation dialogue when deleting an item	,OF-1388,22329,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,,dwd,jonr,jonr,10/05/17 03:34 PM,04/23/19 09:17 AM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,gsoc-teaser,ws3,"# Navigate to 'Server' > 'PubSub'
+ # Click on the subscribers count to the right of an item
+ # Click the red delete icon to the right of an item
+
+Outcome: ""Deleted subscription owned by \{user} from the node."" message displayed and the subscriber has been removed from the list
+
+Expected: Confirmation dialogue displayed asking if the user is sure like when deleting an affiliate (see screenshot)",,,,,"10/05/17 03:34 PM;jonr;Screenshot at Oct 05 16-28-52.png;https://issues.igniterealtime.org/secure/attachment/14164/Screenshot+at+Oct+05+16-28-52.png",,,No,,,,,"0|i0175r:",No,,,,,
+The Group Chat Administrators web page has blank JIDs,OF-1440,22425,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,Fixed,dwd,dele,dele,11/25/17 09:10 AM,02/08/18 02:53 PM,03/21/20 04:12 PM,02/08/18 02:53 PM,4.2.0,,,4.2.2,Admin Console,,,0,,,"If you add a new chat room room administrator, it show up in the list with a blank name. There is no way to confirm the list of administrators",,,,,"01/03/18 04:11 PM;dele;of1440.png;https://issues.igniterealtime.org/secure/attachment/14262/of1440.png",,,No,,,,,"0|i017lb:",No,"01/03/18 05:22 PM;akrherz;Was able to reproduce, but have no idea why the <c:out> is not working :(","01/31/18 02:24 PM;wroot;It says 4.2.2 should be a fix version. But there is no fix yet.","01/31/18 02:27 PM;akrherz;@wroot , that's why it is still open, the fix version just places it on the TODO list for the release.","01/31/18 02:29 PM;wroot;I do that myself with Spark :) Just wanted to make sure.",
+"Install4j openfire-service.exe failed with message ""Windows could not start the openfire service on Local Computer""",OF-1439,22424,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,,speedy,dele,dele,11/25/17 09:02 AM,11/29/17 10:07 PM,03/21/20 04:12 PM,,4.2.0,,,,Installer,,,0,,,"Openfire 4.2.0 was installed from the zip file bundle. The Install4j openfire-service.exe failed with message ""Windows could not start the openfire service on Local Computer"". I had to copy the openfire-service.exe file from 4.1.6 to make it work.",,,,,"11/29/17 09:00 PM;dele;openfire.png;https://issues.igniterealtime.org/secure/attachment/14261/openfire.png",,,No,,,,,"0|i017l3:",No,"11/28/17 06:08 PM;akrherz;Just for reference, the files did change, likely due to install4j updates, hmmm
+{noformat}
+$ unzip -l openfire_4_1_6.zip | grep '.exe'
+    79904  02-22-2017 15:48   openfire/.install4j/i4jdel.exe
+   248832  10-05-2017 15:06   openfire/bin/openfire-service.exe
+   240640  10-05-2017 15:06   openfire/bin/openfire.exe
+   240640  10-05-2017 15:06   openfire/bin/openfired.exe
+$ unzip -l openfire_4_2_0_beta.zip | grep '.exe'
+    91120  10-05-2017 14:35   openfire/.install4j/i4jdel.exe
+   252928  11-17-2017 13:45   openfire/bin/openfire-service.exe
+   246272  11-17-2017 13:45   openfire/bin/openfire.exe
+   246272  11-17-2017 13:45   openfire/bin/openfired.exe
+{noformat}
+
+","11/28/17 06:13 PM;akrherz;@dele, do you happen to have the ../logs/stderror.log and ../logs/stdout.log files from this failure?  Gonna assign this to speedy, to see what he thinks.","11/28/17 06:18 PM;wroot;When using Windows installer it installs the service automatically. It works fine for me.
+
+Running service install/ininstall commands in cmd also works (using binaries provided by the installer).","11/29/17 09:19 PM;dele;@daryl, no files were created. it did not get that far. I was able to use the openfire-services.exe to create the window service manually from cmd. If a normal install works ok accrording to @woot, then we can dismiss this as a one-off and close the issue as I was installing from the zip file without JRE. ","11/29/17 10:07 PM;speedy;odd.  I will try to reproduce this to see what I can come up with"
+S2S Connection Test - No indication on the page that anything is happening during search,OF-1407,22351,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,,dwd,jonr,jonr,10/17/17 08:51 AM,10/17/17 08:51 AM,03/21/20 04:12 PM,,4.2.0,,,,Admin Console,,,0,ws3,,"# Navigate to 'Sessions' > 'Tools' > 'S2S Connection Test'
+ # Enter a valid domain into the 'XMPP domain' field
+ # Click 'Test'
+
+Outcome: If the result isn't returned instantaneously, there is no indication on the page that anything is happening
+
+Expected: Something, likely a spinner, is displayed to indicate that the software is currently doing something. Otherwise the user is likely to be confused and keep pressing 'Test' or just give up completely. ",,,,,"10/17/17 08:50 AM;jonr;Screenshot at Oct 17 09-50-47.png;https://issues.igniterealtime.org/secure/attachment/14179/Screenshot+at+Oct+17+09-50-47.png",,,No,,,,,"0|i017an:",No,,,,,
+S2S Connection Test - Able to edit results fields,OF-1406,22350,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,,dwd,jonr,jonr,10/17/17 08:36 AM,10/17/17 08:36 AM,03/21/20 04:12 PM,,4.2.0,,,,Admin Console,,,0,ws3,,"# Navigate to 'Sessions' > 'Tools' > 'S2S Connection Test'
+ # Enter a valid XMPP domain into the 'XMPP domain' field
+ # Click 'Test'
+ # Attempt to edit any of the three results fields ('XMPP', 'Certs' and 'Logs')
+
+Outcome: User is able to edit these fields
+
+Expected: Considering these are fields for the programme to output results, they should not be editable by the user.",,,,,"10/17/17 08:36 AM;jonr;Screenshot at Oct 17 09-36-33.png;https://issues.igniterealtime.org/secure/attachment/14178/Screenshot+at+Oct+17+09-36-33.png",,,No,,,,,"0|i017af:",No,,,,,
+PubSub Admin Console - Not clear that sysadmin's can create nodes without being on list,OF-1398,22340,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,,dwd,jonr,jonr,10/09/17 04:10 PM,10/09/17 04:10 PM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,ws3,,"# Navigate to 'Server' > 'PubSub' > 'PubSub Service'
+ # Enable 'Node Creation Restricted'
+ # Add user to 'System Administrators' list
+ # Make sure user *isn't* on 'Allowed to Create' list
+ # As user, attempt to create a node
+
+Outcome: User is able to create node
+
+Expected: Either it is made clear to the administrating user that a sysadmin can still create nodes, despite not being on the 'Allowed to Create' list *OR* a user can't be made a sysadmin without already having been on the 'Allowed to Create' list.",,,,,"10/09/17 04:09 PM;jonr;Screenshot at Oct 09 17-09-35.png;https://issues.igniterealtime.org/secure/attachment/14171/Screenshot+at+Oct+09+17-09-35.png",,,No,,,,,"0|i01787:",No,,,,,
+PubSub Admin Console - 'Allowed to Create' appears active when inactive,OF-1397,22339,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,,dwd,jonr,jonr,10/09/17 04:00 PM,10/09/17 04:00 PM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,ws3,,"# Navigate to 'Server' > 'PubSub' > 'PubSub Server' 
+ # Untick 'Node Creation Restricted'
+
+Outcome: 'Allowed to Create' functionality remains active (user is able to add and remove users)
+
+Expected: Functionality is greyed out or hidden as this functionality doesn't work unless 'Node Creation Restricted' is selected. ",,,,,"10/09/17 04:00 PM;jonr;Screenshot at Oct 09 16-59-56.png;https://issues.igniterealtime.org/secure/attachment/14170/Screenshot+at+Oct+09+16-59-56.png",,,No,,,,,"0|i0177z:",No,,,,,
+PubSub Admin Console - 'Cancel' takes user to 'Node Summary',OF-1396,22338,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,,dwd,jonr,jonr,10/09/17 03:47 PM,10/09/17 03:47 PM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,ws3,,"# Navigate to 'Server' > 'PubSub' > 'PubSub Service'
+ # Click 'Cancel'
+
+Outcome: User is taken to 'Node Summary' page
+
+Expected: User remains on current page as 'Node Summary' is neither the parent or the default PubSub page. ",,,,,"10/09/17 03:47 PM;jonr;Screenshot at Oct 09 16-46-34.png;https://issues.igniterealtime.org/secure/attachment/14169/Screenshot+at+Oct+09+16-46-34.png",,,No,,,,,"0|i0177r:",No,,,,,
+PubSub Admin Console - 403 error creating node despite 'Allowed to create' list being empty,OF-1395,22337,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Minor,,dwd,jonr,jonr,10/09/17 03:38 PM,10/09/17 03:38 PM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,ws3,,"# Navigate to 'Server' > 'PubSub' > 'PubSub Service'
+ # Tick 'Node Creation Restricted'
+ # Empty 'Allowed to Create' list
+ # Click 'Update'
+ # Attempt to create a node as any user
+
+Outcome: 403 error returned
+
+Expected: User able to create node, as per the 'Allowed to Create' help text: ""An empty list means that anyone can create nodes."". ",,,,,,,,No,,,,,"0|i0177j:",No,,,,,
+PubSub Admin Console - 'Max number of items to persist' appears configurable when it's not,OF-1399,22341,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Trivial,,dwd,jonr,jonr,10/10/17 03:58 PM,10/10/17 03:58 PM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,,,"# Navigate to 'Server' > 'PubSub' > 'Node Summary'
+ # Click the edit icon by a node
+ # Untick 'Persist items to storage'
+ # Edit 'Max number of items to persist'
+ # Click 'Update'
+
+Outcome: 'Max number of items to persist' value resets to previous value
+
+Expected: User is unable to edit 'Max number of items to persist' when 'Persist items to storage' is not selected. ",,,,,"10/10/17 03:58 PM;jonr;Screenshot at Oct 10 16-57-53.png;https://issues.igniterealtime.org/secure/attachment/14172/Screenshot+at+Oct+10+16-57-53.png",,,No,,,,,"0|i0178f:",No,,,,,
+PubSub Admin Console - Unable to click Node ID,OF-1389,22330,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Trivial,,dwd,jonr,jonr,10/05/17 03:48 PM,10/05/17 03:48 PM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,ws3,,"# Navigate to 'Server' > 'PubSub'
+ # Attempt to click on a node ID
+
+Outcome: Node ID isn't a clickable link
+
+Expected: Node ID is a clickable link that takes user to a page of configuration options, consistent with other Openfire functionality (see screenshots)",,,,,"10/05/17 03:46 PM;jonr;Screenshot at Oct 05 16-45-25.png;https://issues.igniterealtime.org/secure/attachment/14165/Screenshot+at+Oct+05+16-45-25.png","10/05/17 03:46 PM;jonr;Screenshot at Oct 05 16-45-49.png;https://issues.igniterealtime.org/secure/attachment/14166/Screenshot+at+Oct+05+16-45-49.png","10/05/17 03:46 PM;jonr;Screenshot at Oct 05 16-46-07.png;https://issues.igniterealtime.org/secure/attachment/14167/Screenshot+at+Oct+05+16-46-07.png",No,,,,,"0|i0175z:",No,,,,,
+PubSub Admin Console - Node row number starts at 0,OF-1386,22327,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Trivial,,dwd,jonr,jonr,10/05/17 03:18 PM,10/05/17 03:18 PM,03/21/20 04:12 PM,,4.2.0,,,,PubSub,,,0,ws3,,"# Navigate to 'Server' > 'PubSub' tab
+ # If no nodes are listed, create a node
+
+Outcome: '0' is displayed to the left of the first node
+
+Expected: '1' is displayed to the left of the first node (consistent with other pages in Openfire)",,,,,"10/05/17 03:17 PM;jonr;Screenshot at Oct 05 16-15-06.png;https://issues.igniterealtime.org/secure/attachment/14160/Screenshot+at+Oct+05+16-15-06.png","10/05/17 03:17 PM;jonr;Screenshot at Oct 05 16-16-28.png;https://issues.igniterealtime.org/secure/attachment/14161/Screenshot+at+Oct+05+16-16-28.png","10/05/17 03:17 PM;jonr;Screenshot at Oct 05 16-16-56.png;https://issues.igniterealtime.org/secure/attachment/14162/Screenshot+at+Oct+05+16-16-56.png",No,,,,,"0|i0175b:",No,,,,,

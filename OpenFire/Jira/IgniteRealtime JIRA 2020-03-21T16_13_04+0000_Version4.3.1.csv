@@ -1,0 +1,244 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Fix Version/s,Fix Version/s,Component/s,Component/s,Due Date,Votes,Labels,Labels,Labels,Labels,Description,Environment,Work Ratio,Security Level,Outward issue link (Blocks),Outward issue link (Related to),Outward issue link (Related to),Attachment,Attachment,Attachment,Custom field (Acceptance Test - Add?),Custom field (Acceptance Test - Entry),Custom field (Epic Link),Custom field (Expected Effort),Custom field (Ignite Forum URL),Custom field (Rank),Custom field (Support Plan Customer Issue),Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment
+PrivateStorage can fail to persist items,OF-1642,23224,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Blocker,Fixed,gdt,gdt,gdt,11/16/2018 16:30,1/17/2019 21:37,3/21/2020 16:12,11/30/2018 14:44,4.3.0,4.2.4,4.3.0,PubSub,,,0,,,,,"*+Steps to reproduce;+*
+
+# Assuming two users, test1, test2, run the following code:
+{code:java}
+        final PrivateStorage privateStorage = XMPPServer.getInstance().getPrivateStorage();
+
+        final Element data1 = new BaseElement(""my-test-user-1"");
+        data1.addAttribute(""my-value"", UUID.randomUUID().toString());
+
+        final Element data2 = new BaseElement(""my-test-user-2"");
+        data2.addAttribute(""my-value"", UUID.randomUUID().toString());
+
+        privateStorage.add(""test1"", data1);
+        privateStorage.add(""test2"", data2);
+{code}
+ # Examine the contents of ofPubSubItem; 
+{code:sql}
+SELECT * FROM ofPubSubItem WHERE serviceID LIKE 'test%'
+{code}
+  
+ *+Expected results+*
+* The database shows two rows of data, one for user test1 and one for test2.
+
+*+Actual results+*
+* The database shows one row of data, test2 only.",,,,,OF-1594,,,,,No,,,,,0|i019i7:,No,"11/16/18 04:36 PM;gdt;I believe the problem lies around line [https://github.com/igniterealtime/Openfire/blob/master/xmppserver/src/main/java/org/jivesoftware/openfire/pubsub/PubSubPersistenceManager.java#L1166]
+
+The itemKey is "":current"" - which is the same for both user1 and user2 - so the write for user1 is replaced by the one for user2 before it's saved to DB.
+
+I'm currently unsure how to progress from here - I'm unsure of the intent behind this code area!
+
+ ","11/16/18 04:43 PM;akrherz;We are unsure if this issue is related to OF-1594 (corrupted bookmarks), but it hopefully is!","11/16/18 04:48 PM;gdt;OK, so the itemKey is made up of a concatenation of nodeID (blank in this sample) and id (""current""). 
+
+Either
+
+(a) The id for PrivateStorage items needs to be more unique (e.g. the serviceID) (i.e. this only affects PrivateStorage items), or
+
+(b) The itemKey should be made up of a concatenation of serviceID + nodeID + id (which matches the PK on the table) (i.e. this affects all PublishedItems).
+
+I'm out of my depth, now. Perhaps someone else can chime in.","11/19/18 09:57 AM;gdt;After some reflection, I think the correct answer is option b) above. I think the intent of the code is to avoid persisting PubSubItems that are already out of date. - and as such an item should be identified by it's complete identifier - i.e. serviceID + nodeID + id. Looking in to a PR now ...",,,,,,,,
+CPU peaks when using BOSH,OF-1586,22852,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Blocker,Fixed,guus,guus,guus,8/14/2018 8:25,1/17/2019 20:44,3/21/2020 16:13,8/14/2018 12:37,4.3.0,4.2.4,4.3.0,BOSH,,,0,,,,,"As soon as BOSH is used, Openfire starts to consume all CPU resources (and clients connecting through BOSH appear not to connect).
+
+This behavior appears to have been introduced on the master branch, after the 4.2 releases, but before the 4.3 release.",,,,,,,08/14/18 08:25 AM;guus;Screenshot from 2018-08-14 10-23-00.png;https://issues.igniterealtime.org/secure/attachment/14563/Screenshot+from+2018-08-14+10-23-00.png,08/14/18 08:25 AM;guus;Screenshot from 2018-08-14 10-23-10.png;https://issues.igniterealtime.org/secure/attachment/14562/Screenshot+from+2018-08-14+10-23-10.png,,No,,,,,0|i018zz:,No,08/14/18 12:57 PM;akrherz;Thank you Guus!  Verified it fixed my local install and ignite.,,,,,,,,,,,
+Upgrading from 4.2.3 to 4.3.0-beta may not migrate properties to ofPubSub,OF-1648,23232,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Blocker,Fixed,gdt,gdt,gdt,12/4/2018 17:26,1/4/2019 14:59,3/21/2020 16:13,1/4/2019 14:49,4.3.0,4.3.0,,Database,,,0,,,,,"The following error message was reported in the forums;
+
+{code}
+Found old database version 26 for openfire. Upgrading to version 29…
+11:23:35.824 [main] ERROR org.jivesoftware.util.JiveProperties - user lacks privilege or object not found: IV in statement [SELECT name, propValue, encrypted, iv FROM ofProperty]
+java.sql.SQLSyntaxErrorException: user lacks privilege or object not found: IV in statement [SELECT name, propValue, encrypted, iv FROM ofProperty]
+at org.hsqldb.jdbc.JDBCUtil.sqlException(Unknown Source) ~[hsqldb-2.4.1.jar:2.4.1]
+at org.hsqldb.jdbc.JDBCUtil.sqlException(Unknown Source) ~[hsqldb-2.4.1.jar:2.4.1]
+at org.hsqldb.jdbc.JDBCPreparedStatement.(Unknown Source) ~[hsqldb-2.4.1.jar:2.4.1]
+at org.hsqldb.jdbc.JDBCConnection.prepareStatement(Unknown Source) ~[hsqldb-2.4.1.jar:2.4.1]
+at org.apache.commons.dbcp2.DelegatingConnection.prepareStatement(DelegatingConnection.java:292) ~[commons-dbcp2-2.5.0.jar:2.5.0]
+at org.apache.commons.dbcp2.DelegatingConnection.prepareStatement(DelegatingConnection.java:292) ~[commons-dbcp2-2.5.0.jar:2.5.0]
+at org.jivesoftware.util.JiveProperties.loadProperties(JiveProperties.java:439) [xmppserver-4.3.0-beta.jar:4.3.0-beta]
+at org.jivesoftware.util.JiveProperties.init(JiveProperties.java:90) [xmppserver-4.3.0-beta.jar:4.3.0-beta]
+at org.jivesoftware.util.JiveProperties.getInstance(JiveProperties.java:66) [xmppserver-4.3.0-beta.jar:4.3.0-beta]
+at org.jivesoftware.util.JiveGlobals.getProperty(JiveGlobals.java:556) [xmppserver-4.3.0-beta.jar:4.3.0-beta]
+at org.jivesoftware.database.bugfix.OF1515.transform(OF1515.java:118) [xmppserver-4.3.0-beta.jar:4.3.0-beta]
+at org.jivesoftware.database.bugfix.OF1515.executeFix(OF1515.java:63) [xmppserver-4.3.0-beta.jar:4.3.0-beta]
+at org.jivesoftware.database.SchemaManager.checkSchema(SchemaManager.java:276) [xmppserver-4.3.0-beta.jar:4.3.0-beta]
+{code}
+
+What appears to be happening is that OF1515 is being called before the DB upgrade script that creates column ""iv"" is called.
+
+This prevents JiveGlobals.loadProperties() from working, which means the incorrect xmpp domain may be used when migrating the properties. ",,,,,,,,,,No,,,,https://discourse.igniterealtime.org/t/issues-after-openfire-4-3-0-beta-update/83535,0|i019jz:,No,,,,,,,,,,,,
+Admin console fails to complete setup in non-English locales,OF-1641,23222,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Blocker,Fixed,gdt,gdt,gdt,11/14/2018 13:30,11/19/2018 9:41,3/21/2020 16:13,11/19/2018 9:41,4.3.0,4.3.0,,Admin Console,,,0,,,,,"The admin console will fail to complete the setup if run in a non-English locale.
+
+{code:java}
+2018.11.14 17:13:42 WARN [Jetty-QTP-AdminConsole-25]: org.eclipse.jetty.server.handler.ContextHandler.ROOT - Unhandled exception occurred whilst decorating page
+org.eclipse.jetty.http.BadMessageException: 400: Unable to parse form content
+at org.eclipse.jetty.server.Request.getParameters(Request.java:390) ~[jetty-server-9.4.12.v20180830.jar:9.4.12.v20180830]
+at org.eclipse.jetty.server.Request.getParameter(Request.java:1029) ~[jetty-server-9.4.12.v20180830.jar:9.4.12.v20180830]
+at org.jivesoftware.util.ParamUtils.getParameter(ParamUtils.java:52) ~[xmppserver-4.3.0-SNAPSHOT.jar:4.3.0-SNAPSHOT]
+at org.jivesoftware.util.ParamUtils.getParameter(ParamUtils.java:36) ~[xmppserver-4.3.0-SNAPSHOT.jar:4.3.0-SNAPSHOT]
+at org.jivesoftware.openfire.admin.setup.setup_002dhost_002dsettings_jsp._jspService(setup_002dhost_002dsettings_jsp.java:143) ~[xmppserver-4.3.0-SNAPSHOT.jar:4.3.0-SNAPSHOT]
+at org.apache.jasper.runtime.HttpJspBase.service(HttpJspBase.java:70) ~[apache-jsp-8.5.24.2.jar:2.3]
+at javax.servlet.http.HttpServlet.service(HttpServlet.java:790) ~[javax.servlet-api-3.1.0.jar:3.1.0]
+at org.eclipse.jetty.servlet.ServletHolder.handle(ServletHolder.java:865) ~[jetty-servlet-9.4.12.v20180830.jar:9.4.12.v20180830]
+
+{code}",,,,,OF-1632,,,,,No,,,,https://discourse.igniterealtime.org/t/openfire-4-3-0-alpha-start-by-openfire-bat-on-windows-show-error-when-setup-by-admin-console-setup-setup-host-settings-jsp/83410/3,0|i019hr:,No,,,,,,,,,,,,
+Upgrading from 4.2.3 to 4.3.0-beta leaves WEB-INF/lib in place,OF-1647,23231,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Critical,Fixed,gdt,gdt,gdt,12/4/2018 17:12,4/30/2019 13:38,3/21/2020 16:13,4/30/2019 13:38,4.3.0,4.4.0,,Admin Console,,,0,,,,,"When upgrading Openfire 4.2.3 to Openfire 4.3.0-beta (on Windows), after the upgrade the folder plugins/admin/webapp/WEB-INF/lib is left in place - this prevents various pages on the admin console from starting.
+
+{code}
+java.lang.ClassNotFoundException: com.sun.syndication.fetcher.FeedFetcher
+at java.net.URLClassLoader.findClass(Unknown Source)
+at java.lang.ClassLoader.loadClass(Unknown Source)
+at java.lang.ClassLoader.loadClass(Unknown Source)
+at org.eclipse.jetty.webapp.WebAppClassLoader.loadClass(WebAppClassLoader.java:565)
+at java.lang.ClassLoader.loadClass(Unknown Source)
+at java.lang.Class.getDeclaredConstructors0(Native Method)
+at java.lang.Class.privateGetDeclaredConstructors(Unknown Source)
+at java.lang.Class.getConstructor0(Unknown Source)
+at java.lang.Class.getDeclaredConstructor(Unknown Source)
+at org.eclipse.jetty.server.handler.ContextHandler$Context.createInstance(ContextHandler.java:2655)
+at org.eclipse.jetty.servlet.ServletContextHandler$Context.createServlet(ServletContextHandler.java:1372)
+at org.eclipse.jetty.servlet.ServletHolder.newInstance(ServletHolder.java:1297)
+at org.eclipse.jetty.servlet.ServletHolder.initServlet(ServletHolder.java:647)
+at org.eclipse.jetty.servlet.ServletHolder.getServlet(ServletHolder.java:519)
+at org.eclipse.jetty.servlet.ServletHolder.prepare(ServletHolder.java:803)
+at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:530)
+at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:146)
+{code}
+
+or
+
+{code}
+java.lang.NoSuchMethodError: org.apache.jasper.runtime.JspContextWrapper.(Ljavax/servlet/jsp/JspContext;Ljava/util/ArrayList;Ljava/util/ArrayList;Ljava/util/ArrayList;Ljava/util/Map;)V
+at org.apache.jsp.tag.meta.admin.admin.contentBox_tagx.setJspContext(contentBox_tagx.java:37)
+at org.jivesoftware.openfire.admin.security_002dcertificate_002dstore_002dmanagement_jsp._jspx_meth_admin_005fcontentBox_005f0(security_002dcertificate_002dstore_002dmanagement_jsp.java:1545)
+at org.jivesoftware.openfire.admin.security_002dcertificate_002dstore_002dmanagement_jsp._jspx_meth_c_005fforEach_005f1(security_002dcertificate_002dstore_002dmanagement_jsp.java:686)
+at org.jivesoftware.openfire.admin.security_002dcertificate_002dstore_002dmanagement_jsp._jspService(security_002dcertificate_002dstore_002dmanagement_jsp.java:235)
+at org.apache.jasper.runtime.HttpJspBase.service(HttpJspBase.java:70)
+at javax.servlet.http.HttpServlet.service(HttpServlet.java:790)
+at org.eclipse.jetty.servlet.ServletHolder.handle(ServletHolder.java:865)
+...
+{code}
+",,,,,,,,,,No,,,,https://discourse.igniterealtime.org/t/issues-after-openfire-4-3-0-beta-update/83535,0|i019jr:,No,"01/11/19 07:36 PM;wroot;Maybe it only happens if 32-bit version was used in the past. But my last upgrade was x64 to x64. Lib folder is not removed during the upgrade. As this is a rare case, it can probably be changed to Major.","01/11/19 08:22 PM;speedy;I was unable to reproduce this issue.  My test was simple. 
+
+default installation, no additional  plug-ins. 
+
+Test 1.
+
+same arch 4.0.0 to 4.1.0 to 4.2.3 to 4.3.0 - no issues
+
+Test 2
+
+32 bit 4.1.0 to 64bit 4.2.3 to 64bit 4.3.0 - no issues","01/11/19 08:44 PM;speedy;is the issue that the admin console can not be accessed at all, or just certain pages within the admin console",01/11/19 09:41 PM;wroot;In my case i couldn't access main page and TLS/SSL. But by manually specifying URL i could go to other pages.,,,,,,,,
+Group sorting is incorrect,OF-1685,23333,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,Fixed,gdt,wroot,wroot,2/6/2019 17:34,7/30/2019 17:55,3/21/2020 16:13,4/22/2019 13:53,4.3.0,4.4.0,,Admin Console,,,0,admin_console,group,sorting,,"Groups are not sorted by name. Also, i thought there should be a way to set how many show per page (i think there was a ticket for that at some point).",,,,,,,02/06/19 05:34 PM;wroot;image-2019-02-06-19-34-09-495.png;https://issues.igniterealtime.org/secure/attachment/14965/image-2019-02-06-19-34-09-495.png,03/26/19 05:58 PM;gdt;image-2019-03-26-17-58-26-328.png;https://issues.igniterealtime.org/secure/attachment/15064/image-2019-03-26-17-58-26-328.png,,No,,,,,0|i019yn:,No,"03/26/19 05:58 PM;gdt;Groups are now sorted, also updated the filtering/paging in line with other pages. 
+
+!image-2019-03-26-17-58-26-328.png!",,,,,,,,,,,
+Bookmarks are unexpectedly copied to other users.,OF-1594,22861,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,,dwd,guus,guus,8/24/2018 14:13,7/22/2019 20:06,3/21/2020 16:13,,4.3.0,,,Core,,,0,,,,,"With the (unreleased) 4.3.0 alpha code, bookmarks from one person end up with another person.
+
+I've frequently seen that my bookmarks are copied into Pawel's, and later Dele's pubsub items (I looked directly at the database for this)
+
+Timing suggests that this is not done by the database upgrade scripts (otherwise it would have happened to everyone at the same time). ",,,,,,,,,,No,,,,,0|i0191z:,No,"11/13/18 06:31 PM;akrherz;A lot of gnashing of teeth has gone into this issue, but has yet to yield a fix.  Openfire 4.3.0 beta will ship with this issue present (perhaps not everybody sees it though).  Setting the fix revision ahead in time, hopefully it can get resolved.",04/23/19 09:15 AM;guus;I've not seen this happen for a long time.,07/22/19 08:06 PM;akrherz;Lowered the priority and removed from tracking a future release.  We don't seem to have current reproducers.  Please chime in if you are seeing this issue.,,,,,,,,,
+Broadcast plugin's repository is missing,OF-1702,23431,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,Fixed,dele,wroot,wroot,3/3/2019 16:51,6/28/2019 14:19,3/21/2020 16:13,3/19/2019 7:00,4.3.0,,,Plugins,,,1,broadcast,plugin,,,While moving all plugins to separate repositories Broadcast plugin was lost in the process and there is no its repository nor it is still in Openfire source. Maybe it can still be recovered and separated.,,,,,,,,,,No,,,,https://discourse.igniterealtime.org/t/repository-for-broadcast-plugin,0|i01a6n:,No,"03/19/19 07:00 AM;wroot;Dele has created the new repository [https://github.com/igniterealtime/openfire-broadcast-plugin]
+
+Though it still needs work to make it build automatically in Archiva. There is a separate GitHub issue for that.",,,,,,,,,,,
+Problems with groups creation,OF-1686,23335,Bug,Resolved,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,Fixed,gdt,wroot,wroot,2/7/2019 14:58,4/12/2019 18:09,3/21/2020 16:13,4/12/2019 18:09,4.3.0,4.4.0,,Admin Console,,,0,admin_console,group,,,"Users report problems while creating groups. Group is created, but not shown in the list. But when a user tries to create same group it says that the group is present, etc.",,,,,OF-1685,,,,,No,,,,https://discourse.igniterealtime.org/t/openfire-4-3-0-4-3-2-group-creation-problem/84154,0|i019z3:,No,02/07/19 02:59 PM;wroot;Another report https://discourse.igniterealtime.org/t/cant-delete-or-add-groups/84135,,,,,,,,,,,
+Upgrade issues on Debian,OF-1684,23331,Bug,Open,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,,dwd,wroot,wroot,2/5/2019 9:28,4/6/2019 16:02,3/21/2020 16:13,,4.3.0,,,Installer,Linux,,0,debian,permissions,upgrade,,"Ever since 4.3.0 release i have seen a number of reports about issues with upgrades on Debian/Ubuntu based systems.
+
+One of the most common issues seems to be related to permissions, as Openfire for some reason is not able to update config files although users report permissions are correct and hasn't changed.
+
+Another often mentioned issue is with timezone ID in the database connection string. This can be related to Java update, though Debian version doesn't have Java bundled. Users have to update timezone ID to something else.
+
+Some users also report logs being completely empty.",Debian,,,,,,,,,No,,,,https://discourse.igniterealtime.org/t/openfire-4-2-3-to-4-3-2-upgrade-issues/84121,0|i019y7:,No,02/08/19 08:09 AM;wroot;Another report with Debian Jessy https://discourse.igniterealtime.org/t/debian-jessie-openfire-4-2-3-to-4-3-2-upgrade/84163,"02/13/19 05:08 PM;gdt;The thread at [https://discourse.igniterealtime.org/t/can-not-update-from-4-2-3-to-4-3-2-on-debian/84196/3] suggests that the install process prompts about over-writing a changed openfire.xml
+
+I know next-to-nothing about .deb files but given openfire.xml will have always changed from the previous install, I wonder if that prompt can somehow be suppressed and the ""use existing file"" option always taken. I can't see a circumstance when an upgrade should use the ""new"" openfire.xml in preference to the existing one.",02/14/19 09:34 AM;wroot;I wonder if timezone issue is related to mysql connector update.,"02/14/19 03:05 PM;wroot;Also, not just upgrade, but fresh installs are problematic for people on Debian. I have just tried to do this in my Ubuntu VM and i run into same permissions issue like with Windows, when launcher is running without Run as admin option. I can only run Openfire via sudo without issues. If i run with regular user, it shows Current password prompt during fresh setup similar as in https://issues.igniterealtime.org/browse/OF-1298
+
+More details here: https://discourse.igniterealtime.org/t/openfire-4-3-2-fresh-install-ask-for-current-admin-password/84226",02/15/19 08:14 AM;wroot;A user reports that he was only able to setup 4.3.2 on Debian after running this command: timedatectl set-timezone UTC,02/19/19 11:37 AM;gdt;Another report at https://discourse.igniterealtime.org/t/lost-all-settings-after-upgrade-to-4-3-2/84298,"04/06/19 04:02 PM;wroot;It seems that timezone issue is related to JDBC update [https://stackoverflow.com/questions/26515700/mysql-jdbc-driver-5-1-33-time-zone-issue:]
+
+After reading through that post i can't figure out the right approach. To many different suggestions. Certainly wouldn't be ok if you have to change that string twice per year (another vote for stopping clock moving madness..:))",,,,,
+Broadcast plugin not working with Openfire 4.3,OF-1716,23459,Bug,Closed,OF,Openfire,software,guus,"Open-Source Java XMPP (Jabber) server. <p>
+
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/bug_red.gif"" width=""24"" height=""24""></td><td><b>Need to report a bug?</b> All bug reports should be made in the <a href=""https://discourse.igniterealtime.org"">discussion forums</a>. A developer will then create an issue in the bug tracker and schedule it to be fixed in an upcoming release.</td></tr></table>
+
+<br>
+<table border=""0""><tr><td valign=""top""><img src=""https://www.igniterealtime.org/images/vote.png"" width=""24"" height=""24""></td><td><b>Vote for your favorite issues.</b> Issues voted on by the community are given higher priority. View <a href=""https://www.igniterealtime.org/issues/secure/IssueNavigator.jspa?mode=hide&requestId=10200"">the list</a> of open issues by votes.</td></tr></table>
+",http://www.igniterealtime.org/projects/openfire,Major,Moved to GH,,wroot,wroot,3/18/2019 16:49,3/19/2019 9:19,3/21/2020 16:13,3/19/2019 7:03,4.3.0,,,Plugins,,,0,broadcast,,,,"Posting in Jira as Broadcast plugin still doesn't have its own GitHub repository (should be moved there as GitHub issue once available).
+
+Broadcast plugin works only with Openfire 4.2 branch. With 4.3 messages are not sent also it is not possible to view readme and changelog in plugins list as it shows empty screen (similar to issues with other plugins).
+
+User also reports this exception:
+{code:java}
+drwxr-xr-x 3 openfire openfire  4096 Mar 18 13:13 broadcast
+-rw-r--r-- 1 openfire openfire  9789 Mar 18 13:13 broadcast.jar
+
+
+2019.03.18 13:15:54 ERROR [pool-28-thread-1]: org.jivesoftware.openfire.container.PluginManager - An exception occurred while loading plugin 'broadcast':
+java.lang.ClassNotFoundException: org.jivesoftware.openfire.plugin.BroadcastPlugin
+        at java.net.URLClassLoader.findClass(URLClassLoader.java:382) ~[?:1.8.0_181]
+        at java.lang.ClassLoader.loadClass(ClassLoader.java:424) ~[?:1.8.0_181]
+        at java.lang.ClassLoader.loadClass(ClassLoader.java:357) ~[?:1.8.0_181]
+        at org.jivesoftware.openfire.container.PluginManager.loadPlugin(PluginManager.java:544) [xmppserver-4.3.2.jar:4.3.2]
+        at org.jivesoftware.openfire.container.PluginMonitor$MonitorTask$4.call(PluginMonitor.java:354) [xmppserver-4.3.2.jar:4.3.2]
+        at org.jivesoftware.openfire.container.PluginMonitor$MonitorTask$4.call(PluginMonitor.java:342) [xmppserver-4.3.2.jar:4.3.2]
+        at java.util.concurrent.FutureTask.run(FutureTask.java:266) [?:1.8.0_181]
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149) [?:1.8.0_181]
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624) [?:1.8.0_181]
+        at java.lang.Thread.run(Thread.java:748) [?:1.8.0_181] {code}",,,,,OF-1702,,,,,No,,,,https://discourse.igniterealtime.org/t/broadcast-plug-in-does-not-work-with-openfire-4-3-2,0|i01acv:,No,"03/18/19 10:50 PM;dele;I have created the repo on github and confirmed it builds and runs ok.  I now need assistance to automate the build process.
+
+https://github.com/igniterealtime/openfire-broadcast-plugin",03/19/19 07:03 AM;wroot;Moved to https://github.com/igniterealtime/openfire-broadcast-plugin/issues/2,,,,,,,,,,

@@ -1,0 +1,1283 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Affects Version/s,Affects Version/s,Fix Version/s,Fix Version/s,Due Date,Votes,Labels,Labels,Labels,Labels,Description,Environment,Original Estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Outward issue link (Blocker),Outward issue link (Duplicate),Outward issue link (Reference),Attachment,Attachment,Custom field (Affects version (Component)),Custom field (Attachment count),Custom field (Blog - New Blog Administrators),Custom field (Blog - New Blog PMC),Custom field (Blog - Write access),Custom field (Blog Administrator?),Custom field (Blogs - Admin for blog),Custom field (Blogs - Email Address),Custom field (Blogs - Existing Blog Access Level),Custom field (Blogs - Existing Blog Name),Custom field (Blogs - New Blog Write Access),Custom field (Blogs - Username),Custom field (Bug Category),Custom field (Bugzilla - Email Notification Address),Custom field (Bugzilla - List of usernames),Custom field (Bugzilla - PMC Name),Custom field (Bugzilla - Project Name),Custom field (Bugzilla Id),Custom field (Bugzilla Id),Custom field (Change Category),Custom field (Complexity),Custom field (Date of First Response),Custom field (Discovered By),Custom field (Docs Text),Custom field (Enable Automatic Patch Review),Custom field (Epic Link),Custom field (Estimated Complexity),Custom field (Evidence Of Open Source Adoption),Custom field (Evidence Of Registration),Custom field (Evidence Of Use On World Wide Web),Custom field (Existing GitBox Approval),Custom field (External issue ID),Custom field (External issue URL),Custom field (Fix version (Component)),Custom field (Flags),Custom field (Flags),Custom field (Git Notification Mailing List),Custom field (Git Repository Import Path),Custom field (Git Repository Name),Custom field (Git Repository Type),Custom field (GitHub Options),Custom field (Github Integration),Custom field (Github Integrations - Other),Custom field (Global Rank),Custom field (INFRA - Subversion Repository Path),Custom field (Initial Confluence Contributors),Custom field (Last public comment date),Custom field (Level of effort),Custom field (Machine Readable Info),Custom field (New-TLP-TLPName),Custom field (Priority),Custom field (Project),Custom field (Protected Branch),Custom field (Rank),Custom field (Rank (Obsolete)),Custom field (Review Date),Custom field (Reviewer),Custom field (Severity),Custom field (Severity),Custom field (Skill Level),Custom field (Skill Level),Custom field (Source Control Link),Custom field (Space Description),Custom field (Space Key),Custom field (Space Name),Custom field (Tags),Custom field (Test and Documentation Plan),Custom field (Testcase included),Custom field (Tester),Custom field (Workaround),Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment
+MultiKMeansPlusPlusClusterer buggy for alternative evaluators,MATH-1315,12929024,Bug,Open,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,,,thorstenschaefer,thorstenschaefer,10/Jan/16 18:18,07/Mar/20 15:15,23/Mar/20 17:11,,3.5,,,,,4.0,,,0,,,,,"I just looked into the source code for the MultiKMeansPlusPlusClusterer and realized that it would return null in case of an alternative evaluator that favors bigger values instead of smaller ones:
+The basic idea of the clustering method is that we perform n clusterings and choose the best result. The decision what's the best result is performed by the evaluator, which by default assumes smaller values are better. 
+According to the documentation, we can also provide a different evaluator, which for instance would decide that bigger values are better, but given we initialize the best value with Double.POSITIVE_INFINITY in method MultiKMeansPlusPlusClusterer.cluster(Collection<T>), we would never find a ""better"" result and thus always return null. ",,,,,,,,,,,,,"07/May/16 20:29;erans;MATH-1315.patch;https://issues.apache.org/jira/secure/attachment/12802841/MATH-1315.patch",,,1.0,,,,,,,,,,,,,,,,,,,,2016-01-10 19:46:39.843,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue May 17 16:46:07 UTC 2016,,,,,,,"0|i2r3sn:",9223372036854775807,,,,,,,,,,,,,,,,"10/Jan/16 19:46;tn;Indeed, you are right this has to be fixed.","06/May/16 21:59;erans;Do you agree that the attached patch would solve this issue?","07/May/16 17:43;thorstenschaefer;I think you uploaded the wrong patch. ","07/May/16 20:29;erans;Indeed, sorry; here is the right one!","17/May/16 16:46;erans;Hi Thorsten.
+
+Can you contribute a unit test to ensure that the fix is working?  Thanks.",,,,,,,,,,,,,,,,,,,
+Percentile computational accuracy issue,MATH-1490,13239825,Bug,Reopened,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,,chtompki,lingchao,lingchao,16/Jun/19 20:17,08/Feb/20 18:01,23/Mar/20 17:11,,3.4,3.4.1,3.5,3.6,3.6.1,,,,0,performance,,,,"The percentile method works well on the older versions, e.g., the version before 3.4. However, when I update commons-math to the newer version, there produces a computational accuracy issue. There is a backward compatibility bug behind it.","System: Linux testinglab 4.4.0-131-generic #157~14.04.1-Ubuntu
+
+
+Java version ""1.8.0_191""
+Java(TM) SE Runtime Environment (build 1.8.0_191-b12)
+Java HotSpot(TM) 64-Bit Server VM (build 25.191-b12, mixed mode)
+
+ 
+
+ ",,,,,,,,,STATISTICS-18,,,"16/Jun/19 20:16;lingchao;BugDemo.java;https://issues.apache.org/jira/secure/attachment/12971913/BugDemo.java",,,1.0,,,,,,,,,,,,,,,,,,,,2019-06-19 18:03:21.356,,,false,,,,,,,,,,Important,,,,,,,,,9223372036854775807,,,Sat Aug 24 12:37:09 UTC 2019,,,,,,,"0|z03st4:",9223372036854775807,,,,,,,,,,,,,,,,"19/Jun/19 18:03;virendrasinghrp;The Test case given by you in *#MATH-1491* can be resolved  using delta value *1e-15* but, it is not working in this case!
+
+This is the error I found:
+
+{color:#ff0000}_java.lang.AssertionError: expected:<68.95> but was:<68.94999999999999>_{color}
+
+{color:#333333}*1e-14* should work in this case, but it's not working. While *1e-13* is working{color}","20/Jun/19 17:12;chtompki;I think [~erans] wanted to link this over to STATISTICS-7 too.","20/Jun/19 17:24;chtompki;Test case is different.","22/Jun/19 00:56;erans;bq. There is a backward compatibility bug behind it.
+
+Could you please be more explicit?
+What is the expected output?","24/Jun/19 17:33;lingchao;Hi Gilles,
+
+For this test cast, my expected output is 68.95. It works well on the version before 3.4. When I updated the commons-math version to 3.5 or newer version. The output changed to 68.94999999999999.","25/Jun/19 00:24;erans;bq. my expected output is 68.95.
+
+With what precision?","23/Aug/19 16:38;lingchao;Hi Gilles,
+
+ 
+
+The output is different when I update it, and it breaks my existing code. I got an incompatible error.
+
+ 
+
+Thanks.","23/Aug/19 23:38;erans;Did the CM code change (from when it produced your expected to when it doesn't anymore)?","23/Aug/19 23:44;lingchao;No. I didn't change any code. I just upgrade the commons-math. ","24/Aug/19 00:12;erans;I'm asking that you please check whether the _Commons_ _Math_ (CM) code was modified by the developers team, i.e. the code which you _call_ (to get the number ""68.95"").
+","24/Aug/19 12:37;erans;I've done it. So:
+{noformat}
+$ git diff MATH_3_3 MATH_3_4 -- src/main/java/org/apache/commons/math3/stat/descriptive/rank/Percentile.java
+{noformat}
+displays a large number of changes between v3.3 and v3.4 (in order to add new features).
+ I'm not too surprised that this could entail a 1e-15 relative change of the output. Moreover, the unit tests show an expected level of precision much lower than that (although I admit that it's not clear why).
+{quote}it breaks my existing code. I got an incompatible error.
+{quote}
+Could you elaborate a little?",,,,,,,,,,,,,
+Percentile computational accuracy issue,MATH-1491,13239826,Bug,Open,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,,,lingchao,lingchao,16/Jun/19 20:31,20/Jun/19 19:33,23/Mar/20 17:12,,3.4,3.4.1,3.5,3.6,3.6.1,,,,0,performance,,,,"Hi, 
+
+The percentile method works well on the older versions, e.g., the version before 3.4. However, when I update commons-math to the newer version, there produces a computational accuracy issue. There is a backward compatibility bug behind it.
+","System: Linux testinglab 4.4.0-131-generic #157~14.04.1-Ubuntu
+
+
+Java version ""1.8.0_191""
+Java(TM) SE Runtime Environment (build 1.8.0_191-b12)
+Java HotSpot(TM) 64-Bit Server VM (build 25.191-b12, mixed mode)
+
+ 
+
+ ",,,,,,,,,STATISTICS-18,,MATH-1490,"16/Jun/19 20:31;lingchao;BugDemo.java;https://issues.apache.org/jira/secure/attachment/12971914/BugDemo.java",,,1.0,,,,,,,,,,,,,,,,,,,,2019-06-19 17:47:09.355,,,false,,,,,,,,,,Important,,,,,,,,,9223372036854775807,,,Thu Jun 20 17:13:38 UTC 2019,,,,,,,"0|z03stc:",9223372036854775807,,,,,,,,,,,,,,,,"19/Jun/19 17:47;virendrasinghrp;Hi [~lingchao], I looked into your issue, I checked it on version 2.2 & 3.6 with your Test case. I found that version 2.2 gives the Percentile value = *7.55* while the version 3.6 gives the Percentile value = *7.550000000000001*(for this particular test case).
+
+It can be solved if you add delta/tolerance *1e-15* in assertEquals(expected,actual,delta) method.","20/Jun/19 17:13;chtompki;I meant to link this one [~erans], to STATISTICS-7",,,,,,,,,,,,,,,,,,,,,,
+Uncommon wilcoxon signed-rank p-values,MATH-1233,12837832,Bug,Open,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,,chtompki,icarocd,icarocd,15/Jun/15 13:05,30/Apr/18 19:17,23/Mar/20 17:12,,3.5,,,,,4.0,,,0,,,,,"This implementation in WilcoxonSignedRankTest looks weird. For equal vectors, the correct pValue should be 1, because it is the probability of the vectors to come from same population.
+On the opposite, this implementation returns ~0 for equal vectors. So we need to analyze the returned pValue > significanceLevel to reject H0 hypothesis, while in R and many others tools we perform the opposite: pValue <= significanceLevel gives us an argument to reject null hypothesis.",,,,,,,,,,,,,"15/Jun/15 23:56;psteitz;MATH-1233-test.patch;https://issues.apache.org/jira/secure/attachment/12739730/MATH-1233-test.patch",,,1.0,,,,,,,,,,,,,,,,,,,,2015-06-15 22:48:59.045,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Apr 30 19:17:37 UTC 2018,,,,,,,"0|i2g1pj:",9223372036854775807,,,,,,,,,,,,,,,,"15/Jun/15 22:48;psteitz;Thanks for reporting this.  The intent of the code is to provide standard p-values, so this must indicate a bug in the implementation.","15/Jun/15 23:56;psteitz;Unit test illustrating bug.","17/Jun/15 03:38;psteitz;At least one bug is that calculateDifferences does not discard pairs with 0 difference.  It may be best, actually, to do as R does for identical input arrays: return 0 for the statistic an NaN (or throw) for the p-value.","17/Jun/15 11:24;icarocd;I think it is fine to produce NaN for identical vectors. In fact, in apache commons math's source I noticed the procedure differ from the original formulation in some ways (discarding ties as you mentioned is an example).
+Two good baselines to take into account are wilcox.test from R, and scipy.stats.wilcoxon from Python.","19/Oct/15 21:12;tn;The referenced wikipedia article explains the algorithm differently than it is implemented.
+In our implementation, zero values are not discarded, but we calculate the signed rank as max of W+ and W-. I did not yet find a reference to this, but this subsequently leads to errors when calculating the p-value.
+
+scipy allows 3 different zero handling strategies, see here http://docs.scipy.org/doc/scipy-0.15.1/reference/generated/scipy.stats.wilcoxon.html","30/Apr/17 18:36;chtompki;After some reading here, the assumptions on the data given are:
+
+# Data are paired and come from the same population.
+# Each pair is chosen randomly and independently.
+# The data are measured at least on an ordinal scale (i.e., they cannot be nominal).
+
+I wonder if the two input vectors are the same, then is the consumer not violating 3? I generally agree here that the same vector should be treated in its own way. I would think that we may want to throw an exception. The only question then becomes performance in nature, in that, is doing array equality at the beginning of the procedure valuable enough that we are willing to do it every time despite the _O( n )_ performance hit? Or do we simply document the fact that we'll not give reliable results when the vectors are the same.","05/May/17 18:25;chtompki;When we consider scipy, our results don't even match up with theirs on the same input, generally. This somewhat concerns me that our algorithm is generally not correct.","05/May/17 22:44;erans;Was it the case too with the last official release (v3.6.1)?
+","05/May/17 23:29;icarocd;one suggestion is to just to copy the code from scipy, including the tests, then port it to java.","06/May/17 12:50;chtompki;Gilles - yes
+
+Icaro - that was indeed my thought as well.
+
+I'm hoping to sort this out this week.","08/May/17 14:02;chtompki;Gilles - do you think we should deprecate the old method or simply change the signature because we're going from 3.X to 4.X? It feels like that could be abrupt with out the forewarning that deprecation provides.","08/May/17 18:01;erans;Several things will have changed or disappeared ""abruptly"" when 4.0 will be released. :)
+The release notes should contain the context to help people with upgrading their code.","30/Apr/18 19:17;psteitz;A first attempt at a fix for this was implemented in [this issue|https://github.com/Hipparchus-Math/hipparchus/issues/37] in Hipparchus.  Current code there discards tied pairs, which would result in an exception if all pairs are tied.  I agree that it should be configurable how ties are handled and the scipy alternatives make sense.  Hipparchus currently implements the simplest one, what scipy calls ""wilcox.""  Another problem with the current [math] implementation is that the continuity correction is not applied correctly.  That was fixed in the Hipparchus patch, which should backport easily.",,,,,,,,,,,
+PolygonsSet sets incorrect value for last vertex in open loops,MATH-1450,13137673,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,,mattjuntunen,mattjuntunen,11/Feb/18 04:41,15/Feb/18 18:57,23/Mar/20 17:12,15/Feb/18 18:57,3.5,3.6,4.0,,,4.0,,,0,,,,,"According to the documentation, for open infinite vertex loops returned by the PolygonsSet.getVertices() method, the last two points can be used to determine the direction of the last edge in the loop. However, the current code returns a point from the second-to-last edge. For example, the code below builds a box open on the top. It currently returns the vertex loop [null, \{0; 1}, \{0; 0}, \{1; 0}, \{1; 0}], where the last two vertices are the same point and cannot be used to determine the direction of the last edge. The returned vertex loop should be [null, \{0; 1}, \{0; 0}, \{1; 0}, \{1; 1}].
+{code:java}
+Cartesian2D v0 = new Cartesian2D(0, 1);
+        Cartesian2D v1 = new Cartesian2D(0, 0);
+        Cartesian2D v2 = new Cartesian2D(1, 0);
+        Cartesian2D v3 = new Cartesian2D(1, 1);
+
+        Line left = new Line(v0, v1, 1e-10);
+        Line bottom = new Line(v1, v2, 1e-10);
+        Line right = new Line(v2, v3, 1e-10);
+
+        List<SubHyperplane<Euclidean2D>> boundaries = new ArrayList<>();
+        boundaries.add(new SubLine(left, new IntervalsSet(left.toSubSpace(v0).getX(), left.toSubSpace(v1).getX(), 1e-10)));
+        boundaries.add(new SubLine(bottom, new IntervalsSet(bottom.toSubSpace(v1).getX(), bottom.toSubSpace(v2).getX(), 1e-10)));
+        boundaries.add(new SubLine(right, new IntervalsSet(right.toSubSpace(v2).getX(), right.toSubSpace(v3).getX(), 1e-10)));
+
+        PolygonsSet polygon = new PolygonsSet(boundaries, 1e-10);
+
+        polygon.getVertices();{code}
+      
+
+ 
+
+Pull Request: [https://github.com/apache/commons-math/pull/81]",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2018-02-14 09:14:41.776,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Feb 15 18:57:58 UTC 2018,,,,,,,"0|i3q1ev:",9223372036854775807,,,,,,,,,,,,,,,,"11/Feb/18 04:55;mattjuntunen;The pull request for this is very small. I have more tests around this issue in a branch for MATH-1437 but they all use some new test convenience methods I made. So, I thought I'd just submit the bare minimum here and then include the other tests separately to help with traceability and to avoid overly noisy commits.","14/Feb/18 00:59;mattjuntunen;I have the extra tests for this ready to go on my MATH-1437 branch. Would it be better to submit a single pull request for both of these together?","14/Feb/18 09:14;erans;Fine.  While at it, please add braces to enclose the {{else}} branch. :)
+Thanks.","15/Feb/18 01:53;mattjuntunen;I've updated the pull request listed above with the extra tests. I'm not sure what ""else"" branch you're referring to, though.","15/Feb/18 10:15;erans;Merged in ""master"".
+
+bq. I'm not sure what ""else""
+
+Nevermind, there are several other instances of
+{code}
+if (...) {
+    ...
+} else if (...) {
+    ...
+} else {
+    ...
+}
+{code}
+which I find difficult to read. I prefer pairs of {{if}} and {{else}}:
+{code}
+if (...) {
+    ...
+} else {
+    if (...) {
+        ...
+    } else {
+        ...
+    }
+}
+{code}","15/Feb/18 18:57;erans;commit c965f1c7fca41baf313e2234c6328f4082fe9ab2",,,,,,,,,,,,,,,,,,
+PolygonsSet does not handle intersecting infinite lines,MATH-1447,13135675,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,,mattjuntunen,mattjuntunen,02/Feb/18 03:55,02/Feb/18 16:54,23/Mar/20 17:12,02/Feb/18 16:54,3.5,3.6,4.0,,,4.0,,,0,,,,,"When created from boundaries consisting of two intersecting infinite lines, PolygonsSet.getVertices() throws an IndexOutOfBoundsException.
+
+{{Ex:}}
+ {{Line line1 = new Line(new Cartesian2D(0, 0), new Cartesian2D(1, 1), 1e-10);}}
+ {{Line line2 = new Line(new Cartesian2D(1, -1), new Cartesian2D(0, 0), 1e-10);}}
+
+{{List<SubHyperplane<Euclidean2D>> boundaries = new ArrayList<>();}}
+ {{boundaries.add(line1.wholeHyperplane());}}
+ {{boundaries.add(line2.wholeHyperplane());}}
+
+{{PolygonsSet poly = new PolygonsSet(boundaries, 1e-10);}}
+
+{{poly.getVertices(); // throws exception}}
+
+ 
+
+Pull request: https://github.com/apache/commons-math/pull/78",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2018-02-02 16:54:36.056,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Feb 02 16:54:36 UTC 2018,,,,,,,"0|i3pp3j:",9223372036854775807,,,,,,,,,,,,,,,,"02/Feb/18 16:54;erans;commit a37dcb93bed20ee302526473a9653f6cb5ae51a1",,,,,,,,,,,,,,,,,,,,,,,
+PolyhedronsSet.getSize() is incorrect for full space,MATH-1442,13133256,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,,mattjuntunen,mattjuntunen,24/Jan/18 02:54,26/Jan/18 00:04,23/Mar/20 17:12,26/Jan/18 00:04,3.5,3.6,4.0,,,4.0,,,0,,,,,"The getSize() method in PolyhedronsSet returns 0 for instances representing the full space. It should return Double.POSITIVE_INFINITY.
+
+{{Ex:}}
+
+{{PolyhedronsSet poly = new PolyhedronsSet(1e-10);}}
+
+{{poly.isFull(); // returns true}}
+
+{{poly.getSize(); // returns 0.0}}
+
+ 
+
+Pull request: https://github.com/apache/commons-math/pull/75",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2018-01-24 13:56:03.179,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Jan 26 00:04:17 UTC 2018,,,,,,,"0|i3pa7j:",9223372036854775807,,,,,,,,,,,,,,,,"24/Jan/18 13:56;erans;Thanks for the improvements.
+
+Could you please add Javadoc to all fields and methods?  Thanks.
+","25/Jan/18 03:15;mattjuntunen;No problem. I added them on the same pull request.","26/Jan/18 00:04;erans;commit 3ea45970dbe94643fb57ce7713dc1c624526853b",,,,,,,,,,,,,,,,,,,,,
+PolygonsSet Infinite Lines and SubOrientedPoint Tolerance Issues,MATH-1436,13126131,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,,mattjuntunen,mattjuntunen,20/Dec/17 03:26,10/Jan/18 14:23,23/Mar/20 17:12,25/Dec/17 09:52,3.5,3.6,3.6.1,4.0,,4.0,,,0,,,,,"These are two separate issues that I found while using the partitioning code from 3.5 to work with complex solid models. The issues are:
+1. org.apache.commons.math[34].geometry.euclidean.oned.SubOrientedPoint uses a hardcoded tolerance of 1.0e-10 instead of the tolerance from the parent hyperplane. This causes issues when working with a tolerance other than the default.
+2. org.apache.commons.math[34].geometry.euclidean.twod.PolygonsSet fails on infinite line segments. An IndexOutOfBoundsException is thrown when a PolygonsSet is created with a single infinite SubLine as a boundary and a NullPointerException is thrown when one is created with a mix of finite and finite boundaries.
+I will be attaching a pull request shortly with fixes and unit tests.
+
+UPDATE:
+-Pull request for v4.0: [https://github.com/apache/commons-math/pull/70]-
+-Pull request for v3.6.x: [https://github.com/apache/commons-math/pull/71]- (removed; no future releases planned for v3.x)
+
+UPDATE [2017-12-23]:
+Split initial pull request into two separate ones:
+- SubOrientedPoint changes: [https://github.com/apache/commons-math/pull/72]
+- PolygonsSet changes: [https://github.com/apache/commons-math/pull/73 ]",,,,,,,,,,,MATH-1432,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-12-21 15:15:43.926,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Dec 25 09:52:20 UTC 2017,,,,,,,"0|i3o3sn:",9223372036854775807,,,,,,,,,,,,,,,,"21/Dec/17 15:15;erans;Hello.
+
+Thank you for the report and fixes.
+
+bq. These are two separate issues
+
+Would you mind making two separate patches to help tracking of the changes? Thanks.
+Also, as I'm not knowledgeable in this part of the codebase, could you perhaps write a more elaborate comment to describe the new statements (e.g. around line 850 in ""PolygonsSet.java"").
+
+bq. Pull request for v3.6.x
+
+No release based on the 3.x branch is planned anymore.
+A few weeks ago, there was a discussion (on the ""dev"" ML, see [archive|http://markmail.org/message/75vuyhzblfadc5op]) to move the contents of package {{org.apache.commons.math4.geometry}} into a component of its own (i.e. ""Commons Geometry"") as part of a major overhaul towards modularizing ""Commons Math"" which, in the current circumstances, is not maintainable as a monolithic library.
+Work is underway: components [""Commons RNG""|https://commons.apache.org/rng] and [""Commons Numbers""|https://commons.apache.org/numbers] have already been created.
+As a user, your input is important; and you are most welcome to help getting there.","22/Dec/17 03:26;mattjuntunen;Hi. Thanks for the feedback. When you say to create two separate patches, do you mean to close this issue and create two new ones with separate pull requests or just to create two pull requests for this one issue?
+
+That's good to know about the 3.x branch. I'll remove that pull request.
+
+Reading the mailing list thread you posted was quite informative. That gave me a much better picture for the current state of the project. I'm using the geometry code from v3.6.1 quite a bit in my current project and I keep running up against issues and things I'd like to update (specifically in the partitioning package). So, I'd be very interested in helping out if this code is going to be refactored at all.","22/Dec/17 11:03;erans;bq. do you mean to close this issue and create two new ones with separate pull requests
+
+For future work, one report per issue is the best option.
+
+bq. just to create two pull requests for this one issue
+
+That'll be fine but please make the log message (for each issue) a little more explicit than ""adding fixes"". ;)
+
+bq. I'm using the geometry code from v3.6.1 quite a bit in my current project \[...\] So, I'd be very interested in helping out
+
+Currently, you're probably the one with the most expertise with this part of the library; thanks a lot for the offer.","23/Dec/17 19:28;mattjuntunen;I split the pull request in two and added the new links in the issue description. There's also a few more unit tests and more comments. And better commit messages, too :-)
+
+Let me know if this will work or not. Thanks.","25/Dec/17 09:52;erans;Merged in ""master"" (with tabs removed).",,,,,,,,,,,,,,,,,,,
+First Moment is not public,MATH-1228,12833341,Bug,Open,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,,,fabianlange,fabianlange,28/May/15 07:58,14/May/16 18:02,23/Mar/20 17:12,,3.5,,,,,4.0,,,2,,,,,"Hi there,
+is there a specific reason FirstMoment is not public?
+I want to calculate a mean over a List<Double>, for that I want to loop over that list and invoke Mean.increment(listValue), however this is slower than it could be. Every increment call makes a check to incMoment.
+I could avoid that if I use a FirstMoment directly, but I cannot create an instance, because it is protected.
+
+Also this effectively means that the public constructor Mean(FirstMoment) is not usable.",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-09-13 08:08:04.866,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sat May 07 17:16:50 UTC 2016,,,,,,,"0|i2fb1b:",9223372036854775807,,,,,,,,,,,,,,,,"13/Sep/15 08:08;jolkdarr;I agree that the class and its subclasses should be public.
+Subclasses redundantly implements Serializable interface. That should be fixed as well.","13/Sep/15 10:05;erans;bq. this effectively means that the public constructor Mean(FirstMoment) is not usable. 
+
+I'd tend to agree that this looks like an internal inconsistency.
+
+However, if {{FirstMoment}} was intended as an internal support class, while {{Mean}} would be the corresponding public API, it is not good to just make {{FirstMoment}} public, as this would create a redundancy in the library.
+
+I think that the performance problem would be alleviated significantly if the field ""incMoment"" would be *final*.
+Currently, the method {{copy(Mean,Mean)}} prevents such a change.
+IMHO it should be fixed by removing that method, as it is itself redundant with the copy constructor {{Mean(Mean)}}.
+
+If I'm not mistaken, the code is from a time when using ""new"" was to be avoided, leading to many such ""manual"" optimizations, that nowadays prove harmful.
+
+I'd suggest that your raise the issue on the ""dev"" ML (as it concerns a design decision, rather than a bug fix).","06/May/16 22:05;erans;Was this discussed on the ML?
+Conclusion should be reported here.","07/May/16 07:30;fabianlange;I have not taken it to the ML. for me it is a clear API bug that public API contains private classes. In fact this is a violation of the osgi contract, because the package is exported:
+
+Export-Package: org.apache.commons.math3.stat.descriptive.moment;version=""3.6.1""
+
+if you would use the felix bundle plugin it would print: Warning: The exported package org.apache.commons.math3.stat.descriptive.moment contains references to non-public classes.","07/May/16 10:50;erans;bq. a clear API bug
+
+Good reason to start the discussion on the ""dev"" ML.  A better design must be proposed, and agreed on, there.
+Thanks for taking this further.
+And there are other (loosely) related issues, e.g.  MATH-1281.
+","07/May/16 11:21;erans;Also please note that the same design is used throughout, as {{ThirdMoment}} and {{FourthMoment}} are also ""package-private"".  Oddly, {{SecondMoment}} is public.
+Having all of them public would just be a workaround; we should not leave the underlying design issues unanswered. Now is a good time to fix things, e.g. also get rid of all these protected fields (which is a goal in itself: MATH-758).","07/May/16 17:16;erans;I've started a case against the whole {{(First|Second|Third|Fourth)Moment}} hierarchy on the ""dev"" ML.
+",,,,,,,,,,,,,,,,,
+ResizableDoubleArray does not work with double array of size 1,MATH-1252,12848722,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,,johnbay,johnbay,23/Jul/15 22:24,25/Jan/16 20:28,23/Mar/20 17:12,24/Jul/15 00:38,3.4,3.4.1,3.5,,,3.6,4.0,,0,,,,,"When attempting to create a ResizableDoubleArray with an array of a single value (e.g. {4.0}), the constructor creates an internal array with 16 entries that are all 0.0
+
+Bug looks like it might be on line 414 of ResizableDoubleArray.java:
+
+        if (data != null && data.length > 1) {
+",,600,600,,0%,600,600,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-07-24 00:38:29.22,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:28:02 UTC 2016,,,,,,,"0|i2hv7j:",9223372036854775807,,,,,,,,,,,,,,,,"24/Jul/15 00:38;psteitz;Many thanks for reporting this and pinpointing the cause.
+
+Fixed in 
+3.x:  9f148d41e0cb5839e8680bd3b4c4bc21510e444b
+master: 09fe956a62e19c160d0093f8fecf254c2bb6f0cb","25/Jan/16 20:28;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+BitsStreamGenerator#nextBytes(byte[]) is wrong,MATH-1300,12923189,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,,rosti.bsd,rosti.bsd,19/Dec/15 01:57,25/Jan/16 20:28,23/Mar/20 17:12,31/Dec/15 23:21,3.5,,,,,3.6,,,0,,,,,"Sequential calls to the BitsStreamGenerator#nextBytes(byte[]) must generate the same sequence of bytes, no matter by chunks of which size it was divided. This is also how java.util.Random#nextBytes(byte[]) works.
+
+When nextBytes(byte[]) is called with a bytes array of length multiple of 4 it makes one unneeded call to next(int) method. This is wrong and produces an inconsistent behavior of classes like MersenneTwister.
+
+I made a new implementation of the BitsStreamGenerator#nextBytes(byte[]) see attached code.",,,,,,,,,,,,MATH-1304,"19/Dec/15 02:03;rosti.bsd;MersenneTwister2.java;https://issues.apache.org/jira/secure/attachment/12778648/MersenneTwister2.java","19/Dec/15 02:03;rosti.bsd;TestMersenneTwister.java;https://issues.apache.org/jira/secure/attachment/12778649/TestMersenneTwister.java",,2.0,,,,,,,,,,,,,,,,,,,,2015-12-19 15:50:58.77,,,false,,,,,,,,,,Important,Patch,,,,,,,,9223372036854775807,,,Mon Jan 25 20:28:00 UTC 2016,,,,,,,"0|i2q49z:",9223372036854775807,,,,,,,,,,,,,,,,"19/Dec/15 02:03;rosti.bsd;Attaching the code.
+
+New BitsStreamGenerator#nextBytes(byte[]) implementation, made as an overriden method of MersenneTwister. Copy this nextBytes(byte[]) implementation into the BitsStreamGenerator code.
+
+The second file is a Unit test that demonstrates the wrong and the right nextBytes(byte[]) behaviors.","19/Dec/15 15:50;erans;Thanks for pointing out that problem.
+
+bq. Sequential calls to \[...\] nextBytes must generate the same sequence of bytes, no matter by chunks of which size it was divided.
+
+Attempting to figure out how general the claim is, I've implemented a more general unit test based on your suggestion:
+
+{code}
+    private void checkNexBytesChunks(int chunkSize,
+                                     int numChunks) {
+        final RandomGenerator rg = makeGenerator();
+        final long seed = 1234567L;
+
+        final byte[] b1 = new byte[chunkSize * numChunks];
+        final byte[] b2 = new byte[chunkSize];
+
+        // Generate the chunks in a single call.                                                                                                                                                                              
+        rg.setSeed(seed);
+        rg.nextBytes(b1);
+
+        // Reset.                                                                                                                                                                                                             
+        rg.setSeed(seed);
+        // Generate the chunks in consecutive calls.                                                                                                                                                                          
+        for (int i = 0; i < numChunks; i++) {
+            rg.nextBytes(b2);
+        }
+
+        // Store last 128 bytes chunk of b1 into b3.                                                                                                                                                                          
+        final byte[] b3 = new byte[chunkSize];
+        System.arraycopy(b1, b1.length - b3.length, b3, 0, b3.length);
+
+        // Sequence of calls must be the same.                                                                                                                                                                                
+        Assert.assertArrayEquals(""chunkSize="" + chunkSize + "" numChunks="" + numChunks,
+                                 b2, b3);
+    }
+{code}
+
+The original CM code always fails it, as you observed.
+In your example test case (chunkSize=128 and numChunks=8), your fix makes the test pass.
+
+However, it fails whenever the size of the array (argument to ""nextBytes"") is not a multiple of 4.
+That is, the ""chunkSize"" does matter.
+
+And ""nextBytes"" in the JDK's {{Random}} class also fails the test when the array's size is not a multiple of 4.
+
+So there are several issues:
+# Do you have a reference that the behaviour _must_ be as your described?
+# Is the requested behaviour supposed to work only when the array's size is a multiple of 4?  If so, should we add some note about it in the documentation?
+# Is there a way to implement ""nextBytes"" in {{BitsStreamGenerator}} so that the property holds for any size?  And if so, should we consider  making the change (given that {{Random}} does not work that way)?
+","19/Dec/15 16:12;erans;Independently of the above discussion, I propose to replace the current code of ""nextBytes"" with the following:
+{code}
+   public void nextBytes(byte[] bytes) {
+        final int mask = 0xff;
+        final int numBytesChunk = 4;
+        final int shift = 8;
+        final int numBits = numBytesChunk * shift;
+
+        int index = 0;
+        int remainingBytes = bytes.length;
+        while (remainingBytes >= numBytesChunk) {
+            final int random = next(numBits);
+            for (int j = 0; j < numBytesChunk; j++) {
+                bytes[index++] = (byte) ((random >> (j * shift)) & mask);
+                --remainingBytes;
+            }
+        }
+
+        if (remainingBytes > 0) {
+            final int random = next(remainingBytes * shift);
+            for (int j = 0; j < remainingBytes; j++) {
+                bytes[index++] = (byte) ((random >> (j * shift)) & mask);
+            }
+        }
+    }
+{code}
+which I find much more legible (no unrolled loop, no repeated hard-coded constants, explicit variables names).
+It however changes the semantics in the part that fills the ""remainingBytes"", where the argument to ""next"" requests only the required number of bits, thus potentially (?) changing the bytes sequence.  All the CM tests still pass, and perhaps there should be a unit test that assert the expected semantics.
+","19/Dec/15 17:44;rosti.bsd;My first statement about the same bytes sequence generated by differently sized chunks was too optimistic. Indeed even java.util.Random doesn't guarantee this. But neither java.util.Random nor org.spaceroots.mantissa.random.MersenneTwister make unneeded calls to the nextInt() method (that just calls next(32)). Obviously the same bytes sequence guarantee can't be done without a significant performance degradation.
+
+Also MersenneTwister#next() always generates int but return only asked number of bits.
+{code:java}        return y >>> (32 - bits);{code}
+
+BTW the spaceroots's implementation of MersenneTwister was the reference to me. You can download it (including source code) from www.spaceroots.org/downloads.html in their mantissa library.
+
+I still propose to change the nextBytes() code to my version because of the performance. I tested the performance of the four implementations and my implementation is better. I did it by running following test code:
+{code:java}
+	@Test
+	public void test4() {
+		long start;
+		long end;
+		int iterations = 20000000;
+		int chunkSize = 123;
+
+		org.spaceroots.mantissa.random.MersenneTwister referenceMt = new org.spaceroots.mantissa.random.MersenneTwister();
+		org.apache.commons.math3.random.MersenneTwister cmMt = new org.apache.commons.math3.random.MersenneTwister();
+		MersenneTwister2 mt2 = new MersenneTwister2();
+		MersenneTwister3 mt3 = new MersenneTwister3();
+		byte[] buf = new byte[chunkSize];
+
+		referenceMt.setSeed(1234567L);
+		cmMt.setSeed(1234567L);
+		mt2.setSeed(1234567L);
+		mt3.setSeed(1234567L);
+
+		start = System.currentTimeMillis();
+		for (int i = 0; i < iterations; i++) {
+			referenceMt.nextBytes(buf);
+		}
+		end = System.currentTimeMillis();
+		System.err.printf(""Spaceroots MersenneTwister %d iterations:\t%8d ms.\n"", iterations, (end - start));
+
+		start = System.currentTimeMillis();
+		for (int i = 0; i < iterations; i++) {
+			cmMt.nextBytes(buf);
+		}
+		end = System.currentTimeMillis();
+		System.err.printf(""CM 3.5 MersenneTwister %d iterations:\t%8d ms.\n"", iterations, (end - start));
+
+		start = System.currentTimeMillis();
+		for (int i = 0; i < iterations; i++) {
+			mt2.nextBytes(buf);
+		}
+		end = System.currentTimeMillis();
+		System.err.printf(""Rostislav MersenneTwister %d iterations:\t%8d ms.\n"", iterations, (end - start));
+
+		start = System.currentTimeMillis();
+		for (int i = 0; i < iterations; i++) {
+			mt3.nextBytes(buf);
+		}
+		end = System.currentTimeMillis();
+		System.err.printf(""Gilles MersenneTwister %d iterations:\t%8d ms.\n"", iterations, (end - start));
+	}
+{code}
+On my (pretty old) computer (Pentium 4 Prescott2M 3.2GHz, 2GB RAM, JDK 7u80 32-bit) I got following results (two runs):
+{code}
+Spaceroots MersenneTwister 20000000 iterations:	   22937 ms.
+CM 3.5 MersenneTwister 20000000 iterations:	   17532 ms.
+Rostislav MersenneTwister 20000000 iterations:	   15812 ms.
+Gilles MersenneTwister 20000000 iterations:	   24235 ms.
+{code}
+{code}
+Spaceroots MersenneTwister 20000000 iterations:	   27937 ms.
+CM 3.5 MersenneTwister 20000000 iterations:	   16735 ms.
+Rostislav MersenneTwister 20000000 iterations:	   15547 ms.
+Gilles MersenneTwister 20000000 iterations:	   23953 ms.
+{code}","19/Dec/15 17:57;erans;bq. BTW the spaceroots's implementation of MersenneTwister was the reference to me.
+
+If you found a discrepancy between CM and Mantissa, we should leave the creator of Mantissa and the main CM developer to discuss that between themselves. :D
+","19/Dec/15 19:00;rosti.bsd;According to the code comments both the CM and the Mantissa implementations of MersenneTwister are based on the same code ""developed by Makoto Matsumoto and Takuji Nishimura during 1996-1997"". The main difference between them is that Mantissa implementation extends the standard java.util.Random and uses JDK's nextBytes() method while the CM implementation extends its own BitsStreamGenerator with its own nextBytes() method implementation. So the reference behavior for the nextBytes() method must be the java.util.Random since it is a part of the JDK and so it is the standard.
+
+BTW I  looked at my code again and found that & 0xff operations are not needed. Narrowing Primitive Conversion just discards all unneded bits above the byte, so we don't need to do it by ourself before int to byte type casting.
+http://docs.oracle.com/javase/specs/jls/se7/html/jls-5.html#jls-5.1.3
+
+So I propose this new code of the BitsStreamGenerator#nextBytes() method with even a little bit better performance
+{code:java}
+	@Override
+	public void nextBytes(byte[] bytes) {
+		int random;
+		int index = 0;
+		for (int max = bytes.length & 0x7ffffffc; index < max;) {
+			random = next(32);
+			bytes[index++] = (byte) random;
+			bytes[index++] = (byte) (random >>> 8);
+			bytes[index++] = (byte) (random >>> 16);
+			bytes[index++] = (byte) (random >>> 24);
+		}
+
+		if (index < bytes.length) {
+			random = next(32);
+			while (true) {
+				bytes[index++] = (byte) random;
+				if (index < bytes.length) {
+					random >>>= 8;
+				} else {
+					break;
+				}
+			}
+		}
+	}
+{code}","19/Dec/15 19:13;erans;Two runs from me: ;)
+{noformat}
+nextBytes (calls per timed block: 200000, timed blocks: 100, time unit: ms)
+       name      time/call      std error total time      ratio      difference
+  Rostislav 2.27207249e-04 5.12523201e-05 4.5441e+03 1.0000e+00  0.00000000e+00
+     Gilles 2.41729594e-04 3.13763057e-05 4.8346e+03 1.0639e+00  2.90446893e+02
+CommonsMath 2.25267632e-04 3.46659491e-05 4.5054e+03 9.9146e-01 -3.87923460e+01
+{noformat}
+
+{noformat}
+nextBytes (calls per timed block: 200000, timed blocks: 100, time unit: ms)
+       name      time/call      std error total time      ratio      difference
+  Rostislav 2.32682559e-04 3.84982763e-05 4.6537e+03 1.0000e+00  0.00000000e+00
+     Gilles 2.49178627e-04 3.92662253e-05 4.9836e+03 1.0709e+00  3.29921360e+02
+CommonsMath 2.26983378e-04 2.72215448e-05 4.5397e+03 9.7551e-01 -1.13983632e+02
+{noformat}
+I'm still ~7% slower than you, but that's far from the ~50% which your benchmark indicates.
+In your benchmark, your code is faster that the current CM code; but in mine, it's the other way around...","19/Dec/15 20:12;rosti.bsd;We definitly have a different hardware and most likely different operating system and JDK.
+
+I've run my benchmarks several times on JDK 7u80 32-bit with different chunk sizes and numbers of iterations; the results were always similar to what I posted above. Anyway even in your benchmarks your code is ~7% slower, that is +1 voting for my code to be committed :-)","19/Dec/15 23:30;erans;Personally, I'm always in favour of cleaining up in the sense to make the code safer and more understandable, before trying to grab a few milliseconds in a micro-benchmark.
+If we want to focus on performance, it would be better to have a realistic use-case (e.g. estimate how much time is spent in ""nextBytes"" relative to the usage of the generated numbers).
+
+I think that we need to determine how to resolve the original issue, and perhaps open another report for the performance improvement.
+","20/Dec/15 00:28;psteitz;I am not sure that I buy the fact that this is a bug.  We don't advertise this invariant and I don't see the need to constrain implementations to satisfy it.  Unless I am misunderstanding, we *do* provide seed-consistency with constant output buffer size and that is what practical implementations should depend on.  Is there a practical use case that requires the invariant asked for in this issue?","20/Dec/15 09:55;tn;The Random class does not guarantee that for any chunk size the same sequence is generated. In fact it always gets the next 32 bits and uses as much as needed.
+
+This means that for chunk sizes that are not multiples of 4, the test from Gilles will also fail.
+
+I do see a problem in the nextBytes implementation in BitStreamGenerator, as there are unnecessary calls to next(int) in case the chunk size is a multiple of 4. I think the proposed patches could be further improved into something like that:
+
+{code}
+    public void nextBytes(byte[] bytes) {
+        final int len = bytes.length;
+        for (int i = 0; i < len;) {
+            int random = nextInt();
+            int n = Math.min(len - i, 4);
+            while (n-- > 0) {
+                bytes[i++] = (byte) random;
+                random >>= 8;
+            }
+        }
+    }
+{code}","20/Dec/15 12:07;erans;bq. there are unnecessary calls to next(int) in case the chunk size is a multiple of 4
+
+Indeed, that's what Rostislav proposed to solve in the first place.
+Depending on the answers to the questions in my first comment, we could make this as a new feature request.
+Or we can explicitly document that consecutive calls to nextBytes won't provide the same sequence as single call (as per the above unit test).
+The feature will work when size is a multiple of 4 (just with the fix that removes the additional call when not necessary).
+
+Then there was the issue (or not) of performance.
+
+{noformat}
+nextBytes (calls per timed block: 200000, timed blocks: 100, time unit: ms)
+       name      time/call      std error total time      ratio      difference
+CommonsMath 1.21513910e-04 3.20776342e-05 2.4303e+03 1.0000e+00  0.00000000e+00
+  Rostislav 1.23101061e-04 2.58350393e-05 2.4620e+03 1.0131e+00  3.17430180e+01
+     Thomas 2.14572528e-04 2.55932836e-05 4.2915e+03 1.7658e+00  1.86117237e+03
+    Gilles1 1.28583021e-04 1.04224889e-05 2.5717e+03 1.0582e+00  1.41382220e+02
+    Gilles2 1.21604685e-04 9.00060879e-06 2.4321e+03 1.0007e+00  1.81551100e+00
+{noformat}
+
+{noformat}
+nextBytes (calls per timed block: 200000, timed blocks: 100, time unit: ms)
+       name      time/call      std error total time      ratio      difference
+CommonsMath 1.24257845e-04 2.47466019e-05 2.4852e+03 1.0000e+00  0.00000000e+00
+  Rostislav 1.27903613e-04 2.89947446e-05 2.5581e+03 1.0293e+00  7.29153600e+01
+     Thomas 2.23244881e-04 4.19456869e-05 4.4649e+03 1.7966e+00  1.97974071e+03
+    Gilles1 1.34765909e-04 2.56119543e-05 2.6953e+03 1.0846e+00  2.10161271e+02
+    Gilles2 1.28621420e-04 2.35835928e-05 2.5724e+03 1.0351e+00  8.72714880e+01
+{noformat}
+
+""Gilles1"" is my above proposal (minus the unnecessary mask operation).
+""Gilles2"" is a variant of Rostislav's code but using static variables rather than hard-coded numbers.
+
+Based on this not really reliable kind of benchmarks, my position is that we should strive to make the code
+# not use hard-coded numbers
+# self-documenting
+# simple
+# more documented (not at the Javadoc level but explaining the statements)
+# safe (calling an overrideable method in a constructor is not - see e.g. {{MersenneTwister}})
+# thread-safe
+# fast
+
+Thomas' version is the simplest but the performance obviously (?) suffers.
+Rostislav's is (often) the fastest, but it is (much) harder to understand, relatively to the small number of lines.
+","20/Dec/15 12:21;luc;In fact, the code from Apache Commons Math come from the mantissa project.
+Mantissa is obsolete, it was a single person project (myself). I joined
+the Apache Commons project to continue the work there. The complete Mantissa
+library was donated to Apache at that time and merged. The Apache version of
+this code is therefore the  most up to date one.","20/Dec/15 12:34;luc;My position would be that even if having values independent of chunk size is a nice features,
+it is not worth degrading either understandability or performances for it. So just advertising
+the fact this property does *not* hold would be fine to me.
+
+I'm also not sure losing much time with Mersenne twister is worth it. This generator was the
+best one a few years ago but has been superseded with the WELL family of generators
+almost 10 years ago (see http://www.iro.umontreal.ca/~panneton/WELLRNG.html, where
+a mink to the reference paper can be found). According to the paper, the Mersenne twister
+suffers fro a lack of chaos at the start (i.e. the first few millions generations) that the WELL
+generators fix.","20/Dec/15 13:12;erans;But do you agree to remove the unnecessary call to ""next(32)""? Or is there a standard reference (such that the RNG must reproduce the same sequence as that one for the same seed)?
+
+IMO, there is much that could be done to improve the understandability of the code (starting with the simple rule: no hard-coded numbers...).
+
+However, if there are algorithms that are superseded, I of course agree that it's not worth spending any time on them.
+Perhaps it is now a good opportunity to indicate in the Javadoc which RNGs are definitely obsolete (and deprecate them?) and which are recommended, so that uninformed people would not start investigating outdated code...
+","20/Dec/15 13:21;luc;If it is unnecessary, sure it can be removed.
+
+Indicating that the WELL generators are considered more up to date than the Mersenne Twister would be nice too.","20/Dec/15 15:10;erans;Minimal change committed as 1d635088f697178660b6e1c9a89d2b7d3bbe2d29 in ""master"" branch (4.0).
+
+A unit test shows that the property referred to in the description of this issue passes if the array size is a multiple of 4.
+Another test is ""@Ignore""d as a reminder of the limitation.  Can be removed if deemed useless.
+
+We have yet to decide whether to upgrade the Javadoc to mention the feature.
+
+Since the behaviour has changed, perhaps this should not be backported to 3.x (?).
+
+For improving the code (e.g. performance), another report should be created.
+","20/Dec/15 18:07;rosti.bsd;WELL generators in CM inherite the same nextBytes() of BitsStreamGenerator. They extend an AbstractWell that extends the BitsStreamGenerator class. The discussed issue of the BitsStreamGenerator#nextBytes() relates to all BitsStreamGenerator descendants. I used the MersenneTwister class just for the demonstration.
+
+After looking at the Gilles commit I've a few questions:
+https://git1-us-west.apache.org/repos/asf?p=commons-math.git;a=commitdiff;h=1d635088f697178660b6e1c9a89d2b7d3bbe2d29
+
+1. Why did you do the change so minimal with many unneded operations still in the code instead of taking the code I've proposed? I'm talking about the unneded & 0xff operations, not optimal index incrementation and cases where the last shift right 8 bits isn't needed. If you think my code is hard to understand you may add comments into it. In my opinion this is very simple code. Anyway I think the performance is important.
+
+2. I've just noticed the AbstractRandomGenerator has its own implementation of the nextBytes() method. Why does it need a differently implemented nextBytes()? And why that implementation is so strange? After Gilles commit it's even stranger.
+
+before commit:
+{code:java}
+     @Override
+     public void nextBytes(byte[] bytes) {
+         int bytesOut = 0;
+         while (bytesOut < bytes.length) {
+           int randInt = nextInt();
+           for (int i = 0; i < 3; i++) {
+               if ( i > 0) {
+                  randInt >>= 8;
+               }
+               bytes[bytesOut++] = (byte) randInt;
+               if (bytesOut == bytes.length) {
+                   return;
+               }
+           }
+         }
+     }
+{code}
+after commit:
+{code:java}
+     @Override
+     public void nextBytes(byte[] bytes) {
+         int bytesOut = 0;
+         while (bytesOut < bytes.length) {
+             int randInt = nextInt();
+             for (int i = 0; i < 3; i++) {
+                 if (i > 0) {
+                     randInt >>= 8;
+                 }
+             }
+             if (bytesOut < bytes.length) {
+                 bytes[bytesOut++] = (byte) randInt;
+                 if (bytesOut == bytes.length) {
+                     return;
+                 }
+             }
+         }
+     }
+{code}
+The original version before commit is not optimized but this is not the only issue. It uses only three bytes of the random int, doesn't it? And after Gilles commit it uses only one byte of the random int, making many unneeded actions around. Both versions of the AbstractRandomGenerator need more calls to nextInt() than java.util.Random. Both versions look as a bug.
+
+In my opinion both the BitsStreamGenerator and the AbstractRandomGenerator should use the same nextBytes() code that I proposed above.","20/Dec/15 23:15;erans;bq. WELL generators in CM inherite the same nextBytes() of BitsStreamGenerator. They extend an AbstractWell that extends the BitsStreamGenerator class. The discussed issue of the BitsStreamGenerator#nextBytes() relates to all BitsStreamGenerator descendants. I used the MersenneTwister class just for the demonstration.
+
+Sure.
+My comment about deprecating the {{MersenneTwister}} class was not meant to imply that the redundant call should not be removed.
+
+bq. 1. Why did you do the change so minimal with many unneded operations still in the code instead of taking the code I've proposed?
+
+Because we generally prefer one commit per issue.
+This issue (MATH-1300) was about a redundant call that prevented the property which you expected.
+Fixing that first does not prevent further changes.
+
+bq. I'm talking about the unneded & 0xff operations,
+
+I'm going to do that in another commit.
+Usually this should also require another report, but I'll just refer to the discussion here in the commit message.
+
+bq. not optimal index incrementation and cases where the last shift right 8 bits isn't needed.
+
+See above discussion.
+Please open another issue, as it is not related to your original statement (IMHO: ""wrong != suboptimal"").
+
+bq. If you think my code is hard to understand you may add comments into it. In my opinion this is very simple code.
+
+The ""for"" statement in your code is not easy to understand (for a ""for"" statement, that is).
+If I'm not mistaken, a CM unwritten rule for code is ""No hard-coded numbers"".  So I would not just commit your code as is.
+
+bq. Anyway I think the performance is important.
+
+Agreed, just not at all cost, IMO.
+Maintenance is also a parameter to take into account, especially if the gain of less clear code is quite small (and subject to erratic variations between HW and JVM).
+This does not mean that I prefer to leave it at that; just it should also be another issue.
+
+bq. 2. I've just noticed the AbstractRandomGenerator has its own implementation of the nextBytes() method. Why does it need a differently implemented nextBytes()?
+
+It doesn't; I just grouped it in the same commit because it is the same problem, to be fixed in the most obvious way before further changing the code (another CM rule).
+
+bq. And why that implementation is so strange? After Gilles commit it's even stranger.
+
+Sorry, my mistake; I'll fix ASAP.  Thanks for the review.  I hope I'll get it right in the next commit.
+
+bq. In my opinion both the BitsStreamGenerator and the AbstractRandomGenerator should use the same nextBytes() code
+
+Agreed.
+But they are not in the same hierarchy. It's a pity.  If it should be the same code, then the code should be shared.  Suggestions on how to achieve that are welcome.
+","21/Dec/15 00:04;ole;bq. Or is there a standard reference (such that the RNG must reproduce the same sequence as that one for the same seed)?
+
+It's nice to know that running the same simulation with the same seed always produces the same result.  Matlab's documentation also states that the seed is used to produce a predictable sequence of numbers.
+http://www.mathworks.com/help/matlab/ref/rng.html?requestedDomain=www.mathworks.com","21/Dec/15 00:42;erans;bq. It's nice to know that running the same simulation with the same seed always produces the same result. 
+
+As Phil noted, CM abides by this.
+The question was whether _different_ implementations should produce the exact same sequence.
+In this case, if the reference also contained the sometimes redundant call, then fixing it in CM would consequently make its sequences differ from the reference.
+","21/Dec/15 00:53;rosti.bsd;I made a new Jira MATH-1305 ticket with my code of nextBytes() with better performance.
+I've improved its readability and added a few comments. Please review.","31/Dec/15 23:21;erans;Backport in c9c252bf26165e7fafd093cd892af35b23aa8f3f","25/Jan/16 20:28;luc;Closing all resolved issues that were included in 3.6 release."
+multistep integrator start failure triggers NPE,MATH-1297,12921671,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,luc,luc,luc,14/Dec/15 14:09,25/Jan/16 20:27,23/Mar/20 17:12,27/Dec/15 12:43,3.5,,,,,3.6,,,0,,,,,"Multistep ODE integrators like Adams-Bashforth and Adams-Moulton require a starter procedure.
+If the starter integrator is not configured properly, it will not create the necessary number of initial points and the multistep integrator will not be initialized correctly. This results in NullPointErException when the scaling array is referenced later on.
+
+The following test case (with an intentionally wrong starter configuration) shows the problem.
+
+{code}
+@Test
+public void testStartFailure() {
+
+     TestProblem1 pb = new TestProblem1();
+      double minStep = 0.0001 * (pb.getFinalTime() - pb.getInitialTime());
+      double maxStep = pb.getFinalTime() - pb.getInitialTime();
+      double scalAbsoluteTolerance = 1.0e-6;
+      double scalRelativeTolerance = 1.0e-7;
+
+      MultistepIntegrator integ =
+          new AdamsBashforthIntegrator(4, minStep, maxStep,
+                                                            scalAbsoluteTolerance,
+                                                            scalRelativeTolerance);
+      integ.setStarterIntegrator(new DormandPrince853Integrator(0.2 * (pb.getFinalTime() - pb.getInitialTime()),
+                                                                pb.getFinalTime() - pb.getInitialTime(),
+                                                                0.1, 0.1));
+      TestProblemHandler handler = new TestProblemHandler(pb, integ);
+      integ.addStepHandler(handler);
+      integ.integrate(pb,
+                             pb.getInitialTime(), pb.getInitialState(),
+                             pb.getFinalTime(), new double[pb.getDimension()]);
+
+    }
+{code}
+
+Failure to start the integrator should be detected and an appropriate exception should be triggered.",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:58 UTC 2016,,,,,,,"0|i2pux3:",9223372036854775807,,,,,,,,,,,,,,,,"27/Dec/15 12:43;luc;Fixed in git repository, both in MATH_3_X and master branches.","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+"Wrong ""number of calls"" in ""KohonenUpdateAction""",MATH-1251,12846185,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,erans,erans,erans,19/Jul/15 21:07,25/Jan/16 20:27,23/Mar/20 17:12,20/Jul/15 13:51,3.5,,,,,3.6,4.0,,0,,,,,"In class {{KohonenUpdateAction}} (package {{o.a.c.m.ml.neuralnet.sofm}}), the method {{getNumberOfCalls}} is off by 1 due to counter being initialized to -1.
+",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-01-25 20:27:58.103,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:58 UTC 2016,,,,,,,"0|i2hfpz:",9223372036854775807,,,,,,,,,,,,,,,,"20/Jul/15 13:51;erans;commit 9c545d44a4a703c88d417a6fa43298a80ee67735","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Rotation constructor with RotationOrder and angles produces wrong rotation,MATH-1302,12923303,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,luc,jboyerIST,jboyerIST,20/Dec/15 20:13,25/Jan/16 20:27,23/Mar/20 17:12,27/Dec/15 12:12,3.5,,,,,3.6,,,0,,,,,"Rotation constructor taking (RotationOrder, double, double, double) has the local variable ""composed"" set to an incorrect rotation because the use of r1 and r3 are swapped.",,10800,10800,,0%,10800,10800,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-12-21 09:22:32.184,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:55 UTC 2016,,,,,,,"0|i2q4zb:",9223372036854775807,,,,,,,,,,,,,,,,"21/Dec/15 09:22;luc;No. The order is the right one.
+
+What you present is a very well known consequence of a convention that is already explained at length in the Javadoc.
+You can look at the javadoc of the Rotation(Vector axis, double angle) constructor.
+We *know* some people do not like this convention.
+
+The problem is that a rotation can be considered either as a vector operator that moves vectors with respect to a fixed
+reference frame, or it can be seen as a frame conversion operator that moves frames while vectors are kept fixed.
+Suppose that for example we simply state: rotation r is a 90 degrees rotation around the Z axis. Using the first
+convention (fixed frame, moving vectors), the image of vector with coordinates (1, 2, 3) would be vector (-2, 1, 3).
+This means that the vector rotates counterclockwise. Using the second convention (the frames rotates), then
+the image of vector with coordinates (1, 2, 3) would be vector (2, -1, 3) because the frame rotates counterclockwise,
+so the fixed vector appears to rotate in the opposite direction.
+
+Apache Commons Math uses the first convention, because it is focused on representing a vectorial operator.
+
+The other convention, which Apache Commons Math does not use, is more often encountered in the following
+fields of applications: frames transforms (typically 3D scenes modelization) or attitude in space flight dynamics.
+When people work in these fields (and in fact I do work in space flight dynamics and attitude), then one as to
+be aware of the different conventions and as to think that the angle alpha that Apache Commons Math expect
+is a perfectly well defined angle that is simply the opposite of the one I have at hand. So when I build my
+rotation, I simply have to pass -alpha, and when I retrieve the angle using getAngle, I have to change its
+sign after retrieval.
+
+As this topic comes back from time to time, we *may* add an enumerate for specifying the convention in the
+two constructors involved (one axis and one angle or one rotation order and three angles) and the symmetrical
+getters. However, simply changing from one convention to the other without any hint for the user to which
+convention is used is not gonna happen. There are no reasons why the other convention is right and the
+current convention is wrong. They are simply that: conventions. They are relevant in different fields of
+applications.
+
+What would you think about we add an enumerate, which could be for example VECTOR_OPERATOR_CONVENTION
+and FRAMES_CONVERSION_CONVENTION?","21/Dec/15 16:58;jboyerIST;While I like the idea of offering an enumeration that depicts the convention a user may want, a slightly simpler solution using the named constructor idiom might be better. This way, there will be no performance sacrifice while offering the two conventions to users.
+
+Your comments about the conventions makes sense. Even if you do not decide to provide multiple conventions to users, it would be beneficial to update the documentation for the constructor Rotation(RotationOrder, double, double, double) to mention that convention. It also might help to document the convention in the applyTo and applyInverseTo methods.
+","26/Dec/15 20:33;luc;The issue has been fixed in git repository (both MATH_3_X branch and master branch).
+
+I have kept the enumerate approach. It allows user to select the convention at runtime. It can be used for example in some intermediate libraries that
+cannot know by themselves the conventions the user wants to select.","27/Dec/15 07:17;luc;The applyTo(Rotation) method should also expose the rotation convention.
+
+Currently, the method imposes vector operator convention.","27/Dec/15 12:12;luc;Two methods, compose and composeInverse have been added.
+They both allow specifying rotation convention.","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,
+split and side methods may be inconsistent in BSP trees,MATH-1266,12861849,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,luc,luc,luc,04/Sep/15 13:55,25/Jan/16 20:27,23/Mar/20 17:12,06/Sep/15 18:24,3.5,,,,,3.6,4.0,,0,,,,,"In BSP trees, there are two related methods dealing with the relative position of a sub-hyperplane and an hyperplane: side and split.
+
+sub.side(hyperplane) returns an enumerate (PLUS, MINUS, BOTH, HYPER) telling the relative position of the syb-hyperplane with respect to the hyperplane.
+
+sub.split(hyperplane) splits the sub-hyperplane in two parts, one on the plus side of the hyperplane and one on the minus side of the hyperplane.
+
+These methods should be consistent, i.e. when side returns BOTH, then split should return two non-null parts. This fails in the following case:
+
+{code}
+    @Test
+    public void testSideSplitConsistency() {
+
+        double tolerance = 1.0e-6;
+        Circle hyperplane = new Circle(new Vector3D(9.738804529764676E-5, -0.6772824575010357, -0.7357230887208355),
+                                       tolerance);
+        SubCircle sub = new SubCircle(new Circle(new Vector3D(2.1793884139073498E-4, 0.9790647032675541, -0.20354915700704285),
+                                                 tolerance),
+                                      new ArcsSet(4.7121441684170700, 4.7125386635004760, tolerance));
+        SplitSubHyperplane<Sphere2D> split = sub.split(hyperplane);
+        Assert.assertNotNull(split.getMinus());
+        Assert.assertNull(split.getPlus());
+        Assert.assertEquals(Side.MINUS, sub.side(hyperplane));
+
+    }
+{code}
+
+Here, side returns BOTH but the plus part is null. This is due to the plus
+side being smaller than the tolerance (1.0e-6 here) and filtered out in the split methods whereas it is not filtered out in the side method, which has a slightly different algorithm. So instead of returning BOTH, side should return MINUS as it should filter out the too small plus part.
+
+In fact, it is only one particular case, the same could occur in other spaces (Euclidean or Spherical, and on various dimensions).",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:49 UTC 2016,,,,,,,"0|i2jsl3:",9223372036854775807,,,,,,,,,,,,,,,,"06/Sep/15 18:24;luc;Fixed in git repository (commit 2091cfb for branch master, commit 50c5eae for branch MATH_3_X)","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Improve accuracy and performance of 2-sample Kolmogorov-Smirnov test,MATH-1310,12925144,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,,psteitz,psteitz,31/Dec/15 20:03,25/Jan/16 20:27,23/Mar/20 17:12,31/Dec/15 22:22,3.5,,,,,3.6,,,0,,,,,"As of 3.5, the exactP method used to compute exact  p-values for 2-sample Kolmogorov-Smirnov tests is very slow, as it is based on a naive implementation that enumarates all n-m partitions of the combined sample.  As a result, its use is not recommended for problems where the product of the two sample sizes exceeds 100 and the kolmogorovSmirnovTest method uses it only for samples in this range.  To handle sample size products between 100 and 10000, where the asymptotic KS distribution can be used, this method currently uses Monte Carlo simulation.  Convergence is poor for many problem instances, resulting in inaccurate results.
+
+To eliminate the need for the Monte Carlo simulation and increase the performance of exactP itself, a faster exactP implementation should be added.  This can be implemented by unwinding the recursive functions defined in Chapter 5, table 5.2 in:
+
+Wilcox, Rand. 2012. Introduction to Robust Estimation and Hypothesis Testing, Chapter 5, 3rd Ed. Academic Press.",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-01-25 20:27:49.129,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:49 UTC 2016,,,,,,,"0|i2qfvj:",9223372036854775807,,,,,,,,,,,,,,,,"31/Dec/15 22:22;psteitz;Fixed in dcd8015fa (master) and 2983ff81b (3_X).
+
+The functions C and N defined by Wilcox have been implemented with recursive definitions unwound.  Using N, exactP has been reimplemented and is now fast enough to extend the small sample range to cover up to 10000 sample product.  This allowed monteCarloP to be eliminated from use by the ksTest default implementation.  That function has been deprecated.","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+"Bug in ""o.a.c.m.ml.neuralnet.sofm.KohonenUpdateAction""",MATH-1255,12855969,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,erans,erans,erans,13/Aug/15 21:14,25/Jan/16 20:27,23/Mar/20 17:12,13/Aug/15 21:35,3.5,,,,,3.6,4.0,,0,,,,,"In method ""update"", the standard deviation of the ""Gaussian"" function is set to ""1 / n"" instead of ""n"" where n is the current neighbourhood size.
+",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-01-25 20:27:48.077,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:48 UTC 2016,,,,,,,"0|i2iw8v:",9223372036854775807,,,,,,,,,,,,,,,,"13/Aug/15 21:35;erans;4f73871cf40b6dd05c8872d39246c67f798ed915 (4.0)
+5c3988cb0414bb013464f8a12741fde37546cde3 (3.6)
+","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Rotation.getAngles produces wrong angles for Cardan RotationOrders,MATH-1303,12923304,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,,jboyerIST,jboyerIST,20/Dec/15 20:15,25/Jan/16 20:27,23/Mar/20 17:12,26/Dec/15 20:35,3.5,,,,,3.6,,,0,,,,,"See MATH-1302 first. 
+
+Because unit tests for getAngles relies upon the Rotation constructor described in MATH-1302 to work and the constructor does not actually work, getAngles is passing tests when it actually shouldn't.",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-12-26 20:35:11.131,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:47 UTC 2016,,,,,,,"0|i2q4zj:",9223372036854775807,,,,,,,,,,,,,,,,"26/Dec/15 20:35;luc;The issue has been fixed in git repository (both MATH_3_X branch and master branch).
+
+The getAngles method know accepts both vector operator or frame transform convention. The first convention was the one used op to 3.5, and
+explains the order of the angles. The second convention is new in 3.6 and
+corresponds to the order you requested.","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Incorrect calculation in org.apache.commons.math3.complex.Complex#multiply,MATH-1289,12913160,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Invalid,,hsq125,hsq125,15/Nov/15 16:39,15/Nov/15 18:43,23/Mar/20 17:12,15/Nov/15 18:41,3.5,,,,,,,,0,easyfix,,,,"Hello guys!
+
+If think there is a bug in the org.apache.commons.math3.complex.Complex#multiply method
+
+Line 536 & 537 below are not correct
+{code:title=Complex.java|borderStyle=solid}
+return createComplex(real * factor.real - imaginary * factor.imaginary, real * factor.imaginary + imaginary * factor.real);
+{code}
+It should be
+{code:title=Complex.java|borderStyle=solid}
+return createComplex(real * factor.real + imaginary * factor.imaginary, imaginary * factor.real-real * factor.imaginary);
+{code}
+Can you confirm that? Or do I miss something?
+Thanks a lot (also, for this excellent library).
+
+Best,
+Octave","Linux 3.16.0-44-generic #59-Ubuntu SMP Tue Jul 7 02:07:39 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+
+java version ""1.8.0_45""
+Java(TM) SE Runtime Environment (build 1.8.0_45-b14)
+Java HotSpot(TM) 64-Bit Server VM (build 25.45-b02, mixed mode)",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-11-15 18:41:52.975,,,false,,,,,,,,,,Important,,,,,,,,,9223372036854775807,,,Sun Nov 15 18:41:52 UTC 2015,,,,,,,"0|i2oezr:",9223372036854775807,,,,,,,,,,,,,,,,"15/Nov/15 18:41;luc;The expressions used in the library are correct.
+
+With your expressions, computing I^2 would give +1 instead of -1. and multiplication would not be commutative (for example I * 1 would be the opposite of 1 * I).
+
+Remember that in the complex class, the imaginary field is a *real* value holding the multiplicative factor to be applied to I (the square root of -1). In other words z = real + I * imaginary.
+
+So
+{noformat}
+  z1 * z2 = (r1 + I * i1) * (r2 + I * i2)
+          = (r1 * r2 + I * r1 * i2 + I * i1 * r2 + I * I * i1 * i2)
+          = (r1 * r2 + I * I * i1 * i2) + I * (r1 * i2 + i1 * r2)
+          = (r1 * r2 - i1 * i2) + I * (r1 * i2 + i1 * r2)
+{noformat}
+which is exactly the expression in the library.",,,,,,,,,,,,,,,,,,,,,,,
+EventHandler and StepHandler interfaces do not provide derivatives,MATH-1275,12873093,Bug,Open,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,,,luc,luc,16/Sep/15 20:12,16/Sep/15 20:12,23/Mar/20 17:12,,3.5,,,,,4.0,,,0,,,,,"The EventHandler and StepHandler interfaces allow passing the current state vector to user code, but not its derivatives. This is a pity because the integrator does know these derivatives as they are the basis from which everything else is computed. The data is lying around, just not passed to user.
+
+This is a design issue and as it affects user interfaces, it cannot be fixed before 4.0. ",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,2015-09-16 20:12:41.0,,,,,,,"0|i2k9pb:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+SimplexSolver returning wrong answer from optimize,MATH-1230,12836566,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Major,Fixed,,koppdk,koppdk,09/Jun/15 15:07,09/Jun/15 18:49,23/Mar/20 17:12,09/Jun/15 18:49,3.5,,,,,4.0,,,0,,,,,"SimplexSolver fails for the following linear program:
+
+min 2x1 +15x2 +18x3
+
+Subject to
+
+  -x1 +2x2  -6x3 <=-10
+            x2  +2x3 <= 6
+   2x1      +10x3 <= 19
+    -x1  +x2       <= -2
+    x1,x2,x3 >= 0
+
+Solution should be
+x1 = 7
+x2 = 0
+x3 = 1/2
+Objective function = 23
+
+Instead, it is returning
+x1 = 9.5
+x2 = 1/8
+x3 = 0
+Objective function = 20.875
+
+Constraint number 1 is violated by this answer",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-06-09 15:22:58.323,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Jun 09 18:49:44 UTC 2015,,,,,,,"0|i2fu2n:",9223372036854775807,,,,,,,,,,,,,,,,"09/Jun/15 15:13;koppdk;This test case should be added to SimplexSolverTest.java
+
+    @Test
+    public void testMath1230() {
+        //  min 2x1 +15x2 +18x3
+        //  Subject to
+        //  -x1 +2x2  -6x3 <=-10
+        //        x2  +2x3 <= 6
+        //  2x1      +10x3 <= 19
+        //  -x1  +x2       <= -2
+        //   x1,x2,x3 >= 0
+
+        LinearObjectiveFunction f =
+          new LinearObjectiveFunction(new double[] { 2, 15, 18 }, 0);
+        Collection<LinearConstraint> constraints = new ArrayList<LinearConstraint>();
+        constraints.add(new LinearConstraint(new double[] { -1, 2  -6 }, Relationship.LEQ, -10));
+        constraints.add(new LinearConstraint(new double[] {  0, 1,  2 }, Relationship.LEQ, 6));
+        constraints.add(new LinearConstraint(new double[] {  2, 0, 10 }, Relationship.LEQ, 19));
+        constraints.add(new LinearConstraint(new double[] { -1, 1,  0 }, Relationship.LEQ, -2));
+
+        SimplexSolver solver = new SimplexSolver();
+        PointValuePair solution = solver.optimize(f,
+                                                  new LinearConstraintSet(constraints),
+                                                  new NonNegativeConstraint(true),
+                                                  PivotSelectionRule.BLAND);
+
+        Assert.assertEquals(7, solution.getPoint()[0], 0d);
+        Assert.assertEquals(0, solution.getPoint()[1], 0d);
+        Assert.assertEquals(0.5, solution.getPoint()[2], 0d);
+        Assert.assertEquals(23, solution.getValue(), 0d);
+    }
+
+","09/Jun/15 15:22;tn;You have a typo here:
+
+{quote}
+\{ -1, 2 -6 \} 
+{quote}
+
+it should be
+
+{code}
+{-1, 2, -6}
+{code}
+
+then the solver returns the correct solution.","09/Jun/15 15:50;koppdk;Ooops. I feel sheepish.
+
+Thanks.","09/Jun/15 15:51;koppdk;I had a typo in my attempt at making an array","09/Jun/15 15:51;koppdk;Submitter error. Sorry about that.","09/Jun/15 17:52;tn;Other people had the same problem before if I remember correctly.
+
+In fact we should add a safe-guard mechanism to ensure that all constraints have the same coefficient dimension.","09/Jun/15 18:49;tn;Fixed in commit 96eb80efe1da48f37846aa899260aa0c84b15944.
+The optimize method will now throw a DimensionMismatchException if the dimension of the objective function does not match the dimension of the constraints.",,,,,,,,,,,,,,,,,
+SingularMatrixException on Non-Square Matrix,MATH-1423,13083518,Bug,Open,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,,,cmwarre,cmwarre,29/Jun/17 17:06,29/Jun/17 20:22,23/Mar/20 17:12,,3.5,,,,,,,,0,OLSMutlipleRegression,SingularMatrixException,,,"I'm trying to implement an OLSMultipleLinearRegression class in the apache commons math java library and I keep getting a ""SingularMatrixException"". This is confusing to me because my data isn't even square (60 x 2160) which I thought was a requirement for a Singular Matrix.
+
+I've played with the data by pruning rows off and adding them back on, and found differing numbers of rows that will work/fail with this dataset.
+Also, I've checked my matrix for columns or rows that are full of zeros as suggested in this post:
+
+Using Apache Library for OLS Regression : Matrix is singular exception
+
+Is there something else with this library that I don't understand? Is there a way I can make this more robust or predict a singular array beforehand?",Oracle JDK 1.8.121,3600,3600,,0%,3600,3600,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-06-29 18:09:53.705,,,false,,,,,,,,,,Patch,,,,,,,,,9223372036854775807,,,Thu Jun 29 20:22:47 UTC 2017,,,,,,,"0|i3gwlb:",9223372036854775807,,,,,,,,,,,,,,,,"29/Jun/17 18:09;psteitz;I don't think there is a bug here - more a question for the user list and maybe documentation improvement.  In order for there to be a unique solution to the OLS parameter estimation problem, the columns of the X matrix have to be linearly independent and there must be at least as many rows as there are columns.   if your dimensions above are (row, column), there will be no solution because 60 observations are not sufficient to estimate a model with 2160 independent variables).  It is the XX' matrix that ends up singular in this case, which is what ultimately triggers the SingularMatrixException.
+
+If it is 2160 rows and 60 columns, that will work as long as the columns are linearly independent. If one of your variables is (very close to) a linear combination of some subset of the others, you will end up with a SingularMatrixException.  Check to make sure that all of the columns are distinct and that none is just a multiple of another.
+
+The javadoc should advertise SME and maybe explain this or provide a link to a reference on OLS.
+
+","29/Jun/17 20:22;cmwarre;Hi Phil,
+
+Sorry I actually meant 60 attributes and 2160 observations.  Where is the user group???  Some more documentation on some of that would be nice as well though.  
+
+",,,,,,,,,,,,,,,,,,,,,,
+Vector is-not-a Point,MATH-1284,12907640,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,raydecampo,roman.werpachowski,roman.werpachowski,24/Oct/15 12:35,13/May/17 12:53,23/Mar/20 17:12,13/May/17 12:53,3.5,,,,,4.0,,,0,,,,,"The class hierarchy for geometry claims that Vector is-a Point: https://commons.apache.org/proper/commons-math/apidocs/org/apache/commons/math3/geometry/Point.html
+
+This is mathematically incorrect, see e.g. http://math.stackexchange.com/a/645827
+
+Just because they share the same numerical representation, Point and Vector shouldn't be crammed into a common class hierarchy.",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-10-24 20:48:50.377,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sat May 13 12:53:31 UTC 2017,,,,,,,"0|i2nh53:",9223372036854775807,,,,,,,,,,,,,,,,"24/Oct/15 20:48;erans;I think that {{Point}} here is just meant to be a base class of {{Vector}}.
+It is perhaps imprecise, mathematically. 
+Does a ""point"" actually need a ""distance"" to exist?  If ""distance"" is defined in this class, then isn't it equivalent to a ""vector""?
+Perhaps Luc could clarify his choice of terms within the Javadoc.
+What would you suggest?
+","24/Oct/15 20:52;roman.werpachowski;My point (no pun intended) is that Points and Vectors behave differently under translation T:
+
+T(point) != point
+
+T(vector) = vector
+
+So if someone starts coding symmetry operations using this classes, they're in a bind.","24/Oct/15 21:09;erans;I don't follow...
+
+Is there a problem with the current usage of {{Point}} in CM?
+Or do you point :) out that, the name ""Point"" being taken by this class, CM won't be able to provide an implementation of some geometry concepts using the expected terminology?
+
+Could you provide a concrete example?
+Do you intend to provide such an extension to CM?
+","24/Oct/15 21:13;roman.werpachowski;I'm just saying that this setup is obviously wrong for any mathematician. I understand that the intention of these classes is to model geometrical concepts. If this is not the case, then you can ignore my ticket.","24/Oct/15 22:08;erans;bq. obviously wrong for any mathematician
+
+Well, It's not obvious to me, nor to anyone who might have looked at this CM code since version 3.3.
+
+bq. I understand that the intention of these classes is to model geometrical concepts.
+
+I would think so too.
+The discussion link which you give above is not authoritative.  Care to share a math reference?
+","24/Oct/15 22:12;roman.werpachowski;https://www.encyclopediaofmath.org/index.php/Vector","24/Oct/15 22:48;erans;Defining ""vector"" in terms of two ""point""s makes it obvious, indeed.  Unless... the first point is the ""origin"".
+I think that it is important to show what will go wrong when we wish to implement some geometrical concepts.
+
+Perhaps it would be useful to start a discussion on the ""dev"" ML.
+A proposal would be to just remove the {{Point}} interface, if what is currently implemented in CM only needs the ""vector"" concept.
+","25/Oct/15 09:20;luc;I agree that vector is not a point.
+This issue was discussed (shortly) on the developers list on May 22nd 2011.
+You can look here <http://mail-archives.apache.org/mod_mbox/commons-dev/201105.mbox/browser> for
+the thread or here <http://commons.markmail.org/search/list:org.apache.common.dev+%22affine+and+vector+spaces%22>.
+
+One argument for merging was that the difference was too subtle and merging the two concepts was quite common.
+The other argument was that our interface is not restricted to Euclidean space but also encompasses spherical
+geometry (we do use it for BSP trees on the 1-sphere and on the 2-sphere for example).
+
+So we decided to stick to a single representation and in the Vector Javadoc we state:
+
+ This interface represents a generic vector in a vectorial space or a point in an affine space.
+
+This implies users are free to decide by themselves what is the semantic of the object they use.
+
+The Transform interface defined in the lower partitioning package needs to know about the semantics.
+Therefore, it specifically states it represents a transform in *affine* space. On the other hand, the
+Rotation class in the euclidean.threed package is an operator acting in a vector space, and it does
+*not* implement the aforementioned Transform interface.
+
+I would indeed be glad to separate the two concepts, but has to think really a lot about it
+in spherical geometry.","12/Apr/17 11:08;chtompki;[~erans] Should this issue remain open? It feels closable.","12/Apr/17 11:19;erans;I don't know. It's not quite clear that there isn't anything to fix.
+
+This is the kind of issues that IMHO calls for separation of concerns (i.e. separate components for separate domains of expertise).","22/Apr/17 22:45;raydecampo;I agree with the issue as reported; from a mathematical POV a vector is not a point.
+
+From a CS POV I am having trouble seeing the value that having the interface {{Vector}} extending the interface {{Point}} brings.  In fact, by having {{Vector}} extend {{Point}}, one ends up with a method in your {{Vector}} implementation where one is ostensibly calculating the ""distance from a vector to a point"".  This isn't really satisfying to me from a mathematical or CS perspective.  The implementations of the {{Point}} {{distance()}} method in {{Vector}} implementations all immediately cast the {{Point}} to a {{Vector}} implementation.
+
+I will prepare a branch with a proposal for resolving this issue.
+","25/Apr/17 23:09;raydecampo;Please take a look at the {{feature-MATH-1284}} branch.
+
+First, I made it so that {{Vector}} no longer extends {{Point}}.  Then I added the appropriate methods from the {{Point}} interface to the {{Vector}} interface.
+
+The only implementations which represented problems were the {{Vector?D}} classes.  I noticed that the existing code dealing with these implementations relied pretty heavily on casting back and forth between {{Point}} and {{Vector}}, so the most prudent thing seemed to be supplying a class which implements both.
+
+I decided on {{Coordinates?D}} for the ""new"" classes (these are really just {{Vector?D}} renamed).  Here I am using the fact that point a vector and a point in finite dimensional Euclidean space can be represented by a set of coordinates.  (Keeping the classes with {{Vector?D}} name would feel like we hadn't really addressed the issue.)
+
+If it is a problem that the {{Vector?D}} classes are just dropped we could introduce them as an intermediate interface (or even as a concrete class which {{Coordinates?D}} extends but that feels less satisfying).
+
+Having {{Coordinates?D}} implement both interfaces led to some method calls being ambiguously defined.  Here I just removed one of the methods.  I am thinking now it would have been better just to create an implementation accepting the {{Coordinate?D}} class.
+
+In any case, there would be more work in terms of cleaning up and documentation, this is not meant to be a finished product but a basis for discussion.
+","26/Apr/17 00:28;erans;I replied to the commit on the ML, asking whether ""Coordinates?D"" actually meant _Cartesian_ coordinates in the code.","06/May/17 15:11;raydecampo;OK, I have made the change to {{Cartesian?D}}.  I have also restored the {{Vector?D}} as abstract classes which {{Cartesian?D}} extend - I thought that would be easier on existing client code.
+
+I also made an attempt to update the javadoc and supporting files.
+
+Please take another look at the {{feature-MATH-1284}} branch for review.","13/May/17 12:53;raydecampo;Resolution applied in commit 7a59c0af26177cf69e702eaac85471e54762f664",,,,,,,,,
+Skewness could get more precision from slightly reordered code.,MATH-1253,12851234,Bug,Open,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,,,murphyw,murphyw,03/Aug/15 22:32,12/Apr/17 11:02,23/Mar/20 17:12,,3.5,,,,,4.0,,,0,,,,,"In Skewness.java, approx line 180, there is code like:
+
+{noformat}
+            double accum3 = 0.0;
+            for (int i = begin; i < begin + length; i++) {
+                final double d = values[i] - m;
+                accum3 += d * d * d;
+            }
+            accum3 /= variance * FastMath.sqrt(variance);
+{noformat}
+
+If the division was moved into the for loop, accum3 would be less likely to overflow to Infinity (or -Infinity). This might allow computation to return a result in a case such as:
+
+{noformat}
+double[] numArray = { 1.234E11, 1.234E51, 1.234E101, 1.234E151 };
+
+Skewness    skew = new Skewness();
+double    sk = skew.evaluate( numArray );
+{noformat}
+
+Currently, this returns NaN, but I'd prefer it returned approx 1.154700538379252.
+
+The change I'm proposing would have the code instead read like:
+{noformat}
+            double accum3 = 0.0;
+            double divisor = variance * FastMath.sqrt(variance);
+
+            for (int i = begin; i < begin + length; i++) {
+                final double d = values[i] - m;
+                accum3 += d * d * d / divisor;
+            }
+{noformat}
+
+Thanks!",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-08-08 14:41:18.957,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Nov 24 19:41:33 UTC 2015,,,,,,,"0|i2iaf3:",9223372036854775807,,,,,,,,,,,,,,,,"08/Aug/15 14:41;Otmar Ertl;The given example is problematic anyway, because the numbers (1.234E11, 1.234E51, 1.234E101, 1.234E151) are many orders of magnitude apart, for which cancellation effects are a major issue when using floating point types. I can reproduce the NaN result for values that have either large or small exponents, for example (1.234E148, 1.234E149, 1.234E150, 1.234E151) and (1.234E-148, 1.234E-149, 1.234E-150, 1.234E-151). The proposed code does not avoid this over-/underflows either, because the division is performed after the two multiplications which cause the over-/underflow. However, following code would work:
+{code}
+            final double variance = (accum - (accum2 * accum2 / length)) / (length - 1);
+            final double stdDevInverse = 1d / FastMath.sqrt(variance);
+
+            double accum3 = 0.0;
+            for (int i = begin; i < begin + length; i++) {
+                final double d = (values[i] - m) * stdDevInverse;
+                accum3 += d * d * d;
+            }
+{code}
+(Here the inverse is precomputed, in order to avoid additional divisions which are likely to be more expensive than multiplications.) Nevertheless, I am not sure, If we really should fix that. The variance calculation is also prone to over-/underflows for numbers greater than sqrt(Double.MAX_VALUE) and smaller than sqrt(Double.MIN_VALUE), respectively. So the fix would ""slightly"" extend the valid input range from (cbrt(Double.MIN_VALUE), cbrt(Double.MAX_VALUE)) to (sqrt(Double.MIN_VALUE), sqrt(Double.MAX_VALUE)) at the expense of an additional multiplication within the loop. Of course, if there was also an accurate variance calculation method, that avoids over-/underflows for values outside of (sqrt(Double.MIN_VALUE), sqrt(Double.MAX_VALUE)), this fix would make much more sense to me.","18/Aug/15 22:35;murphyw;I agree with Otmar's comments entirely.
+
+I do not yet know a better suggestion. Even a slight extension of the range of correct results seems to me to be an improvement. I would still prefer going forwards with these mods as suggested, but a true fix as outlined by Otmar would be hugely better. Does someone else know enough numerical analysis stuff to provide a mostly-correct approximation over the range of doubles? It is sadly beyond me as of today.
+","23/Nov/15 23:02;tn;just ftr: I did some tests with octave and scipy, and both return NaN or overflow for the input.","24/Nov/15 10:47;erans;Independently of extending the valid range, wouldn't Otmar's proposal also give a more accurate result (than the current code), especially when the number of samples is large?
+","24/Nov/15 19:41;Otmar Ertl;Provided that there is no overflow, I do not think that my proposal is more accurate. The relative error of a sum of floating point numbers is the same after scaling the numbers by the same factor.",,,,,,,,,,,,,,,,,,,
+"RNG: public ""setSeed"" method should not be called from inside the constructor",MATH-1309,12924424,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Won't Fix,erans,erans,erans,27/Dec/15 23:10,04/Feb/16 01:04,23/Mar/20 17:12,04/Feb/16 01:04,3.5,,,,,,,,0,,,,,"It is dangerous to call an overridable method from inside a constructor.
+",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-12-28 19:41:24.689,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Wed Feb 03 13:42:01 UTC 2016,,,,,,,"0|i2qbtr:",9223372036854775807,,,,,,,,,,,,,,,,"28/Dec/15 17:29;erans;Created private methods ""setSeedInternal"" in commit 4fc5b3402c58d6a4b317bf23b896ea91d22af6fe (master).","28/Dec/15 19:41;rosti.bsd;Why it is dangerous?","29/Dec/15 00:58;erans;http://stackoverflow.com/questions/3404301/whats-wrong-with-overridable-method-calls-in-constructors","31/Dec/15 00:37;erans;Commit 2fcfce303989ae14b5b51f4c9fc92e97bc540ba8 fixes some missed occurrences.","03/Feb/16 13:42;erans;Commits were reverted.",,,,,,,,,,,,,,,,,,,
+ODE tutorial documentation not up to date,MATH-1225,12830185,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,bgodard,bgodard,15/May/15 14:43,25/Jan/16 20:27,23/Mar/20 17:12,17/May/15 16:18,3.5,,,,,3.6,4.0,,0,,,,,"The tutorial on ODE is not up to date
+http://commons.apache.org/proper/commons-math/userguide/ode.html
+in particular in what concerns the usage of Parametrized ODE and jacobian providers.
+
+",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-05-17 16:18:21.554,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:59 UTC 2016,,,,,,,"0|i2esbr:",9223372036854775807,,,,,,,,,,,,,,,,"17/May/15 16:18;luc;The userguide has been updated in git repository (both master branch and 3.x branch). The online site has also been updated.
+
+Thanks for the report.","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Incorrect Kendall Tau calc due to data type mistmatch,MATH-1277,12888682,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,marcr1230,marcr1230,18/Sep/15 21:39,25/Jan/16 20:27,23/Mar/20 17:12,20/Sep/15 08:15,3.5,,,,,3.6,4.0,,0,correlation,Kendall,tau,,"The Kendall Tau calculation returns a number from -1.0 to 1.0
+
+due to a mixing of ints and longs, a mistake occurs on large size columns (arrays) passed to the function. an array size of > 50350 triggers the condition in my case - although it may be data dependent
+
+the ver 3.5 library returns 2.6 as a result (outside of the defined range of Kendall Tau)
+
+with the cast to long below - the result reutns to its expected value
+
+
+commons.math3.stat.correlation.KendallsCorrelation.correlation
+
+
+here's the sample code I used:
+I added the cast to long of swaps in the 
+
+			int swaps = 1077126315;
+			 final long numPairs = sum(50350 - 1);
+			    long tiedXPairs = 0;
+		        long tiedXYPairs = 0;
+		        long tiedYPairs = 0;
+		        
+		  final long concordantMinusDiscordant = numPairs - tiedXPairs - tiedYPairs + tiedXYPairs - 2 * (long) swaps;
+	        final double nonTiedPairsMultiplied = 1.6e18;
+	        double myTest = concordantMinusDiscordant / FastMath.sqrt(nonTiedPairsMultiplied);
+",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-09-20 08:15:21.383,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:57 UTC 2016,,,,,,,"0|i2l52v:",9223372036854775807,,,,,,,,,,,,,,,,"20/Sep/15 08:15;Otmar Ertl;Thanks for reporting! Fixed bug in following commits:
+* 81ce1b183aa4fb56e7710ebe0274740c268118fa (3.6)
+* fb0078159d2463da149de54018fca79a9447153e (4.0)","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Gamma function computation,MATH-1283,12907019,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,jnd77,jnd77,22/Oct/15 08:40,25/Jan/16 20:27,23/Mar/20 17:12,22/Oct/15 20:34,3.5,4.0,,,,3.6,4.0,,0,,,,,"In the gamma method, when handling the case ""absX > 20"", the computation of gammaAbs should replace ""x"" (see code below with x in bold) by ""absX"".
+For large negative values of x, the function returns with the wrong sign.
+
+final double gammaAbs = SQRT_TWO_PI / *x* *
+                                     FastMath.pow(y, absX + 0.5) *
+                                     FastMath.exp(-y) * lanczos(absX);",All,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-10-22 20:34:05.115,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:56 UTC 2016,,,,,,,"0|i2ndbj:",9223372036854775807,,,,,,,,,,,,,,,,"22/Oct/15 20:34;tn;Fixed in the following commits:
+
+ * 3.6: 40f35da56
+ * 4.0: 9e0c5ad4b
+
+Thanks for the report and suggested fix!","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+NullPointerExceptions not documented in some classes,MATH-1224,12828708,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,Telcontar,Telcontar,11/May/15 00:43,25/Jan/16 20:27,23/Mar/20 17:12,19/May/15 11:47,3.3,3.5,,,,3.6,4.0,,0,documentation,easyfix,easytest,newbie,"In general, the need to initialize newly constructed objects with more data is now documented, but we have found two cases where a NullPointerException is thrown because of missing data.
+
+The documentation should be updated to reflect this. This is similar to issues report in MATH-1116 but concerns classes that are not going to be deprecated (as far as we can tell).
+
+I have previously posted this as a new comment on issue 1116, but that comment has not elicited any response. As the original issue is one year old, I post this bug as a new issue.
+
+Below is the code that produces the two cases:
+
+org.apache.commons.math3.ode.nonstiff.HighamHall54Integrator var1 = new org.apache.commons.math3.ode.nonstiff.HighamHall54Integrator(0.0d, 0.0d, 0.0d, 0.0d);
+double[] var2 = new double[] { 0.0d };
+var1.computeDerivatives(0.0d, var2, var2); // NPE
+
+new org.apache.commons.math3.stat.correlation.SpearmansCorrelation().getCorrelationMatrix(); // NPE
+
+","Mac OS X, Java 6-8",2400,2400,,0%,2400,2400,,,,,,"11/May/15 00:44;Telcontar;Report6.java;https://issues.apache.org/jira/secure/attachment/12731837/Report6.java","11/May/15 00:44;Telcontar;Report7.java;https://issues.apache.org/jira/secure/attachment/12731838/Report7.java",,2.0,,,,,,,,,,,,,,,,,,,,2015-05-13 19:27:59.03,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:55 UTC 2016,,,,,,,"0|i2ejf3:",9223372036854775807,,,,,,,,,,,,,,,,"11/May/15 00:44;Telcontar;Self-contained unit test to reproduce NullPointerException on HighamHall54Integrator (the need to initialize it further is not documented yet).","11/May/15 00:44;Telcontar;Self-contained unit test to reproduce NullPointerException on SpearmansCorrelation (the need to initialize it further is not documented yet).","13/May/15 19:27;psteitz;Fixed for Spearman's 
+3.x branch: fbf6259e0fd4fc85ff55ff7a496b40f98cca43f0
+master: 83c61da2c90548f2ddf48e164e8ab14b388e1d0c","19/May/15 11:47;luc;Fixed in git repository for the remaining part (ODE package).","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,
+NormalDistribution.cumulativeProbability() suffers from cancellation,MATH-1257,12857050,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,murphyw,murphyw,18/Aug/15 22:31,25/Jan/16 20:27,23/Mar/20 17:12,19/Aug/15 21:16,3.5,,,,,3.6,4.0,,0,,,,,"I see the following around line 194:
+{noformat}
+        return 0.5 * (1 + Erf.erf(dev / (standardDeviation * SQRT2)));
+{noformat}
+
+When erf() returns a very small value, this cancels in the addition with the ""1.0"" which leads to poor precision in the results.
+
+I would suggest changing this line to read more like:
+{noformat}
+return 0.5 * Erf.erfc( -dev / standardDeviation * SQRT2 );
+{noformat} 
+
+Should you want some test cases for ""extreme values"" (one might argue that within 10 standard deviations isn't all that extreme) then you can check the following: http://www.jstatsoft.org/v52/i07/ then look in the v52i07-xls.zip at replication-01-distribution-standard-normal.xls
+
+I think you will also find that evaluation of expressions such as {noformat}NormalDistribution( 0, 1 ).cumulativeProbability( -10.0 );{noformat}
+are pretty far off.",,,,,,,,,,,,,"19/Aug/15 16:23;erans;MATH-1257.patch;https://issues.apache.org/jira/secure/attachment/12751298/MATH-1257.patch",,,1.0,,,,,,,,,,,,,,,,,,,,2015-08-19 11:54:46.328,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:54 UTC 2016,,,,,,,"0|i2j2rr:",9223372036854775807,,,,,,,,,,,,,,,,"19/Aug/15 11:54;erans;bq. return 0.5 * Erf.erfc( -dev / standardDeviation * SQRT2 );
+
+Using either the current code or
+{code}
+return 0.5 * Erf.erfc(-dev / (standardDeviation * SQRT2));
+{code}
+the unit tests pass.
+
+bq. \[...\] test cases for ""extreme values"" \[...\]
+
+A patch with a test case that shows the problem would be welcome.
+
+","19/Aug/15 15:35;murphyw;I'm not sure where your test cases are in your src, or how one runs them. A suitable test is to see if 
+{noformat}NormalDistribution( 0, 1 ).cumulativeProbability( -10.0 );{noformat}
+
+is evaluated to 0.0 (I think incorrect) or like 7.61985E-24 (I think close/approximately correct). 
+
+This should really be reviewed by someone sharper at math than me, so even were I to know where to find the tests and add one as a patch, this needs someone more familiar with the problem domain to assure this is the right move. It looks good to me, however, this is insufficient assurance.","19/Aug/15 16:15;erans;Well, you found a list of reference values; do you mean that you don't trust them?
+
+Otherwise, the unit test would amount to put them in an array of pairs (x, N_cumulative\(x\)) and compare the reference values with the value computed by the library...
+","19/Aug/15 16:23;erans;I've added a test case for x=-10 and the above reference value.
+
+CM's current code does not pass the test.
+
+Your suggested change make it pass, so unless there is an objection, I'll apply the attached patch.
+","19/Aug/15 17:37;murphyw;My doubts are based mostly on my not being a statistician. My suggested change was researched on wikipedia and wolfram. 
+
+Glad that you like the mod, I would be in favor of applying this patch. Thanks!","19/Aug/15 18:07;Otmar Ertl;+1 for the patch, it eliminates one source of error. For values much smaller than -1 the regularizedGammaQ function evaluates to a very small positive values. The computation was like 0.5*((regularizedGammaQ - 1) + 1). With the patch the computation is now 0.5*regularizedGammaQ, obviously improving accuracy.","19/Aug/15 21:16;erans;Change applied in the following commits:
+03178c8b15f1b522b98ded0f83cfb0e79f5ec4d3 (4.0)
+49a9e6e8742cb6e05abf0219705338d95f732e12 (3.6)
+","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,
+"FastMath.pow(double, long) enters an infinite loop with Long.MIN_VALUE",MATH-1272,12862964,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,Qualtagh,Qualtagh,10/Sep/15 06:07,25/Jan/16 20:27,23/Mar/20 17:12,10/Sep/15 09:15,3.5,4.0,,,,3.6,4.0,,0,patch,,,,"FastMath.pow(double, long) enters an infinite loop with Long.MIN_VALUE. It cannot be negated, so unsigned shift (>>>) is required instead of a signed one (>>).",,,,,,,,,,,,,"10/Sep/15 06:08;Qualtagh;MATH-1272.patch;https://issues.apache.org/jira/secure/attachment/12755072/MATH-1272.patch",,,1.0,,,,,,,,,,,,,,,,,,,,2015-09-10 09:15:23.918,,,false,,,,,,,,,,Patch,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:51 UTC 2016,,,,,,,"0|i2jzcn:",9223372036854775807,,,,,,,,,,,,,,,,"10/Sep/15 09:15;luc;Fixed in git repository (commit d93c95d for master branch, commit 252a013 for MATH_3_X branch).
+
+Thanks for the report and for the patch!","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Digamma calculation produces SOE on NaN argument,MATH-1241,12840198,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,dievsky,dievsky,24/Jun/15 12:49,25/Jan/16 20:27,23/Mar/20 17:12,24/Jun/15 13:43,3.5,,,,,3.6,4.0,,0,,,,,"Digamma doesn't work particularly well with NaNs.
+
+How to reproduce: call Gamma.digamma(Double.NaN)
+
+Expected outcome: returns NaN or throws a meaningful exception
+
+Real outcome: crashes with StackOverflowException, as digamma enters infinite recursion.",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-06-24 13:43:21.405,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:50 UTC 2016,,,,,,,"0|i2gfn3:",9223372036854775807,,,,,,,,,,,,,,,,"24/Jun/15 13:43;tn;Fixed in the following commits:
+
+ * 4.0: 471e6b078a7891aea99b77f200e828
+ * 3.6: 229232829c6d8741138decf27c4909
+
+Now the Gamma.digamma and trigamma methods will propagate the input argument if it is not a real value.
+
+Thanks for the report!","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Kolmogorov-Smirnov exactP gives incorrect p-values for some D-statistics,MATH-1245,12842757,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,psteitz,psteitz,06/Jul/15 00:42,25/Jan/16 20:27,23/Mar/20 17:12,10/Jul/15 19:34,3.4.1,3.5,,,,3.6,4.0,,0,,,,,"The exactP method in KolmogorovSmirnovTest, which is used by default for small samples in 2-sample tests, can give slightly incorrect p-values in some cases.  The reason for this is that p(D > d) is computed by examining all m-n partitions and counting the number of partitions that give D values larger than the observed value.  D values are not rounded, so some values that are mathematically identical to the observed value compare less than or greater than it.  This results in small errors in the reported p-values.",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-01-25 20:27:50.256,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:50 UTC 2016,,,,,,,"0|i2gv67:",9223372036854775807,,,,,,,,,,,,,,,,"10/Jul/15 19:34;psteitz;Fixed in master 32d33210a92b1197a6c5a07f19aa25426af72723
+3.x 7a6aa92c8ac46059f7ca9d76d7da6b710df901aa","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Wrong splitting of huge double numbers,MATH-1223,12828013,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,luc,luc,07/May/15 13:20,25/Jan/16 20:27,23/Mar/20 17:12,07/May/15 13:42,3.5,,,,,3.6,4.0,,0,,,,,"In both MathArrays and FastMath, some computations on double are performed by firt splitting double numbers in two numbers with about 26 bits.
+
+This splitting fails when the numbers are huge, even if they are still representable and not infinite (the limit is about 1.0e300, eight orders of magnitude below infinity).
+
+This can be seen by computing for example
+{code}
+FastMath.pow(FastMath.scalb(1.0, 500), 4);
+{code}
+
+The result is NaN whereas it should be +infinity.
+
+or by modifying test MathArraysTest.testLinearCombination1 and scaling down first array elements by FastMath.scalb(a[i], -971) and scaling up the second array elements by FastMath.scalb(b[i], +971), which should not change the results. Here the result is a loss of precision because a safety check in MathArrays.linearCombination falls back to naive implementation if the high accuracy algorithm fails.
+
+The reason for the wrong splitting is an overflow when computing
+{code}
+        final int splitFactor = 0x8000001;
+        final double cd       = splitFactor * d; // <--- overflow
+{code}
+{code}",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:47 UTC 2016,,,,,,,"0|i2ef7b:",9223372036854775807,,,,,,,,,,,,,,,,"07/May/15 13:42;luc;Fixed in git repository, with commit e4b3ac8 in the master branch (4.X) and with commit 9e1b0ac in the MATH_3_X branch.","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+NonLinearConjugateGradientOptimizer and BracketFinder TooManyEvaluationsException,MATH-1295,12917293,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,luke.lindsay,luke.lindsay,01/Dec/15 15:56,25/Jan/16 20:27,23/Mar/20 17:12,02/Dec/15 14:58,3.5,,,,,3.6,4.0,,0,,,,,"I am getting the exception below when using NonLinearConjugateGradientOptimizer.  
+
+ org.apache.commons.math3.exception.TooManyEvaluationsException: illegal state: maximal count (50) exceeded: evaluations
+	at org.apache.commons.math3.optim.univariate.BracketFinder.eval(BracketFinder.java:287)
+	at org.apache.commons.math3.optim.univariate.BracketFinder.search(BracketFinder.java:181)
+	at org.apache.commons.math3.optim.nonlinear.scalar.LineSearch.search(LineSearch.java:127)
+	at org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer.doOptimize(NonLinearConjugateGradientOptimizer.java:283)
+	at org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer.doOptimize(NonLinearConjugateGradientOptimizer.java:47)
+	at org.apache.commons.math3.optim.BaseOptimizer.optimize(BaseOptimizer.java:154)
+	at org.apache.commons.math3.optim.BaseMultivariateOptimizer.optimize(BaseMultivariateOptimizer.java:66)
+	at org.apache.commons.math3.optim.nonlinear.scalar.MultivariateOptimizer.optimize(MultivariateOptimizer.java:64)
+	at org.apache.commons.math3.optim.nonlinear.scalar.GradientMultivariateOptimizer.optimize(GradientMultivariateOptimizer.java:74)
+	at org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer.optimize(NonLinearConjugateGradientOptimizer.java:245)
+
+
+NonLinearConjugateGradientOptimizer calls the no argument constructor of BracketFinder which defaults its max evaluations to 50.  I tried changing the source code of BracketFinder so that the default max evaluations is 200 and since making the change have not encountered the problem.  I was wondering if BracketFinder could have its default max evaluations increased or if NonLinearConjugateGradientOptimizer could set a higher max evaluations when it constructs a BracketFinder.
+",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-12-02 14:58:12.042,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:47 UTC 2016,,,,,,,"0|i2p4gf:",9223372036854775807,,,,,,,,,,,,,,,,"02/Dec/15 14:58;erans;Default increased to 500.
+
+Commits:
+26ad6ac83721fd90e35fe4db4613685b5857fed9 (MATH_3_X)
+34646ec9b52192a71e52ffc09cf7fefdd506c48c (master)
+","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+Exception thrown in ode for a pair of close events,MATH-1226,12830980,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Fixed,,luc,luc,19/May/15 11:11,25/Jan/16 20:27,23/Mar/20 17:12,19/May/15 11:29,3.5,,,,,3.6,4.0,,0,,,,,"When two discrete events occur closer to each other than the convergence threshold used for locating them, this sometimes triggers a NumberIsTooLargeException.
+
+The exception happens because the EventState class think the second event is simply a numerical artifact (a repetition of the already triggerred first event) and tries to skip past it. If there are no other event in the same step later on, one interval boundary finally reach step end and the interval bounds are reversed.",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:46 UTC 2016,,,,,,,"0|i2ex6f:",9223372036854775807,,,,,,,,,,,,,,,,"19/May/15 11:29;luc;Fixed in git repository, as of commit c44bfe0 for master branch and commit 777273e for 3.X branch.","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+NoBracketingException send with valid brackets,MATH-1238,12839402,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Minor,Incomplete,,charles.s,charles.s,21/Jun/15 11:49,11/Sep/15 17:51,23/Mar/20 17:12,11/Sep/15 17:51,3.5,,,,,,,,0,,,,,"The brent solver sometimes send a NoBracketingException with valid brackets : example for a beta distribution with large Beta (285) and alpha around 15
+Exception in thread ""main"" org.apache.commons.math3.exception.NoBracketingException: function values at endpoints do not have different signs, endpoints: [0, 1], values: [-0.15, 0.85]
+
+the exception is actually caused by the yinitial which is Nan",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-06-21 17:55:42.335,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Sep 11 17:51:46 UTC 2015,,,,,,,"0|i2gb8f:",9223372036854775807,,,,,,,,,,,,,,,,"21/Jun/15 17:55;erans;This behaviour stems from the particular semantics of NaN (all comparisons with NaN being ""false"").
+The library lets NaN values propagate... until some code gives up.
+
+The error message might indeed be misleading but not more than what would have been reported later on (i.e. in this case, if the ""brent"" method were passed a NaN as one of its argument).
+","27/Jun/15 10:17;erans;Is it the ""automatically-computed"" or a ""user-defined"" initial value whose function evaluation is NaN?
+In the former case, the library might try to generate another start value.
+Could you provide a unit test that shows the problem?
+","10/Sep/15 18:21;Axion004;I have the same issue through the following test program
+
+import java.util.TreeSet;
+import org.apache.commons.math3.analysis.UnivariateFunction;
+import org.apache.commons.math3.analysis.solvers.*;
+
+public class TestBrent {
+
+    public static void main(String[] args) {
+        BrentSolver test2 = new BrentSolver(1E-10);
+        UnivariateFunction function = (double x) -> Math.sin(x);
+
+        double EPSILON = 1e-6;
+        TreeSet<Double> set = new TreeSet<>();
+        for (int i = 1; i <= 500; i++) {
+            set.add(test2.solve(1000, function, i, i+1));
+        }
+
+        for (Double s : set) {
+            if (s > 0) {
+                System.out.println(s);
+            }
+        }
+    }
+}
+
+
+
+
+
+
+run:
+Exception in thread ""main"" org.apache.commons.math3.exception.NoBracketingException: function values at endpoints do not have different signs, endpoints: [1, 2], values: [0.841, 0.909]
+	at org.apache.commons.math3.analysis.solvers.BrentSolver.doSolve(BrentSolver.java:133)
+	at org.apache.commons.math3.analysis.solvers.BaseAbstractUnivariateSolver.solve(BaseAbstractUnivariateSolver.java:199)
+	at org.apache.commons.math3.analysis.solvers.BaseAbstractUnivariateSolver.solve(BaseAbstractUnivariateSolver.java:204)
+	at TestBrent.main(TestBrent.java:15)
+Java Result: 1
+BUILD SUCCESSFUL (total time: 0 seconds)
+","11/Sep/15 00:53;erans;bq. I have the same issue
+
+I don't think so.
+Your ""NoBracketingException"" occurs because the bracket is _not_ valid.
+Moreover, there is no root of the sine function between 1 and 2.
+","11/Sep/15 01:54;Axion004;Correct, I did not see my mistake. I will need to review the documentation more carefully. Thank You for pointing this out.","11/Sep/15 17:50;erans;You are welcome.
+
+For usage questions, it is best to post to the [user ML|http://commons.apache.org/proper/commons-math/mail-lists.html].","11/Sep/15 17:51;erans;No reply from the OP.",,,,,,,,,,,,,,,,,
+UknownParameterException message prints {0} instead of parameter name,MATH-1232,12837115,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Trivial,Fixed,,luc,luc,11/Jun/15 11:45,25/Jan/16 20:27,23/Mar/20 17:12,11/Jun/15 12:12,3.5,,,,,3.6,4.0,,0,,,,,"The constructor for UnknownParameterException stores the
+parameter name internally but does not forward it to the base class which creates the error message.",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:59 UTC 2016,,,,,,,"0|i2fxdb:",9223372036854775807,,,,,,,,,,,,,,,,"11/Jun/15 12:12;luc;Fixed in git repository, both in master branch and MATH_3_X branch.","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+"ResizableDoubleArray: Wrong ""initialCapacity""",MATH-1229,12833991,Bug,Closed,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Trivial,Fixed,erans,erans,erans,30/May/15 16:25,25/Jan/16 20:27,23/Mar/20 17:12,30/May/15 17:27,3.5,,,,,3.6,,,0,,,,,"In {{o.a.c.m.util.ResizableDoubleArray}}, in the constructor
+{code}
+public ResizableDoubleArray(double[] initialArray) {
+    this(DEFAULT_INITIAL_CAPACITY,
+            DEFAULT_EXPANSION_FACTOR,
+            DEFAULT_CONTRACTION_DELTA + DEFAULT_EXPANSION_FACTOR,
+            DEFAULT_EXPANSION_MODE,
+            initialArray);
+}
+{code}
+the initial capacity should be set to the length on the input, and not to the hard-coded default.
+",,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-01-25 20:27:48.371,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 25 20:27:48 UTC 2016,,,,,,,"0|i2feyn:",9223372036854775807,,,,,,,,,,,,,,,,"30/May/15 17:27;erans;commit 8be87e032a8c05622148357f30bdca3c614a669f
+","25/Jan/16 20:27;luc;Closing all resolved issues that were included in 3.6 release.",,,,,,,,,,,,,,,,,,,,,,
+MicrosphereInterpolator: Unnecessery restriction in constructor,MATH-1231,12836814,Bug,Resolved,MATH,Commons Math,software,issues@commons.apache.org,,http://commons.apache.org/math/,Trivial,Fixed,erans,erans,erans,10/Jun/15 11:59,11/Jun/15 22:13,23/Mar/20 17:12,11/Jun/15 22:13,3.5,,,,,4.0,,,0,,,,,"In {{o.a.c.m.analysis.interpolation.MicrosphereInterpolator}}, the constructor requires that the ""exponent"" be an integer, whereas the algorithm has no such restriction.
+",,,,,,,,,,,,,"10/Jun/15 12:02;erans;MATH-1231.patch;https://issues.apache.org/jira/secure/attachment/12738806/MATH-1231.patch",,,1.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Jun 11 22:13:37 UTC 2015,,,,,,,"0|i2fvk7:",9223372036854775807,,,,,,,,,,,,,,,,"10/Jun/15 12:02;erans;Any objection to my applying the just uploaded patch?
+","11/Jun/15 22:13;erans;commit 2990f6caad0db0f7c7a2df22d65f1031ed9e33e1",,,,,,,,,,,,,,,,,,,,,,

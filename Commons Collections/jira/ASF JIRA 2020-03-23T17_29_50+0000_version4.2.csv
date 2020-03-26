@@ -1,0 +1,123 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Fix Version/s,Component/s,Component/s,Component/s,Due Date,Votes,Labels,Description,Environment,Log Work,Log Work,Log Work,Original Estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Custom field (Affects version (Component)),Custom field (Attachment count),Custom field (Blog - New Blog Administrators),Custom field (Blog - New Blog PMC),Custom field (Blog - Write access),Custom field (Blog Administrator?),Custom field (Blogs - Admin for blog),Custom field (Blogs - Email Address),Custom field (Blogs - Existing Blog Access Level),Custom field (Blogs - Existing Blog Name),Custom field (Blogs - New Blog Write Access),Custom field (Blogs - Username),Custom field (Bug Category),Custom field (Bugzilla - Email Notification Address),Custom field (Bugzilla - List of usernames),Custom field (Bugzilla - PMC Name),Custom field (Bugzilla - Project Name),Custom field (Bugzilla Id),Custom field (Bugzilla Id),Custom field (Change Category),Custom field (Complexity),Custom field (Date of First Response),Custom field (Discovered By),Custom field (Docs Text),Custom field (Enable Automatic Patch Review),Custom field (Epic Link),Custom field (Estimated Complexity),Custom field (Evidence Of Open Source Adoption),Custom field (Evidence Of Registration),Custom field (Evidence Of Use On World Wide Web),Custom field (Existing GitBox Approval),Custom field (External issue ID),Custom field (External issue URL),Custom field (Fix version (Component)),Custom field (Flags),Custom field (Git Notification Mailing List),Custom field (Git Repository Import Path),Custom field (Git Repository Name),Custom field (Git Repository Type),Custom field (GitHub Options),Custom field (Github Integration),Custom field (Github Integrations - Other),Custom field (Global Rank),Custom field (INFRA - Subversion Repository Path),Custom field (Initial Confluence Contributors),Custom field (Last public comment date),Custom field (Level of effort),Custom field (Machine Readable Info),Custom field (New-TLP-TLPName),Custom field (Priority),Custom field (Project),Custom field (Protected Branch),Custom field (Rank),Custom field (Rank (Obsolete)),Custom field (Review Date),Custom field (Reviewer),Custom field (Severity),Custom field (Severity),Custom field (Skill Level),Custom field (Skill Level),Custom field (Source Control Link),Custom field (Space Description),Custom field (Space Key),Custom field (Space Name),Custom field (Tags),Custom field (Test and Documentation Plan),Custom field (Testcase included),Custom field (Tester),Custom field (Workaround),Comment,Comment,Comment
+functors.InvokerTransformer backward incompatibility bug,COLLECTIONS-721,13239832,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Not A Bug,,lingchao,lingchao,16/Jun/19 21:48,24/Jul/19 18:57,23/Mar/20 17:29,24/Jul/19 18:56,4.1,4.2,4.3,,,,,,0,performance,"The following code snippets throw a NotSerializableException. It works well before commons-collections4 4.0 and commons-collection3. When I update it to 4.1 or newer versions, it failed.
+
+
+{code:java}
+	@Test
+	public void Demo() throws IOException{
+		InvokerTransformer transformer = new InvokerTransformer(""toString"", new Class[]{}, new Object[]{});
+        Queue priorityQueue = new PriorityQueue(2, new TransformingComparator(transformer));
+        priorityQueue.add(1);
+        
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bout);
+        out.writeObject(priorityQueue);
+		
+		}
+{code}
+",,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-07-24 03:20:46.377,,,false,,,,,,,,,,Important,,,,,,,,9223372036854775807,,,Wed Jul 24 18:57:00 UTC 2019,,,,,,,"0|z03suo:",9223372036854775807,,,,,,,,,,,,,,,,"24/Jul/19 03:20;oota;InvokerTransformerクラスから﻿﻿Serializableの実装を外したことが原因です。
+JavaDocコメントでは脆弱性対応のためとあります。","24/Jul/19 03:33;oota;The documents translated into English at the translation site are as follows:
+It is caused by removing the implementation of Serializable from the InvokerTransformer class.
+JavaDoc comments are for vulnerability support.","24/Jul/19 18:57;ggregory;Serializable was removed for -COLLECTIONS-580.-"
+"NullPointerExceptions in CompositeCollection, CompositeSet, and CompositeMap",COLLECTIONS-710,13212660,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Fixed,,sychelsea,sychelsea,29/Jan/19 22:00,09/Feb/19 23:01,23/Mar/20 17:29,09/Feb/19 23:01,4.2,,,4.4,Collection,Map,Set,,0,nullpointerexception,"If we first add a null element into CompositeCollection by CompositeCollection.addComposited(nullElement), projects will crash and throw java.lang.NullPointerException when we call CompositeCollection.size().
+
+For example, we have following code:
+
+ArrayList<String> nullList = null;
+CompositeCollection<String> cc = new CompositeCollection<String>(list);
+cc.addComposited(nullList);
+System.out.println(cc.size());
+
+ 
+
+We will get:
+
+{{Exception in thread ""main"" java.lang.NullPointerException}}
+at org.apache.commons.collections4.collection.CompositeCollection.size(CompositeCollection.java:103)
+
+ 
+
+Because in CompositeCollection.size(), it iterate all items in the Collection, call item.size() and sum up their size. If the item point to null, the program will crash.
+
+ 
+
+This bug also exists in other methods of CompositeCollection. Moreover, CompositeSet and CompositeMap have the same bug.","Windows 10
+
+Eclipse IDE for Java Developers     Version: 2018-09 (4.9.0)",,,,3600,3600,,0%,3600,3600,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-02-09 23:01:58.617,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sat Feb 09 23:01:58 UTC 2019,,,,,,,"0|yi0gfk:",9223372036854775807,,,,,,,,,,,,,,,,"09/Feb/19 23:01;ggregory;[~sychelsea],
+
+Thank you for your report.
+
+Fixes are in git master. Please verify and close. If there are still problems, please provide a PR on GitHub.
+
+Gary",,
+PatriciaTrie.subMap() does not return the expected outcome,COLLECTIONS-695,13184962,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Invalid,,kwin,kwin,13/Sep/18 17:29,09/Oct/18 10:05,23/Mar/20 17:29,09/Oct/18 10:05,4.2,,,,,,,,0,,"I use a {{PatriciaTrie}} to basically retrieve the entry whose key is the longest prefix of a requested key. 
+
+Now I do have a simple trie with only two entries:
+# {{""/"":<somevalue>}}
+# {{""/libs/cq/flow/widgets"":<someothervalue>""}}
+
+If I call {{subMap(""/"", ""/libs/cq/gui/components/authoring/dialog/""}} I would expect to only get back a map containing only entry 1. Instead I get back both entries. This happens primarily with those two specific keys. 
+
+According to the javadoc of {{PatriciaTrie}} 
+{quote}
+The Trie can return operations in lexicographical order using the 'prefixMap', 'submap', or 'iterator' methods. 
+{quote}
+(https://commons.apache.org/proper/commons-collections/apidocs/org/apache/commons/collections4/trie/PatriciaTrie.html) 
+therefore I assumed that according to the lexicographical order only the ""/"" entry should be contained in here.
+
+Is this a bug or am I misinterpreting the Javadoc?",,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Oct 09 10:05:41 UTC 2018,,,,,,,"0|i3y2gn:",9223372036854775807,,,,,,,,,,,,,,,,"09/Oct/18 10:05;kwin;To answer my own question: I was not correctly interpreting the order. Actually {{/libs/cq/gui/components/authoring/dialog/}} is lexicographically ordered after {{/libs/cq/flow/widgets}}, this is because the first different character at position 10 is in one case {{f}} and in the other case a {{g}}. Since the latter is lexicographically ordered after the former, the outcome is like this. So this is just a misinterpretation of the ordering.",,
+MultiSet.Entry::getCount() isn't 0 after removing the last element,COLLECTIONS-709,13210557,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,Fixed,,CasualSuperman,CasualSuperman,19/Jan/19 23:30,20/Jan/19 17:41,23/Mar/20 17:29,20/Jan/19 15:06,4.1,4.2,,4.3,,,,,0,,"Removing the final element(s) in a MultiSet doesn't set the count on a MultiSet.Entry to zero.
+{code:java}
+protected int getCountAfterRemoval(MultiSet<String> multiset) {
+  MultiSet.Entry<String> entry = multiset.entrySet().iterator().next();
+  entry.getCount(); // = 2
+  multiset.remove(entry.getElement());
+  entry.getCount(); // = 1
+  multiset.remove(entry.getElement());
+  return entry.getCount(); // Still = 1, should be 0
+}
+{code}",,"CasualSuperman commented on pull request #66: COLLECTIONS-709 Set Entry count to 0 after remove
+URL: https://github.com/apache/commons-collections/pull/66
+ 
+ 
+   After removing the last element of a MultiSet, the Entry doesn't have a count of 0. This makes the count accurate after removing the last item of a MultiSet.
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;19/Jan/19 23:34;githubbot;600","grimreaper commented on issue #66: COLLECTIONS-709 Set Entry count to 0 after remove
+URL: https://github.com/apache/commons-collections/pull/66#issuecomment-455824429
+ 
+ 
+   This seems reasonable to me.
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;19/Jan/19 23:40;githubbot;600","CasualSuperman commented on pull request #66: COLLECTIONS-709 Set Entry count to 0 after remove
+URL: https://github.com/apache/commons-collections/pull/66
+ 
+ 
+   
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;20/Jan/19 15:15;githubbot;600",,0,1800,,,0,1800,,,0.0,,,,,,,,,,,,,,,,,,,,2019-01-20 15:06:17.674,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sun Jan 20 17:41:14 UTC 2019,,,,,,,"0|yi03i8:",9223372036854775807,,,,,,,,,,,,,,,,"19/Jan/19 23:35;CasualSuperman;Pull request created with a fix: https://github.com/apache/commons-collections/pull/66","20/Jan/19 15:06;ggregory;In git master now. Please verify and close this ticket and the PR.","20/Jan/19 17:41;CasualSuperman;Just realized the commit message says COMMONS-706 instead of COMMONS-709. Not sure how important that is to fix."
+Link to Javadoc API broken,COLLECTIONS-689,13172571,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,Fixed,,Richard.Walker@ands.org.au,Richard.Walker@ands.org.au,17/Jul/18 06:51,18/Jul/18 23:53,23/Mar/20 17:29,17/Jul/18 16:08,4.2,,,4.3,Collection,,,,0,,"On the front page [https://commons.apache.org/proper/commons-collections/] in the Documentation section, the link to the Javadoc API for ""The current release 4.2"" is broken.",,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2018-07-17 16:08:10.635,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Wed Jul 18 23:53:03 UTC 2018,,,,,,,"0|i3vyo7:",9223372036854775807,,,,,,,,,,,,,,,,"17/Jul/18 16:08;ggregory;Thank you for your report. The live site has been patched. Please verify and close.","18/Jul/18 23:53;Richard.Walker@ands.org.au;(The link _was_ version-agnostic, i.e.: https://commons.apache.org/proper/commons-collections/javadocs/api-release/)
+
+I confirm that the new version-specific link does indeed work.
+
+ ",

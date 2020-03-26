@@ -1,0 +1,276 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Fix Version/s,Component/s,Due Date,Votes,Labels,Description,Environment,Original Estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Custom field (Affects version (Component)),Custom field (Attachment count),Custom field (Blog - New Blog Administrators),Custom field (Blog - New Blog PMC),Custom field (Blog - Write access),Custom field (Blog Administrator?),Custom field (Blogs - Admin for blog),Custom field (Blogs - Email Address),Custom field (Blogs - Existing Blog Access Level),Custom field (Blogs - Existing Blog Name),Custom field (Blogs - New Blog Write Access),Custom field (Blogs - Username),Custom field (Bug Category),Custom field (Bugzilla - Email Notification Address),Custom field (Bugzilla - List of usernames),Custom field (Bugzilla - PMC Name),Custom field (Bugzilla - Project Name),Custom field (Bugzilla Id),Custom field (Bugzilla Id),Custom field (Change Category),Custom field (Complexity),Custom field (Date of First Response),Custom field (Discovered By),Custom field (Docs Text),Custom field (Enable Automatic Patch Review),Custom field (Epic Link),Custom field (Estimated Complexity),Custom field (Evidence Of Open Source Adoption),Custom field (Evidence Of Registration),Custom field (Evidence Of Use On World Wide Web),Custom field (Existing GitBox Approval),Custom field (External issue ID),Custom field (External issue URL),Custom field (Fix version (Component)),Custom field (Git Notification Mailing List),Custom field (Git Repository Import Path),Custom field (Git Repository Name),Custom field (Git Repository Type),Custom field (GitHub Options),Custom field (Github Integration),Custom field (Github Integrations - Other),Custom field (Global Rank),Custom field (INFRA - Subversion Repository Path),Custom field (Initial Confluence Contributors),Custom field (Last public comment date),Custom field (Level of effort),Custom field (Machine Readable Info),Custom field (New-TLP-TLPName),Custom field (Priority),Custom field (Project),Custom field (Protected Branch),Custom field (Rank),Custom field (Rank (Obsolete)),Custom field (Review Date),Custom field (Reviewer),Custom field (Severity),Custom field (Severity),Custom field (Skill Level),Custom field (Skill Level),Custom field (Source Control Link),Custom field (Space Description),Custom field (Space Key),Custom field (Space Name),Custom field (Tags),Custom field (Test and Documentation Plan),Custom field (Testcase included),Custom field (Tester),Custom field (Workaround),Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment
+CollectionUtils.filter(..) broken with blank Collections.singleton,COLLECTIONS-756,13290427,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Not A Problem,,noname713705,noname713705,08/Mar/20 22:20,08/Mar/20 23:29,23/Mar/20 17:31,08/Mar/20 23:29,4.4,,Collection,,0,,"When using {{CollectionUtils.filter(..)}}, if the passed collection is initialized with jdk {{Collections.singleton(..)}} and only contains an {{isBlank(..)}} string, the method will throw an exception instead of removing blank item as expected. Tested with commons-collections:4.4 and java8.
+
+All can be resumed with
+{code:java}
+CollectionUtils.filter(Collections.singleton("" ""), StringUtils::isNotBlank); {code}",,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2020-03-08 23:29:18.17,,,false,,,,,,,,,,,,,,,,,9223372036854775807,,,Sun Mar 08 23:29:18 UTC 2020,,,,,,,"0|z0cb60:",9223372036854775807,,,,,,,,,,,,,,,,"08/Mar/20 22:21;noname713705;I have created a small github project to show the problem and expected behaviour. If unclear, please contact me.
+
+The project is here:
+
+[https://github.com/noname713705/commons-collections-test]","08/Mar/20 23:29;aherbert;From the Javadoc for {{Collections.singleton(T o)}}:
+
+{noformat}
+Returns an immutable set containing only the specified object.
+{noformat}
+
+If the set is immutable you cannot expect any function to be able to change it based on a filter.
+
+This will throw an exception:
+
+{code:java}
+Collections.singleton("""").clear();
+{code}
+
+So don't expect CollectionUtils to be able to remove the blank string.
+
+
+",,,,,,,,
+MultiKey.getKeys class cast exception,COLLECTIONS-747,13284335,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Fixed,ggregory,wlaan,wlaan,10/Feb/20 14:49,17/Feb/20 09:00,23/Mar/20 17:31,16/Feb/20 21:28,4.4,4.5,KeyValue,,0,,"When using an non-array constructor of MultiKey, an Object[] is created, which cannot be cast to a K[]
+{code}
+import org.apache.commons.collections4.keyvalue.MultiKey;
+
+public class MultiKeyClassCastException {
+
+    public static void main(String[] args) {
+        MultiKeyClassCastException key1 = new MultiKeyClassCastException();
+        MultiKeyClassCastException key2 = new MultiKeyClassCastException();
+        MultiKeyClassCastException[] keys = new MultiKey<>(key1, key2).getKeys();
+    }
+}
+
+// running gives (same error if in module):
+
+Exception in thread ""main"" java.lang.ClassCastException: class [Ljava.lang.Object; cannot be cast to class [LMultiKeyClassCastException; ([Ljava.lang.Object; is in module java.base of loader 'bootstrap'; [LMultiKeyClassCastException; is in unnamed module of loader 'app')
+	at MultiKeyClassCastException.main(MultiKeyClassCastException.java:8)
+{code}
+
+AFAIK, the only way to fix this (with source compatibility), is to only have a varargs constructors. but I think this breaks binary compatibility though and cannot be used with the existing constructors.
+{code}
+    @SafeVarargs
+    public MultiKey(K... keys) {
+        this.keys = keys;
+    }
+{code}
+
+Workaround is to use array constructor with correct typed array or {code}Object[] keys = multiKey.getKeys();{code} explicitly.",,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2020-02-11 07:29:21.292,,,false,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Feb 17 09:00:55 UTC 2020,,,,,,,"0|z0bbwg:",9223372036854775807,,,,,,,,,,,,,,,,"11/Feb/20 07:29;Guoping;Can you using it follow the JAVADoc ?
+
+[http://commons.apache.org/proper/commons-collections/apidocs/org/apache/commons/collections4/keyvalue/MultiKey.html]
+
+K[] getKeys()K[] getKeys()Gets a clone of the array of keys.","11/Feb/20 08:34;wlaan;No, you will need the actual array Class to make a copy. See java.util.ArrayList#toArray() which return Object[] and toArray(T[]) which creates a copy. Or you could use the class from a key value, but that won't work if all of them are null, which is not forbidden as far as I checked.
+
+For example, if want to keep the minimum of two keys, you have to do:
+{code:java}
+    @SafeVarargs
+    public MultiKey(K key1, K key2, K... keys) {
+        int length = keys.length + 2;
+        @SuppressWarnings(""unchecked"") // cast is correct because K[].getClass() is passed
+        K[] tmpKeys = (K[]) Arrays.copyOf(keys, keys.length + 2, keys.getClass());
+        for(int i = length - 1; i > 1; i--) {
+            tmpKeys[i] = tmpKeys[i - 2];
+        }
+        tmpKeys[0] = key1;
+        tmpKeys[1] = key2;
+
+        this.keys = tmpKeys;
+    }
+
+// which then allows null keys, though need to specify type instead of just diamond (<>)
+
+MultiKeyClassCastException[] keys = new MultiKey<>(key1, key2).getKeys();
+MultiKeyClassCastException[] keys2 = new MultiKey<>(key1, key2, key3).getKeys();
+MultiKeyClassCastException[] keys3 = new MultiKey<MultiKeyClassCastException>(null, null).getKeys();
+ {code}
+[https://stackoverflow.com/questions/529085/how-to-create-a-generic-array-in-java]
+ [https://softwareengineering.stackexchange.com/a/331109]","16/Feb/20 21:28;ggregory;[~wlaan],
+
+Please checkout git master and check that the fix works for you,
+
+Thank you!","17/Feb/20 09:00;wlaan;Thanks, works for me.
+
+The only issue is the all-null case, which maybe could have a warning in the javadoc of getKeys:
+@throws ClassCastException if all keys are {@code null}, and an {@link Object} array was constructed.
+MultiKeyMap does not use the method, so should be fine.
+
+Nitpicks:
+{code}
+// can add @SafeVarargs here
+    private static <T> Class<? extends T> getComponentType(final T... values) {
+
+
+assertNotNull(keys);
+// bit more comprehensive test would be
+assertEquals(new MultiKeyTest[] { key1, key2 }, keys);
+{code}",,,,,,
+JavaDoc for FixedSizeList should warn that modifying underlying list is still allowed and is not prevented,COLLECTIONS-697,13188930,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Fixed,,george.ranjan@gmail.com,george.ranjan@gmail.com,02/Oct/18 17:33,11/Jan/20 23:54,23/Mar/20 17:31,11/Jan/20 23:42,4.4,4.5,,,0,,"I just noticed that it is not explicitly mentioned in the JavaDoc that modifying the underlying list of a FixedSizeList would actually land up modifying the list of the constructed FixedSizeList.  Not sure if this was by design, but at the very list I think the JavaDoc should caution against this.
+
+Following is a test case that written that you could use to check this.
+
+{code:java}
+
+public void testAllowsMutationOfUnderlyingCollection() {
+
+ List<String> decoratedList = new ArrayList<>();
+ decoratedList.add(""item 1"");
+ decoratedList.add(""item 2"");
+ //
+ FixedSizeList<String> fixedSizeList = FixedSizeList.fixedSizeList(decoratedList);
+ int sizeBefore = fixedSizeList.size();
+ //
+ boolean changed = decoratedList.add(""New Value"");
+ Assert.assertTrue(changed);
+ //
+ Assert.assertEquals(""Modifying an the underlying list is allowed"", sizeBefore + 1, fixedSizeList.size());
+}
+
+{code}",,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2018-10-02 17:48:35.607,,,false,,,,,,,,,,,,,,,,,9223372036854775807,,,Sat Jan 11 23:53:41 UTC 2020,,,,,,,"0|i3yqvb:",9223372036854775807,,,,,,,,,,,,,,,,"02/Oct/18 17:48;githubbot;GitHub user george-ranjan opened a pull request:
+
+    https://github.com/apache/commons-collections/pull/55
+
+    COLLECTIONS-697 Added relevant JavaDoc and a test which proves
+
+    I just noticed that it is not explicitly mentioned in the JavaDoc that modifying the underlying list of a FixedSizeList would actually land up modifying the list of the constructed FixedSizeList. Not sure if this was by design, but at the very list I think the JavaDoc should caution against this.
+    
+    This Pull Request has the necessary updates to the JavaDoc and a test that proves the findings.
+    
+    NOTE: this is my first PR and I have tried to follow the guidelines.  Pleas let me know if I need to do anything more.  Thanks!
+
+You can merge this pull request into a Git repository by running:
+
+    $ git pull https://github.com/george-ranjan/commons-collections COLLECTIONS-697_FixedSizeList
+
+Alternatively you can review and apply these changes as the patch at:
+
+    https://github.com/apache/commons-collections/pull/55.patch
+
+To close this pull request, make a commit to your master/trunk branch
+with (at least) the following in the commit message:
+
+    This closes #55
+    
+----
+commit 1517ed304eef7737b7175a997d77cca384be8631
+Author: george-ranjan <george.ranjan@...>
+Date:   2018-10-02T17:44:07Z
+
+    COLLECTIONS-697 Added relevant JavaDoc and a test which proves
+
+----
+","02/Oct/18 17:48;githubbot;GitHub user george-ranjan opened a pull request:
+
+    https://github.com/apache/commons-collections/pull/55
+
+    COLLECTIONS-697 Added relevant JavaDoc and a test which proves
+
+    I just noticed that it is not explicitly mentioned in the JavaDoc that modifying the underlying list of a FixedSizeList would actually land up modifying the list of the constructed FixedSizeList. Not sure if this was by design, but at the very list I think the JavaDoc should caution against this.
+    
+    This Pull Request has the necessary updates to the JavaDoc and a test that proves the findings.
+    
+    NOTE: this is my first PR and I have tried to follow the guidelines.  Pleas let me know if I need to do anything more.  Thanks!
+
+You can merge this pull request into a Git repository by running:
+
+    $ git pull https://github.com/george-ranjan/commons-collections COLLECTIONS-697_FixedSizeList
+
+Alternatively you can review and apply these changes as the patch at:
+
+    https://github.com/apache/commons-collections/pull/55.patch
+
+To close this pull request, make a commit to your master/trunk branch
+with (at least) the following in the commit message:
+
+    This closes #55
+    
+----
+commit 1517ed304eef7737b7175a997d77cca384be8631
+Author: george-ranjan <george.ranjan@...>
+Date:   2018-10-02T17:44:07Z
+
+    COLLECTIONS-697 Added relevant JavaDoc and a test which proves
+
+----
+","03/Oct/18 10:51;githubbot;Github user grimreaper commented on a diff in the pull request:
+
+    https://github.com/apache/commons-collections/pull/55#discussion_r222264747
+  
+    --- Diff: src/main/java/org/apache/commons/collections4/list/FixedSizeList.java ---
+    @@ -31,6 +31,12 @@
+      * The add, remove, clear and retain operations are unsupported.
+      * The set method is allowed (as it doesn't change the list size).
+      * <p>
+    + * <p>
+    --- End diff --
+    
+    extra `<p>`
+","03/Oct/18 10:51;githubbot;Github user grimreaper commented on a diff in the pull request:
+
+    https://github.com/apache/commons-collections/pull/55#discussion_r222264719
+  
+    --- Diff: src/test/java/org/apache/commons/collections4/list/FixedSizeListTest.java ---
+    @@ -66,4 +68,20 @@ public String getCompatibilityVersion() {
+     //        writeExternalFormToDisk((java.io.Serializable) getCollection(), ""src/test/resources/data/test/FixedSizeList.fullCollection.version4.obj"");
+     //    }
+     
+    +
+    --- End diff --
+    
+    extra newline
+","03/Oct/18 17:09;githubbot;Github user george-ranjan commented on the issue:
+
+    https://github.com/apache/commons-collections/pull/55
+  
+    @grimreaper fixed & pushed.
+","03/Oct/18 17:27;githubbot;Github user grimreaper commented on the issue:
+
+    https://github.com/apache/commons-collections/pull/55
+  
+    cool. Now we're waiting for INFRA-17094. 
+","06/Oct/18 20:20;githubbot;Github user asfgit closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/55
+","06/Oct/18 20:20;githubbot;Github user asfgit closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/55
+","11/Jan/20 23:42;kinow;The PR [https://github.com/apache/commons-collections/pull/55] has been merged. Closing this one.","11/Jan/20 23:53;kinow;Added missing changes.xml entry in https://github.com/apache/commons-collections/commit/64420e34cc20b08d4386cfbfec5aaa3f49973c10"
+A potential misleading comment,COLLECTIONS-727,13251866,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Fixed,,xz-x,xz-x,20/Aug/19 15:20,23/Aug/19 20:17,23/Mar/20 17:31,23/Aug/19 20:15,4.4,4.5,Iterator,,0,JavaDoc,"I was wondering whether there's something wrong in the @throws IndexOutOfBoundsException condition for the `setIterator(final int index, final Iterator<? extends E> iterator)` method in the class `org.apache.commons.collections4.iterators.CollatingIterator<E>`.
+
+The method and its Javadoc comment are shown as follows.
+
+
+
+/**
+ * Sets the iterator at the given index.
+ *
+ * @param index index of the Iterator to replace
+ * @param iterator Iterator to place at the given index
+ * @throws IndexOutOfBoundsException if index &lt; 0 or index &gt; size()
+ * @throws IllegalStateException if iteration has started
+ * @throws NullPointerException if the iterator is null
+ */
+public void setIterator(final int index, final Iterator<? extends E> iterator) {
+    checkNotStarted();
+    if (iterator == null) {
+        throw new NullPointerException(""Iterator must not be null"");
+    }
+    iterators.set(index, iterator);
+}
+
+
+
+The boundary of the parameter index is marked as `index &lt; 0 or index &gt; size()`
+in the comment.
+Nevertheless, the `set(index, iterator)` method would throw an IndexOutOfBoundsException when the index is equal to `size()`. 
+So it would be better if we could change the boundary in the comment to `index &lt; 0 or index &gt;= size()`.
+",,300,300,,0%,300,300,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-08-21 23:50:13.26,,,false,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Aug 23 20:15:19 UTC 2019,,,,,,,"0|z05ubs:",9223372036854775807,,,,,,,,,,,,,,,,"21/Aug/19 23:50;ggregory;PR welcome on GitHub :)","23/Aug/19 20:15;ggregory;[~xz-x]
+In git master. Please verify and close.
+",,,,,,,,
+Signature of IteratorUtils.objectGraphIterator is wrong,COLLECTIONS-741,13273690,Bug,Open,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,,,hanspeterstoerr,hanspeterstoerr,10/Dec/19 19:30,10/Dec/19 20:12,23/Mar/20 17:31,,4.4,,,,0,,"With the current signature
+
+Iterator<E> objectGraphIterator(E root, Transformer<? super E,? extends E> transformer)
+
+it is impossible to create any other iterator than an Iterator<Object> since the signature for the transformer just doesn't fit. (This problem extends to the underlying [ObjectGraphIterator|https://commons.apache.org/proper/commons-collections/javadocs/api-4.4/org/apache/commons/collections4/iterators/ObjectGraphIterator.html], too.) In the [example from the javadoc|https://commons.apache.org/proper/commons-collections/javadocs/api-4.4/org/apache/commons/collections4/IteratorUtils.html#objectGraphIterator-E-org.apache.commons.collections4.Transformer-], you would want to return an Iterator<Leaf>, but the root is of type Forest (compare the full source in the [ObjectGraphIteratorTest|https://git-wip-us.apache.org/repos/asf?p=commons-collections.git;a=blob;f=src/test/java/org/apache/commons/collections4/iterators/ObjectGraphIteratorTest.java;h=caff4ed312400c2a9e397c55edff2a5839981a68;hb=HEAD] ), the transformer takes either Forest, Tree, Branch or Leaf as argument and returns Leaf or Iterators of Tree, Branch or Leaf. There just is no common bound for these types except Object. I'm afraid there is no way to get some type safety into this signature. So I suggest to just relax it to
+
+public static <E> Iterator<E> objectGraphIterator(final Object root, final Transformer<Object, Object> transformer)
+
+since Object is the bound for all those arguments, anyway. (In many cases you would have the root and the first type variable the same type E, but the second type variable of the transformer would have to allow for both E and Iterator<E>, and thus be Object. So I'm not sure whether it makes any sense to make any restriction here.)
+
+BTW: While that function has been useful for me, I'm a bit unhappy with it, anyway, since I see no acceptable way to use it to return all nodes of a tree, including the inner nodes, with it. At least not without serious hacks like wrapping the returned nodes in an Object[1] array and chain that to the children iterator.",,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,9223372036854775807,,,2019-12-10 19:30:57.0,,,,,,,"0|z09j88:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,

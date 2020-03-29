@@ -1,0 +1,1320 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Affects Version/s,Fix Version/s,Component/s,Due Date,Votes,Labels,Labels,Labels,Labels,Labels,Description,Environment,Log Work,Log Work,Original Estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Outward issue link (Reference),Attachment,Attachment,Attachment,Attachment,Custom field (Affects version (Component)),Custom field (Attachment count),Custom field (Blog - New Blog Administrators),Custom field (Blog - New Blog PMC),Custom field (Blog - Write access),Custom field (Blog Administrator?),Custom field (Blogs - Admin for blog),Custom field (Blogs - Email Address),Custom field (Blogs - Existing Blog Access Level),Custom field (Blogs - Existing Blog Name),Custom field (Blogs - New Blog Write Access),Custom field (Blogs - Username),Custom field (Bug Category),Custom field (Bugzilla - Email Notification Address),Custom field (Bugzilla - List of usernames),Custom field (Bugzilla - PMC Name),Custom field (Bugzilla - Project Name),Custom field (Bugzilla Id),Custom field (Bugzilla Id),Custom field (Change Category),Custom field (Complexity),Custom field (Date of First Response),Custom field (Discovered By),Custom field (Docs Text),Custom field (Enable Automatic Patch Review),Custom field (Epic Link),Custom field (Estimated Complexity),Custom field (Evidence Of Open Source Adoption),Custom field (Evidence Of Registration),Custom field (Evidence Of Use On World Wide Web),Custom field (Existing GitBox Approval),Custom field (External issue ID),Custom field (External issue URL),Custom field (Fix version (Component)),Custom field (Flags),Custom field (Flags),Custom field (Git Notification Mailing List),Custom field (Git Repository Import Path),Custom field (Git Repository Name),Custom field (Git Repository Type),Custom field (GitHub Options),Custom field (Github Integration),Custom field (Github Integrations - Other),Custom field (Global Rank),Custom field (INFRA - Subversion Repository Path),Custom field (Initial Confluence Contributors),Custom field (Last public comment date),Custom field (Level of effort),Custom field (Machine Readable Info),Custom field (New-TLP-TLPName),Custom field (Priority),Custom field (Project),Custom field (Protected Branch),Custom field (Rank),Custom field (Rank (Obsolete)),Custom field (Review Date),Custom field (Reviewer),Custom field (Severity),Custom field (Severity),Custom field (Skill Level),Custom field (Skill Level),Custom field (Source Control Link),Custom field (Space Description),Custom field (Space Key),Custom field (Space Name),Custom field (Tags),Custom field (Test and Documentation Plan),Custom field (Testcase included),Custom field (Tester),Custom field (Workaround),Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment
+SubnetUtils.SubnetInfo doesn't represent lowAddress and highAddress.,NET-679,13285812,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Critical,,,sshplendid,sshplendid,17/Feb/20 16:26,17/Feb/20 16:26,28/Mar/20 23:27,,3.6,,,,,,,0,,,,,," 
+
+This is my test case.
+
+CIDR '10.213.160.0/16' should be contain 10.213.0.0 and 10,213.255.255, but shouldn't.
+
+ 
+
+ 
+
+ 
+{code:java}
+// 코드 자리 표시자
+@Test
+void when16bitIsGiven_thenReturnTrue() {
+    // GIVEN
+    final String CIDR = ""10.213.160.0/16"";
+    SubnetInfo subnetInfo = new SubnetUtils(CIDR).getInfo();
+
+    final String[] givenIPs = {""10.213.0.0"", ""10.213.160.0"", ""10.213.255.255""};
+
+    // WHEN and THEN
+    assertThat(subnetInfo.getLowAddress()).isEqualTo(givenIPs[0]);
+    assertThat(subnetInfo.getHighAddress()).isEqualTo(givenIPs[2]);
+
+    Stream.of(givenIPs).forEach(ip -> {
+        assertThat(subnetInfo.isInRange(ip)).isTrue();
+    });
+}
+{code}
+ 
+
+ 
+{panel}
+CIDR to IP Range{panel}
+{panel}
+h3. Result
+||CIDR Range|10.213.160.0/16|
+||Netmask|255.255.0.0|
+||Wildcard Bits|0.0.255.255|
+||First IP|10.213.0.0|
+||Last IP|10.213.255.255|
+||Total Host|65536|
+{panel}
+ 
+
+I think we should care about 'SubnetInfo.low' and 'SubnetInfo.high'.
+{code:java}
+// 코드 자리 표시자
+    public final class SubnetInfo {        ...
+        private int low() {
+            return (isInclusiveHostCount() ? network() :
+                broadcastLong() - networkLong() > 1 ? network() + 1 : 0);
+        }        private int high() {
+            return (isInclusiveHostCount() ? broadcast() :
+                broadcastLong() - networkLong() > 1 ? broadcast() -1  : 0);
+        }        public boolean isInRange(int address) {
+            long addLong = address & UNSIGNED_INT_MASK;
+            long lowLong = low() & UNSIGNED_INT_MASK;
+            long highLong = high() & UNSIGNED_INT_MASK;
+            return addLong >= lowLong && addLong <= highLong;
+        }
+       ...
+    }
+{code}","JDK 1.8
+
+Gradle
+
+MacOS Mojave",,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,2020-02-17 16:26:10.0,,,,,,,"0|z0bl0o:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+using execPROT on FTPSClients with Proxy Settings removes Proxy Settings,NET-642,13087557,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Critical,,,DJGummikuh,DJGummikuh,17/Jul/17 12:13,27/Sep/19 09:01,28/Mar/20 23:28,,3.6,,,,,FTP,,1,,,,,,"In Reference to https://issues.apache.org/jira/browse/NET-578
+I'm trying to establish an FTPS Connection via a HTTP Proxy. The Control Connection is properly established, however the Moment I do execPROT the Proxy settings are resetted by call to setSocketFactory(new FTPSSocketFactory(context)); in FTPSClient.java:534.
+This causes FTPSClients with a call to execPROT to actually ignore the proxy settings and attempt to contact the FTPS Server directly for data connections.
+Since we are required to use PROT P this is currently blocking our feature for FTPS Connections via HTTP proxy.","Java 1.8.0_112
+Linux 64bit","markt-asf commented on pull request #27: [NET-642] Creating a unit-test that proves that execPROT resets the p…
+URL: https://github.com/apache/commons-net/pull/27
+ 
+ 
+   
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on to GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;01/May/19 20:43;githubbot;600","DJGummikuh commented on pull request #27: [NET-642] Creating a unit-test that proves that execPROT resets the p…
+URL: https://github.com/apache/commons-net/pull/27
+ 
+ 
+   …roxy settings on FTPS Clients.
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on to GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;02/May/19 09:04;githubbot;600",,0,1200,,,0,1200,,NET-637,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-08-10 20:44:57.481,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Sep 27 09:01:20 UTC 2019,,,,,,,"0|i3hldz:",9223372036854775807,,,,,,,,,,,,,,,,"10/Aug/17 10:12;DJGummikuh;Setting it to critical because we already have two customers now that can't switch from FTP to FTPS due to the need of going through a Proxy.","10/Aug/17 20:44;ggregory;Hi Johannes,
+
+Thank you for your report.
+
+Feel free to create a PR on GitHub with a unit test if you can.
+
+Gary","11/Aug/17 10:09;DJGummikuh;I have the unit test but how and to which branch should I create a PR for that?
+
+Edit: NVM, done. You have a Pull Request https://github.com/apache/commons-net/pull/27","28/Aug/17 09:17;DJGummikuh;Any thoughts on my PR?","18/Sep/17 15:02;DJGummikuh;*bump*","08/Feb/18 12:39;sebb;execPROT(""P"") calls setSocketFactory which clears the proxy variable.
+I don't know enough about this to determine whether execProt should always call setSocketFactory and/or whether setSocketFactory should clear the proxy.
+
+But an obvious work-round is to use:
+
+{code}
+Proxy p =client.getProxy(); // save ...
+client.execPROT(""P"");
+client.setProxy(p); // ... restore the proxy
+{code}
+
+Does that fix the issue?","08/Feb/18 13:24;DJGummikuh;No it doesn't because setProxy() resets the Socketfactory to a DefaultSocketFactory (which does not utilize TLS) - execPROT(""P"") earlier replaces the socket factory with a specific FTPSSocketFactory and initializes the SSL/TLS Context - all of which is lost when setProxy bluntly resets the socketfactory to default afterwards in your example.","08/Feb/18 13:45;sebb;I see.
+
+So what needs to be done then?
+I assume there is a good reason to clear the proxy in setSocketFactory, so dropping that might break some existing code.
+
+[It looks like there is an unrelated bug in execPROT - it calls initSslContext() (which sets context if necessary) after using context.
+If the code works in other situations I assume it is because the context has already been set up.]","08/Feb/18 14:15;sebb;Looks like NET-637 may be due to the same cause.
+
+It has a work-round which is to use system properties to define the SOCKS proxy.","08/Feb/18 15:02;DJGummikuh;The issue with the java way of using proxies is that it's totally cumbersome. The fact that commons-net has its own proxy management is basically one of the major selling points for us to keep using commons-net. We already have this proxy management for several other things but whenever we have alternative approaches we take them. Main issue is that especially with proxies that have authentication you can basically only have one set of credentials for any given proxy server at any given time.","08/Feb/18 16:23;sebb;Yes, I realise that.
+But it is still a potential work-round for some circumstances.
+And it also allows one to check that the code is otherwise working OK.","14/Dec/18 16:44;dsylaiev;Also have this issue. Can't use HTTP proxy for FTPS connection which require PROT P","14/Feb/19 14:59;arrowemorse;I have the exact same issue using HTTP Proxy. The failing combination is HTTP proxy +  Local Passive Mode + execPROT = P
+
+ 
+
+FTPSClient ftps;
+
+Proxy proxy = *new* Proxy(Type.*_HTTP_*, *new* InetSocketAddress(""<proxyhost>"", <proxyport>));
+
+ftps.setProxy(proxy);
+
+ftps.execPROT(""P"");
+
+ftps.enterLocalPassiveMode();
+
+ 
+
+I could not make the mentioned work around work (adding explicit System._setProperty_(""socksProxyPort"", ""<port>""); System._setProperty_(""socksProxyHost"" ,""<host>"");
+
+ Any suggested workaround?","26/Sep/19 16:58;madeyedexter;I am writing a fix for this. This issue has been open for too long and I think there should be a fix.","27/Sep/19 09:01;dsylaiev;[https://github.com/Talend/tdi-studio-se/tree/master/main/plugins/org.talend.designer.components.libs/libs_src/commons-net-ftps-proxy]
+
+ 
+
+Here's additional lib with fix for commons-net",,,,,,,,
+Apache Commons Net ftpClient.java changeWorkingDirectory() Function CRLF Injection Remote Command Execution,NET-670,13233587,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Critical,Not A Bug,,hurstd,hurstd,15/May/19 20:11,16/Jun/19 23:02,28/Mar/20 23:28,16/Jun/19 23:02,3.6,,,,3.7,FTP,,0,patch,,,,,"Per BlackDuck Hub VulnDB 171100
+
+Apache Commons Net contains a flaw in the changeWorkingDirectory() function in ftpClient.java that is triggered as user-supplied input is not properly sanitized. This may allow a remote attacker to use a newline character in a specially crafted string to execute arbitrary commands.
+
+ 
+
+ ",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-06-16 23:01:52.424,,,false,,,,,,,BlackDuck Hub VulnDB 171100,,,Important,Patch,,,,,,,,9223372036854775807,,,Sun Jun 16 23:01:52 UTC 2019,,,,,,,"0|z02qeo:",9223372036854775807,,,,,,,,,,,,,,,,"16/Jun/19 23:01;sebb;NET is intended as a low-level interface to various internet protocols.
+
+The caller application must validate user input before calling NET methods.",,,,,,,,,,,,,,,,,,,,,,
+SubnetUtils/SubnetInfo does not compute range for /32 subnet,NET-675,13270420,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,david tarr,david tarr,25/Nov/19 11:18,25/Nov/19 11:20,28/Mar/20 23:28,,3.6,,,,,,,0,,,,,,"If a SubnetUtils is created using a cidr notation of a single ip-address, the isInRange returns false for the ip-address.
+
+Example code:
+{code:java}
+String subnet = ""192.168.0.15/32"";
+
+SubnetUtils subnetUtils = new SubnetUtils(subnet);
+SubnetInfo info = subnetUtils.getInfo();
+log.debug(""{}"", info); // first and last ip-address are 0.0.0.0
+log.debug(""{}"", info.isInRange(""192.168.0.15"")); // false is returned, I would expect true
+log.debug(""{}"", subnetInfo.getAddress())); // the exact address is returned
+{code}",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Nov 25 11:20:40 UTC 2019,,,,,,,"0|z08z1s:",9223372036854775807,,,,,,,,,,,,,,,,"25/Nov/19 11:20;david tarr;I am not sure if this contributes to this Jira, but https://www.ipaddressguide.com/cidr does show the 'range' correctly.",,,,,,,,,,,,,,,,,,,,,,
+"SubnetUtils invalid address ""1.1.125.52/32""",NET-664,13212267,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Invalid,,fravigotti,fravigotti,28/Jan/19 16:20,04/May/19 11:01,28/Mar/20 23:28,04/May/19 11:01,3.6,,,,,,,0,,,,,,"during some work I've spotted an issue ( probably more addresses are affected, I've just spotted that ) 
+
+
+ val addr = ""1.1.125.52/32""
+ val subnetUtils = SubnetUtils(addr)
+ assertThat(subnetUtils.info.lowAddress).isEqualTo(""1.1.125.52"")
+----
+org.opentest4j.AssertionFailedError: 
+Expecting:
+ <""0.0.0.0"">
+to be equal to:
+ <""1.1.125.52"">
+but was not.
+Expected :1.1.125.52
+Actual :0.0.0.0
+ <",kotlin,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-05-04 11:01:18.366,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sat May 04 11:01:18 UTC 2019,,,,,,,"0|yi0e1s:",9223372036854775807,,,,,,,,,,,,,,,,"04/May/19 11:01;sebb;See:
+
+ 
+
+http://commons.apache.org/proper/commons-net/javadocs/api-3.6/org/apache/commons/net/util/SubnetUtils.SubnetInfo.html#getLowAddress()",,,,,,,,,,,,,,,,,,,,,,
+ALLO FTP Command for files >2GB,NET-646,13110682,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,basinilya,basinilya,19/Oct/17 14:25,04/May/19 10:07,28/Mar/20 23:28,04/May/19 10:07,3.6,,,,,FTP,,0,,,,,,The allo() and allocate() methods of FTPClient should be made deprecated and new versions should be added that accept a 64-bit size.,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-10-19 16:24:36.566,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sat May 04 10:07:26 UTC 2019,,,,,,,"0|i3lgsv:",9223372036854775807,,,,,,,,,,,,,,,,"19/Oct/17 16:24;sebb;Patches welcome","04/May/19 10:07;sebb;{color:#222222}commit 39f8fa7a1e8386edc05d924932733e{color}{color:#222222}a2f9b5fc6a{color}
+{color:#222222}AuthorDate: Sat May 4 11:05:53 2019 +0100{color}
+
+{color:#222222}    NET-646 ALLO FTP Command for files >2GB{color}
+{color:#222222}---{color}
+{color:#222222} src/changes/changes.xml                            |  3 ++{color}
+{color:#222222} src/main/java/org/apache/comm{color}{color:#222222}ons/net/ftp/FTP.java  | 40 ++++++++++++++++++++++{color}
+{color:#222222} .../java/org/apache/commons/n{color}{color:#222222}et/ftp/FTPClient.java | 37 ++++++++++++++++++++{color}
+{color:#222222} 3 files changed, 80 insertions(+){color}",,,,,,,,,,,,,,,,,,,,,
+Incorrect IP mask,NET-669,13228370,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Won't Fix,,alekseyivashin,alekseyivashin,16/Apr/19 15:37,16/Apr/19 16:01,28/Mar/20 23:28,16/Apr/19 16:01,3.6,,,,,,,0,,,,,,"Incorrect IP mask in SubnetUtils class.
+
+In existed implementation, IP addresses like ""256.256.256.256"" or ""999.999.999.999"" are passed through matcher.",Java 1.8,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,2019-04-16 15:37:37.0,,,,,,,"0|z01ubc:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Pure-FTP MLSD Answer is not interpreted correctly,NET-666,13216659,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,mcancomert,mcancomert,19/Feb/19 14:36,28/Feb/19 07:15,28/Mar/20 23:28,,3.6,,,,,FTP,,1,,,,,,"Hello,
+
+For our integration tests, we made an FTPS server setup with Pure-FTP.
+It is running with a self-signed TLS certificate in a docker container.
+
+With FileZilla, we can make a connection and see files or we can upload/download files.
+You can see the complete FileZilla communication logs in the FileZillaLog.txt
+The part related to MLSD is like following:
+-----
+Command: MLSD
+Trace: Trying to resume existing TLS session.
+Trace: TLS Handshake successful
+Trace: TLS Session resumed
+Trace: Protocol: TLS1.2, Key exchange: ECDHE-RSA, Cipher: CHACHA20-POLY1305, MAC: AEAD
+Trace: Hostname does not match certificate SANs
+Response: 150 Accepted data connection
+Response: 226-Options: -a -l 
+Response: 226 3 matches total
+Listing: type=cdir;sizd=30;modify=20190218135100;UNIX.mode=0755;UNIX.uid=1000;UNIX.gid=1000;unique=fd0eg103ba52; .
+Listing: type=pdir;sizd=40;modify=20190218134929;UNIX.mode=0755;UNIX.uid=1000;UNIX.gid=0;unique=fd0eg81323a; ..
+Listing: type=file;size=1002;modify=20190218135100;UNIX.mode=0644;UNIX.uid=1000;UNIX.gid=1000;unique=fd0eg103ba53; test-file.txt
+Status: Directory listing of ""/test"" successful
+----
+
+With Commons-Net I have written a small test class based on CCCTester
+The test file is available in ListFilesTester.java and complete logs in ListFilesLog.txt
+The part related to MLSD is like following:
+---
+COMMAND: PASV
+REPLY: 227 Entering Passive Mode (192,168,52,185,117,53)
+COMMAND: MLSD
+REPLY: 150 Accepted data connection
+org.apache.commons.net.ftp.FTPConnectionClosedException: Connection closed without indication.
+at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:324)
+at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:300)
+at org.apache.commons.net.ftp.FTP.getReply(FTP.java:732)
+at org.apache.commons.net.ftp.FTPClient.completePendingCommand(FTPClient.java:1857)
+at org.apache.commons.net.ftp.FTPClient.initiateMListParsing(FTPClient.java:3452)
+at org.apache.commons.net.ftp.FTPClient.mlistDir(FTPClient.java:2546)
+at org.apache.commons.net.ftp.FTPClient.mlistDir(FTPClient.java:2533)
+at org.apache.commons.net.ftp.parser.ListFilesTester.test(ListFilesTester.java:48)
+at org.apache.commons.net.ftp.parser.ListFilesTester.main(ListFilesTester.java:103)
+---
+
+Once we debug inside  __getReply method we can actually see 
+150 Accepted data connection
+message in ""_replyLines"" list but it is written in the list of previous answer lines. 
+Next call to _controlInput_.readLine(); results NULL in the ""line"" variable and exception is thrown.
+
+This issue seems also very similar to 
+https://issues.apache.org/jira/browse/NET-598
+
+It would be nice to make Pure-FTP working together with Commons-Net.
+It is used in one of the popular Docker Images for FTP Servers and it is useful for integration tests.
+Docker Image is available under:
+https://hub.docker.com/r/stilliard/pure-ftpd/
+",,,,,,,,,,,,,"19/Feb/19 14:29;mcancomert;FileZillaLog.txt;https://issues.apache.org/jira/secure/attachment/12959257/FileZillaLog.txt","19/Feb/19 14:29;mcancomert;ListFilesLog.txt;https://issues.apache.org/jira/secure/attachment/12959256/ListFilesLog.txt","19/Feb/19 14:29;mcancomert;ListFilesTester.java;https://issues.apache.org/jira/secure/attachment/12959255/ListFilesTester.java",,,3.0,,,,,,,,,,,,,,,,,,,,2019-02-28 07:15:49.022,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Feb 28 07:15:49 UTC 2019,,,,,,,"0|yi1500:",9223372036854775807,,,,,,,,,,,,,,,,"20/Feb/19 09:31;mcancomert;If I enable Trace Logging on FileZilla, there seems to be a communication between Server and FileZilla after reply code 150 is received.
+
+Command:	MLSD
+Trace:	CTransferSocket::OnConnect
+Trace:	CFtpControlSocket::OnReceive()
+Response:	150 Accepted data connection
+Trace:	CFtpRawTransferOpData::ParseResponse() in state 4
+Trace:	CControlSocket::SendNextCommand() --> I guess FileZilla sends something here.
+Trace:	CFtpRawTransferOpData::Send() in state 5
+Trace:	CTransferSocket::TransferEnd(1)
+Trace:	CFtpControlSocket::TransferEnd()
+Trace:	CFtpControlSocket::OnReceive()
+Response:	226-Options: -a -l 
+Response:	226 4 matches total
+","28/Feb/19 07:15;skin27;I also had error 150 when connecting to FileZilla Server over FTPS. I used Apache Camel as a client which uses Apache Commons Net FTP under the hood. The reason for the error code was because TLS session reuse.
+
+Short explanation:
+
+1) First a connection and handshake are done by the client over port 21.
+
+2) Secondly the data is send over another port.
+
+FileZilla by default expects that this is done from the same session/handshake. Commons Net make a new session. It was possible to turn that off in the FileZilla server TLS configuration. Then it worked. It would be better if Commons FTP could handle this scenario (or at least give some clear error message).
+
+For complete information:
+
+http://camel.465427.n5.nabble.com/FTPS-Handshake-error-td5829967.html",,,,,,,,,,,,,,,,,,,,,
+IMAP fails to quote/encode mailbox names,NET-614,13042604,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,sebb,sebb,13/Feb/17 16:27,05/Oct/18 19:40,28/Mar/20 23:28,05/Oct/18 19:40,3.6,,,,,IMAP,,0,,,,,,"Mailbox names need to be quoted if they contain spaces or double-quote.
+
+If they contain non-ASCII characters then they also need to be encoded [1]
+
+There may be other parameters that are not being encoded/quoted correctly.
+
+[1] https://tools.ietf.org/html/rfc3501#section-5.1.3",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Oct 05 19:40:52 UTC 2018,,,,,,,"0|i3a027:",9223372036854775807,,,,,,,,,,,,,,,,"14/Feb/17 17:28;sebb;Also note that double-quotes and backslash need to be escaped in quoted strings. [2]
+
+Care must be taken when fixing this to avoid breaking applications that don't expect NET to adjust the parameter, and which therefore do the quoting/encoding themselves.
+
+The simplest might be to provide a separate method for processing the mailbox name which applications need to call before passing the name to a method that takes a mailbox name parameter.
+
+However this would be awkard to use, so the code can perhaps be updated to do the processing automatically, at least common cases.
+
+If the input string is not enclosed in quotes, then clearly it has not been quoted, and so it is safe to do so if neccesary.
+Likewise if the input contains non-ASCII characters it cannot have been encoded.
+
+However in general it's not possible to determine if a string has been encoded and/or quoted.
+This is because the process of quoting and encoding generates a string which passes the tests for a valid mailbox name.
+
+[2] https://tools.ietf.org/html/rfc2683#section-3.4.2","05/Oct/18 19:40;sebb;URL: http://svn.apache.org/viewvc?rev=1842969&view=rev
+Log:
+NET-614 IMAP fails to quote/encode mailbox names...
+
+URL: http://svn.apache.org/viewvc?rev=1842972&view=rev
+Log:
+NET-614 IMAP fails to quote/encode mailbox names
+More commands with mailbox name parameters",,,,,,,,,,,,,,,,,,,,,
+FTPSClient hang java.net.SocketInputStream.socketRead0 while doing SSL Handshake - Socket timeout not set,NET-661,13165402,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,danalain,danalain,11/Jun/18 19:49,11/Jun/18 19:54,28/Mar/20 23:28,,3.6,,,,,FTP,,0,hang,implicit,socketRead0,SocketTimeout,ssl,"In a lab with unstable connection we have our FTP client hanging forever (e.g. 36 hours -> base on our linux kernel configuration)
+{quote}java.lang.Thread.State: RUNNABLE
+ at java.net.SocketInputStream.socketRead0(Native Method)
+ at java.net.SocketInputStream.socketRead(SocketInputStream.java:116)
+ at java.net.SocketInputStream.read(SocketInputStream.java:171)
+ at java.net.SocketInputStream.read(SocketInputStream.java:141)
+ at sun.security.ssl.InputRecord.readFully(InputRecord.java:465)
+ at sun.security.ssl.InputRecord.read(InputRecord.java:503)
+ at sun.security.ssl.SSLSocketImpl.readRecord(SSLSocketImpl.java:983)
+ locked <0x00000000ae243608> (a java.lang.Object)
+ at sun.security.ssl.SSLSocketImpl.performInitialHandshake(SSLSocketImpl.java:1385)
+ locked <0x00000000ae243620> (a java.lang.Object)
+ at sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:1413)
+ at sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:1397)
+ at org.apache.commons.net.ftp.FTPSClient.sslNegotiation(FTPSClient.java:289)
+ at org.apache.commons.net.ftp.FTPSClient.connectAction(FTPSClient.java:220)
+ at org.apache.commons.net.SocketClient._connect(SocketClient.java:244)
+ at org.apache.commons.net.SocketClient.connect(SocketClient.java:202)
+...
+{quote}
+our code
+{quote}final FTPSClient client = new FTPSClient(""TLSv1.2"", true);
+ // load the trust store& key store 
+ client.setDataTimeout(1000);
+ client.setControlKeepAliveReplyTimeout(1000);
+ client.setControlKeepAliveTimeout(1000);
+ client.setDefaultTimeout(1000);
+ client.setConnectTimeout(1000);
+ client.connect(host, port); // hang randomly
+ client.setSoLinger(true, 10); // cannot be call before, socket is null 
+ reply = client.getReplyCode();
+{quote}
+After looking at the FTP, FTPSClient code and reading on internet I realize that in the case of an implicit connection the Socket is initialized with So timeout of 0 because ""_connectAction_()"" is overwritten
+
+*Socket.java*
+{quote}protected void _connectAction_() throws IOException
+     *_socket_.setSoTimeout(_timeout_);*
+     _input_ = _socket_.getInputStream(); 
+     _output_ = _socket_.getOutputStream(); }
+{quote}
+*FTPSClient.java*
+{quote}@Override
+
+protected void _connectAction_() throws IOException {
+
+    // Implicit mode.
+      if (isImplicit) {
+          *sslNegotiation();* {color:#ff0000}// hangs at java.net.SocketInputStream.socketRead0(Native Method){color}
+      }
+      super._connectAction_(); *{color:#ff0000}// setSoTimeout will be set here - but too late{color}*
+      // Explicit mode.
+      if (!isImplicit)
+ Unknown macro: \{        execAUTH();      }
+ }
+{quote}
+So *workaround* for now is to overwrite FTPSClient-> _connectAction_()
+{quote}new FTPSClient(...)
+
+{
+ @Override 
+ protected void _connectAction_() throws IOException  
+Unknown macro: \{        _socket_.setSoTimeout(_timeout_);     super._connectAction_(); }
+};
+{quote}","Apache NET 3.6
+
+ 
+
+#uname -a
+
+Linux myhost 2.6.32-696.23.1.el6.x86_64 #1 SMP Sat Feb 10 11:10:31 EST 2018 x86_64 x86_64 x86_64 GNU/Linux
+
+
+# java -version
+
+openjdk version ""1.8.0_171""
+
+OpenJDK Runtime Environment (build 1.8.0_171-b10)
+
+OpenJDK 64-Bit Server VM (build 25.171-b10, mixed mode)
+
+ 
+
+ ",,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,2018-06-11 19:49:48.0,,,,,,,"0|i3uqq7:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+FTPClient.retrieveFile hang due to data connection failure,NET-658,13142053,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Not A Bug,,newhill,newhill,02/Mar/18 09:37,05/Mar/18 05:46,28/Mar/20 23:28,05/Mar/18 05:45,3.6,,,,,FTP,,0,,,,,,"When retrieving files from FTP server, the client will open a data connection with an in-use port and failed in server, but the client hung in this function(no error, no exception, even the connection is closed due to timeout by server). This will occur after successfully getting hundreds of files (I have more than 4000 small files to be transferred, it will fail after 100+ or 300+ or 400+ files. It always fail to FTP 4000 small files.)","Server:
+
+FileZilla Server 0.9.60 beta
+
+windows 10 x64
+
+ 
+
+Client:
+
+Linux 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+
+java 1.8.0_11
+
+ 
+
+ ",,,,,,,,,,,,"02/Mar/18 09:20;newhill;2018-3-2 17-02-57.png;https://issues.apache.org/jira/secure/attachment/12912762/2018-3-2+17-02-57.png",,,,,1.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Mar 05 05:46:13 UTC 2018,,,,,,,"0|i3qsdj:",9223372036854775807,,,,,,,,,,,,,,,,"05/Mar/18 05:45;newhill;I inspected the codes and found that there is a method which can set port range to avoid this. Sorry!","05/Mar/18 05:46;newhill;This is not a bug, misreported.",,,,,,,,,,,,,,,,,,,,,
+NPE when closing telnet stream,NET-643,13097587,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,einmalfel,einmalfel,25/Aug/17 12:23,08/Feb/18 11:58,28/Mar/20 23:28,08/Feb/18 11:58,3.6,,,,3.7,Telnet,,0,,,,,,"our code:
+{code:java}
+try {
+            TelnetClient telnetClient = new TelnetClient();
+            telnetClient.connect(address, port);
+            mInput = new BufferedInputStream(telnetClient.getInputStream());
+            mOutput = new PrintStream(telnetClient.getOutputStream());
+            BufferedReader br = new BufferedReader(new InputStreamReader(this.mInput));
+            ... some IO on streams ...
+} catch (IOException e) {
+            if (Dbg.DEBUG) {
+                Dbg.d(TAG, ""telnet exception "" + Dbg.getStackTraceString(e));
+            }
+            return false;
+} finally {
+            try {
+                  if (mInput != null) mInput.close();
+                  if (mOutput != null) mOutput.close();
+            } catch (IOException ignored) {}
+}
+{code}","Observed in Android application. Some people encountered similar NPE on desktop years ago:
+https://bugs.eclipse.org/bugs/show_bug.cgi?id=395149",,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-08-25 15:15:28.552,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Feb 08 11:58:40 UTC 2018,,,,,,,"0|i3jabz:",9223372036854775807,,,,,,,,,,,,,,,,"25/Aug/17 15:15;ggregory;May you please post the NPE?","25/Aug/17 15:30;einmalfel;Sorry, should have attach it initially:
+
+java.lang.NullPointerException:
+at org.apache.commons.net.telnet.TelnetClient._flushOutputStream (Unknown Source)
+at org.apache.commons.net.telnet.TelnetOutputStream.flush (Unknown Source)
+at java.io.PrintStream.flush (PrintStream.java:257)
+at java.io.PrintStream.close (PrintStream.java:237)","08/Feb/18 11:50;sebb;It looks like the stream has been closed (or has not yet been opened).
+It should not give NPE, instead it should raise IOException(""Stream closed"")
+
+Also, close() should be idempotent.","08/Feb/18 11:58;sebb;URL: http://svn.apache.org/viewvc?rev=1823550&view=rev
+Log:
+NET-643 NPE when closing telnet stream
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/telnet/TelnetClient.java
+",,,,,,,,,,,,,,,,,,,
+Strict CRLF handling in Commons-NET FTP breaks compatibility with some FTP servers,NET-620,13047689,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Abandoned,,Unsta,Unsta,02/Mar/17 14:24,08/Feb/18 11:13,28/Mar/20 23:28,08/Feb/18 11:13,3.3,3.4,3.5,3.6,,FTP,,0,,,,,,"The fix for FTP.java in NET-401 to switch from using BufferedReader to CRLFLineReader breaks the ability to connect to servers that have varying LF and CRLF line termination in the banner.
+
+I've run into 2 different cases with slightly different banner configs, one where you end up hung indefinitely by not reading far enough (this is the sigquit from when it is hung):
+
+1. Thread=FTP Provider Protocol Provider Thread: class com.xxxx.xxxxx.xxx (00007F35A1AF4A00) Status=Running
+       at java/net/SocketInputStream.socketRead0(Ljava/io/FileDescriptor;[BIII)I (Native Method)
+       at java/net/SocketInputStream.read([BIII)I (SocketInputStream.java:164) (Compiled Code)
+       at java/net/SocketInputStream.read([BII)I (SocketInputStream.java:134) (Compiled Code)
+       at sun/nio/cs/StreamDecoder.readBytes()I (StreamDecoder.java:323) (Compiled Code)
+       at sun/nio/cs/StreamDecoder.implRead([CII)I (StreamDecoder.java:365) (Compiled Code)
+       at sun/nio/cs/StreamDecoder.read([CII)I (StreamDecoder.java:211) (Compiled Code)
+       at java/io/InputStreamReader.read([CII)I (InputStreamReader.java:206) (Compiled Code)
+       at java/io/BufferedReader.fill()V (BufferedReader.java:166) (Compiled Code)
+       at java/io/BufferedReader.read()I (BufferedReader.java:187) (Compiled Code)
+       at org/apache/commons/net/io/CRLFLineReader.readLine()Ljava/lang/String; (CRLFLineReader.java:58)
+       at org/apache/commons/net/ftp/FTP.__getReply(Z)V (FTP.java:357)
+       at org/apache/commons/net/ftp/FTP.__getReply()V (FTP.java:300)
+       at org/apache/commons/net/ftp/FTP._connectAction_(Ljava/io/Reader;)V (FTP.java:438)
+       at org/apache/commons/net/ftp/FTPClient._connectAction_(Ljava/io/Reader;)V (FTPClient.java:962)
+       at org/apache/commons/net/ftp/FTPClient._connectAction_()V (FTPClient.java:950)
+       at org/apache/commons/net/SocketClient._connect(Ljava/net/InetAddress;ILjava/net/InetAddress;I)V (SocketClient.java:244)
+       at org/apache/commons/net/SocketClient.connect(Ljava/net/InetAddress;I)V (SocketClient.java:181)
+
+
+2. And one where you error out by reading too far and getting a null back:
+
+Caused by:
+org.apache.commons.net.ftp.FTPConnectionClosedException: Connection closed without indication.
+    at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:317)
+    at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:294)
+    at org.apache.commons.net.ftp.FTP.sendCommand(FTP.java:483)
+    at org.apache.commons.net.ftp.FTP.sendCommand(FTP.java:608)
+    at org.apache.commons.net.ftp.FTP.user(FTP.java:753)
+    at org.apache.commons.net.ftp.FTPClient.login(FTPClient.java:1034)
+
+I do have hex data available to show the source data, but the end result is there's a mix of 0d0a (CRLF) and 0a (LF) termination in the FTP banner (220-)
+
+I can modify the library to undo the NET-401 change, but ideally it'd be nice to have a strictNewline type of setting you could set on the FTPClient object to decide if you want to be ultra-strict, or ultra compatible. I will be filing a defect with Cisco about this as well, but it would be great if the FTPClient had the option to handle it instead of forced compatibility with no options to relax it.
+
+This is kind of hinted at in one of the comments on NET-402 by Bogdan Drozdowski on 12/Apr/11
+""So, on one hand, we stop supporting non-conforming servers (which could mean that we're supporting less servers now), but on the other hand we're fixing a bug that someone has found in a real-life system.""
+
+Giving users the option to relax the conformity requirements (but strict by default) would allow the end user to choose the option.
+
+Any thoughts on this?",Java RHEL Linux,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-03-02 15:16:51.615,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Apr 04 13:09:59 UTC 2017,,,,,,,"0|i3aus7:",9223372036854775807,,,,,,,,,,,,,,,,"02/Mar/17 15:16;sebb;The proper fix for this is for servers to abide by the RFC and send CRLF as the line terminator.
+
+Reverting NET-401 may cause problems with well-behaved servers so is not acceptable.
+
+An option to allow less strict behaviour might be feasible.
+However this will have to be carefully done to ensure EOL is not detected incorrectly.
+
+===
+
+It looks as though it might be possible to override 
+protected void _connectAction_()
+and have it call
+protected void _connectAction_(Reader)
+
+where the Reader is defined as
+new InputStreamReaderFixEOL(_input_, getControlEncoding())
+
+InputStreamReaderFixEOL would have to convert bare LF to CRLF
+This could probably be derived from ToNetASCIIInputStream
+
+The net result would be that the CRLF reader would only see CRLFs
+","02/Mar/17 19:49;Unsta;So I was hoping originally to be able to just use the library as-is and extend FTPClient in my code and override _connectAction_ but to recreate it and use a different reader as it is I couldn't as __initDefaults() and  __autodetectEncoding are both private and not accessible by subclasses. Maybe I'm just missing something here but it doesn't seem possible with the current code.
+
+(from commons-net-3.3)
+
+{noformat}
+    protected void _connectAction_() throws IOException
+    {
+        super._connectAction_(); // sets up _input_ and _output_
+        __initDefaults();
+        // must be after super._connectAction_(), because otherwise we get an
+        // Exception claiming we're not connected
+        if ( __autodetectEncoding )
+        {
+            ArrayList<String> oldReplyLines = new ArrayList<String> (_replyLines);
+            int oldReplyCode = _replyCode;
+            if ( hasFeature(""UTF8"") || hasFeature(""UTF-8"")) // UTF8 appears to be the default
+            {
+                 setControlEncoding(""UTF-8"");
+                 _controlInput_ =
+                     new BufferedReader(new InputStreamReader(_input_, getControlEncoding())); //Changed from CRLFLineReader for my purposes
+                 _controlOutput_ =
+                    new BufferedWriter(new OutputStreamWriter(_output_, getControlEncoding()));
+            }
+            // restore the original reply (server greeting)
+            _replyLines.clear();
+            _replyLines.addAll(oldReplyLines);
+            _replyCode = oldReplyCode;
+        }
+    }
+{noformat}
+At least then I can choose to use the BufferedReader instead and deal with whatever issues I hit.
+
+So I'm 100% not saying the CRLFLineReader should be reverted, I'm asking if we can look at a way of having the strictness be optional. Even restructuring to allow someone to override a method that lets you pass in your reader would suffice but a property that allows you to toggle it would certainly be more user-friendly similar to what setStrictMultilineParsing(boolean strictMultilineParsing) allows you to do currently.","02/Mar/17 21:52;sebb;Code it as follows:
+
+{code}
+    protected void _connectAction_() throws IOException
+    {
+        _connectAction_(new InputStreamReaderFixEOL(input, getControlEncoding()));
+    }
+{code}
+
+No need to rewrite the method, just provide a Reader that adds CRs as necessary.","02/Mar/17 23:06;Unsta;This would still require modifying the commons-net library though would it not? If I have to modify commons-net for my own purposes I've certainly got lots of options but ideally if I could extend a class in my own code and override a method to make it work then I *should* be able to drop any future version of commons-net in without modification (unless something major changes).
+
+So am I missing something here? Just want to make sure the above change would still require a modified version of the current (or 3.3 in my case) release.
+
+If there's no way to extend and override in the currently released code I'll need to ship a modified version with our production code and maintain that while we work to get functionality added to the released version (by contribution or helping in some way).
+
+I appreciate the assistance and the quick response, many thanks!
+
+
+
+","02/Mar/17 23:24;sebb;You should be able to subclass FTPClient and override the method.
+No need to edit the code.
+
+BTW 3.6 was released recently and my suggestion is based on the current code, but I don't think that area has changed much.","02/Mar/17 23:34;Unsta;Aha moment... 3.6 has this method:
+
+{noformat}
+    protected void _connectAction_(Reader socketIsReader) throws IOException
+{noformat}
+
+3.3 does not.
+
+I'll go down that road and since it's available now you might as well close this issue out unless you think you'd like to make it easier for someone to toggle this behaviour via a property (like strictReplyParsing and strictMultilineParsing). It'd certainly be nice to be able to just call a method on the FTPClient object and toggle it!
+
+Thanks again for the help Sebb and I'll post back here with a success/fail.
+
+-Chris","03/Mar/17 00:43;Unsta;So rather than bothering with an extra class in my code I'm just going to handle it like this:
+
+{noformat}
+public class FTPClient extends org.apache.commons.net.ftp.FTPClient
+{
+    /**
+     * Overridden version of org.apache.commons.net.ftp.FTPClient to convert all
+     * line termination to CRLF regardless of source for compatibility with non-conforming
+     * FTP servers.
+     */
+    @Override
+    protected void _connectAction_() throws IOException
+    {
+    	ToNetASCIIInputStream toNetAsciiIs = new ToNetASCIIInputStream(_input_);
+    	InputStreamReader isr = new InputStreamReader(toNetAsciiIs, getControlEncoding());
+    	_connectAction_(isr);
+    }	
+}
+
+{noformat}
+
+This should handle it in-line, I'll give this a go later and see how I make out. Thanks for the tip and hopefully the *very* useful referral to ToNetASCIIInputStream.","03/Mar/17 03:36;Unsta;Well it definitely used it upon connection, but gets an NPE on the reader.
+
+{noformat}
+java.lang.NullPointerException
+   at org.apache.commons.net.io.ToNetASCIIInputStream.available(ToNetASCIIInputStream.java:177)
+   at org.apache.commons.net.io.ToNetASCIIInputStream.read(ToNetASCIIInputStream.java:139)
+   at sun.nio.cs.StreamDecoder.readBytes(StreamDecoder.java:323)
+   at sun.nio.cs.StreamDecoder.implRead(StreamDecoder.java:365)
+   at sun.nio.cs.StreamDecoder.read(StreamDecoder.java:211)
+   at java.io.InputStreamReader.read(InputStreamReader.java:206)
+   at java.io.BufferedReader.fill(BufferedReader.java:166)
+   at java.io.BufferedReader.read(BufferedReader.java:187)
+   at org.apache.commons.net.io.CRLFLineReader.readLine(CRLFLineReader.java:58)
+   at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:321)
+   at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:300)
+   at org.apache.commons.net.ftp.FTP._connectAction_(FTP.java:438)
+   at org.apache.commons.net.ftp.FTPClient._connectAction_(FTPClient.java:962)
+   at com.q1labs.semsources.sources.remote.transferprotocol.ftp.FTPClient._connectAction_(FTPClient.java:28)
+   at org.apache.commons.net.SocketClient._connect(SocketClient.java:244)
+   at org.apache.commons.net.SocketClient.connect(SocketClient.java:181)
+{noformat}
+
+ToNetASCIIInputStream.java:177 is 
+{noformat}
+        result = in.available();
+{noformat}
+
+Having a look through though \_input\_ is initialized in SocketClient \_connectAction\_ which is called by FTP.java \_connectAction\_ which is called by FTPClient.java \_connectAction\_ so it presumably should be populated.
+
+So the inputStream must be null at that point, but I'll have to remote debug it to dig further.","03/Mar/17 13:17;Unsta;Ok, so it appears that the breaking up of \_connectAction\_() and \_connectAction\_(Reader reader) was done to re-use existing readers when possible instead of creating new ones, but doesn't allow you do define your own reader and pass it in.
+
+This appears to be due to \_input\_ not being initialized until SocketClient.\_connectAction\_ is called through the chain mentioned in the previous comment. I thought that maybe ToNetASCIIInputStream might get \_input\_ initialized if the inputstream was passed by reference but it doesn't appear to. Through remote debugging I can clearly see that when the reader is passed in FTP.\_\_getReply:321 is definitely working on a null InputStream within the InputStreamReader. If I reformat FTPClient.\_connectAction\_ like this for testing purposes everything works fine including the newlines getting fixed:
+
+{noformat}
+    protected void _connectAction_(Reader socketIsReader) throws IOException {
+        super._connectAction_(); // sets up _input_ and _output_
+        if(socketIsReader == null) {
+            _controlInput_ =
+                    new CRLFLineReader(new InputStreamReader(new ToNetASCIIInputStream(_input_), getControlEncoding()));
+        } else {
+            _controlInput_ = new CRLFLineReader(socketIsReader);
+        }
+{noformat}
+
+This shows that wrapping the InputStream in ToNetASCIIInputStream does in fact fix my issue, so maybe I'm back to making a strictNewlineProcessing option that can be set and create the reader accordingly.
+
+Looking at these results and how things are organized and where initializations happen does this Null InputStream make sense to you as well Sebb?","13/Mar/17 11:51;Unsta;Does anyone have any other ideas or am I best to work out a solution that allows configuration on which reader to use based on a parameter and then submit a patch for consideration?","04/Apr/17 13:09;Unsta;If there's no other methods to extend or override that have visibility into the variables/methods needed then I'll have to move forward with putting in a submission to allow the strict CR/LF handling to be a parameter that can be toggled by the client.",,,,,,,,,,,,
+IMAPClient over proxy doesn't properly resolve DNS,NET-650,13130321,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,msm,msm,11/Jan/18 21:02,29/Jan/18 20:00,28/Mar/20 23:28,,3.6,,,,,IMAP,,0,,,,,,"IMAPClient when configured to use a socks proxy is not able to resolve DNS names through the proxy.
+
+
+See attached sample code, if I use it with:
+
+{noformat}
+$ java -DsocksProxyHost=localhost -DsocksProxyPort=16003 -cp .:./commons-net-3.6.jar imapproxy imap.server.test.com user1 userpass
+connect error: java.net.UnknownHostException: imap.server.test.com: unknown error
+{noformat}
+
+vs if I use it with the appropriate IP:
+
+{noformat}
+$ java -DsocksProxyHost=localhost -DsocksProxyPort=16003 -cp .:./commons-net-3.6.jar imapproxy 10.250.3.127 user1 userpass
+* OK IMAP4rev1 proxy server ready
+IMAP: 10.250.3.127 143
+AAAA LOGIN *******
+AAAA OK [CAPABILITY IMAP4rev1 ACL BINARY CATENATE CHILDREN CONDSTORE ENABLE ESEARCH ESORT I18NLEVEL=1 ID IDLE LIST-EXTENDED LIST-STATUS LITERAL+ LOGIN-REFERRALS MULTIAPPEND NAMESPACE QRESYNC QUOTA RIGHTS=ektx SASL-IR SEARCHRES SORT THREAD=ORDEREDSUBJECT UIDPLUS UNSELECT WITHIN XLIST] LOGIN completed
+AAAB LOGOUT
+* BYE 10.250.3.127 Zimbra IMAP4rev1 server closing connection
+AAAB OK LOGOUT completed
+{noformat}",,,,,,,,,,,,,"11/Jan/18 21:02;msm;imapproxy.java;https://issues.apache.org/jira/secure/attachment/12905744/imapproxy.java","26/Jan/18 22:22;sebb;imapproxy2.java;https://issues.apache.org/jira/secure/attachment/12907945/imapproxy2.java","12/Jan/18 02:52;msm;socketproxy.java;https://issues.apache.org/jira/secure/attachment/12905790/socketproxy.java",,,3.0,,,,,,,,,,,,,,,,,,,,2018-01-12 00:28:03.982,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 29 20:00:06 UTC 2018,,,,,,,"0|i3othr:",9223372036854775807,,,,,,,,,,,,,,,,"12/Jan/18 00:28;sebb;Any suggestions for a patch?","12/Jan/18 02:52;msm;Well this is the details of the exception:
+
+{noformat}
+java.net.UnknownHostException: imap.server.test.com
+	at java.net.InetAddress.getAllByName0(InetAddress.java:1280)
+	at java.net.InetAddress.getAllByName(InetAddress.java:1192)
+	at java.net.InetAddress.getAllByName(InetAddress.java:1126)
+	at java.net.InetAddress.getByName(InetAddress.java:1076)
+	at org.apache.commons.net.SocketClient.connect(SocketClient.java:202)
+	at imapproxy.main(imapproxy.java:45)
+{noformat}
+
+So it looks like your connect code calls InetAddress directly to resolve the name which will happen on the server that code is run from. Which is not what we need.
+
+I have attached a new program that works at a socket level in both cases:
+
+{noformat}
+$ java -DsocksProxyHost=localhost -DsocksProxyPort=16003 -cp .:./commons-net-3.6.jar socketproxy imap.server.test.com user1 userpass
+* OK IMAP4rev1 proxy server ready
+$ java -DsocksProxyHost=localhost -DsocksProxyPort=16003 -cp .:./commons-net-3.6.jar socketproxy 10.250.3.127 user1 userpass
+* OK IMAP4rev1 proxy server ready
+{noformat}
+
+Let me know if that doesn't help I'm not going to have time to work out a patch but hopefully the above should turn into a simple replacement in the appropriate place.
+","26/Jan/18 20:15;sebb;I don't have any way of testing this.
+
+However if you say that socketproxy.java works, this suggests that InetSocketAddress must be getting the host info over the proxy.
+ In which case it should be possible to apply the same fix to imapprox.java
+
+ 
+
+i.e. replace
+{code:java}
+ic.connect(iserver,Integer.parseInt(iport));
+{code}
+with
+{code:java}
+ic.connect(InetSocketAddress(iserver, Integer.parseInt(iport)));
+{code}
+
+Does that work for you?","26/Jan/18 21:47;msm;See the API for the socket connect http://commons.apache.org/proper/commons-net/apidocs/org/apache/commons/net/SocketClient.html#connect it doesn't support what you suggest.
+ 
+{code}
+$ javac -cp ./commons-net-3.6.jar imapproxy.java 
+imapproxy.java:44: error: no suitable method found for connect(InetSocketAddress)
+      ic.connect(rip);
+        ^
+    method SocketClient.connect(InetAddress) is not applicable
+      (argument mismatch; InetSocketAddress cannot be converted to InetAddress)
+    method SocketClient.connect(String) is not applicable
+      (argument mismatch; InetSocketAddress cannot be converted to String)
+Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+{code}
+
+Even if it did I would consider that a work around and not a fix for the underlying issue.
+ 
+
+ ","26/Jan/18 22:23;sebb;OK, sorry, I had confused InetAddress with InetSocketAddress.
+
+Does the imapproxy2.java code work? (it compiles for me)
+
+","26/Jan/18 22:29;msm;This would be an outline of a test case you might want to setup up or figure out how to build in to a regression test:
+
+1. Consider two hosts A and B
+ 2. Setup the host file on A so it only knows host B as say: test.domain.com
+ 3. Setup the host file on B so it only knows it self as say: proxy.domain.com
+ 4. Confirm ping proxy.domain.com from A fails on host lookup
+ 5. From A ssh to B creating a socks proxy
+{code:java}
+$ ssh -D localhost:16000 test.domain.com
+{code}
+6. now run the socketproxy.java on A
+{code:java}
+$ java -DsocksProxyHost=localhost -DsocksProxyPort=16000 socketproxy proxy.domain.com
+{code}
+As socketproxy is currently written you would need something listening on the imap port of host B so it returns something when connected to so you can see that the above works. But you can replace the port number in socketproxy to anything that will respond. In the above since ssh is on B to support the socks proxy you could use the ssh port which when you connect should return something like:
+
+$ nc localhost 22
+ SSH-2.0-OpenSSH_7.6","26/Jan/18 22:37;msm;This is what I get when using your imapproxy2 code with a hostname:
+
+connect error: java.lang.NullPointerException
+connect error: java.lang.NullPointerException
+
+I also get the same thing when I use an IP address.","26/Jan/18 22:49;msm;InetSocketAddress should work regardless of proxy or not. So you should be able to test that you have found a working InetSocketAddress solution simply by connecting to anything you would normally.
+
+{code}
+$ java -cp .:./commons-net-3.6.jar socketproxy imap.comcast.net
+* OK IMAP4 ready
+{code}
+
+Then once you are using InetSocketAddress locally fine it should continue to work for when -DsocksProxyHost and -DsocksProxyPort are specified.","26/Jan/18 23:11;sebb;Thanks for the info.
+
+I left a bit out:
+{code}
+_socket_ = _socketFactory_.createSocket(); // add this line
+_socket_.connect(endpoint, connectTimeout); // before this
+{code}
+
+That should fix the NPE.
+
+AFAICT the difference between InetSocketAddress and InetAddress is that the former allows the IP address to be unresolved.
+In which case the Socket is passed the hostname instead of an IP address.
+
+This brings up something else: it's possible that the hostname has different values on the local and far side of the proxy, so I think any fix would need to take that into account.","26/Jan/18 23:15;msm;> This brings up something else: it's possible that the hostname has different values on the local and far side of the proxy, so I think any fix would need to take that into account.
+
+Not sure what your thinking but if you have directed something to use a proxy then you want the remote mapping of the name and not the local one.","26/Jan/18 23:22;msm;I get this with those lines:
+
+{code}
+$ javac -cp .:./commons-net-3.6.jar imapproxy2.java 
+imapproxy2.java:17: error: cannot find symbol
+            _socket_.connect(endpoint, connectTimeout); // before this
+                             ^
+  symbol:   variable endpoint
+  location: class MyClient
+1 error
+{code}","26/Jan/18 23:37;sebb;I forget I changed my code slightly to debug the NPE.
+It should be
+{code}
+_hostname_ = host; // after this line
+_socket_ = _socketFactory_.createSocket(); // ++ add this line ++
+_socket_.connect(new InetSocketAddress(host, port), connectTimeout); // before this line
+{code}","26/Jan/18 23:43;sebb;bq.  if you have directed something to use a proxy then you want the remote mapping of the name and not the local one.
+
+Not necessarily.
+There may be no remote mapping, so you might want to add your own local definition.
+Also the code may not know that a proxy is being used.
+
+As it stands, the constructor new InetSocketAddress(host, port) will use the local definition if there is one.
+To force the use of the remote mapping, one would need to use InetSocketAddress.createUnresolved(host,port)","26/Jan/18 23:48;msm;Your latest changes work as expected for both host name and IP of proxy.","26/Jan/18 23:53;sebb;OK great, thanks for testing.
+
+Now just need to work out how to implement this without changing existing behaviour for the non-proxy case.","26/Jan/18 23:55;msm;> There may be no remote mapping, so you might want to add your own local definition.
+
+I would want to know that the remote does not know how to resolve the name.
+
+> Also the code may not know that a proxy is being used.
+
+But I do because I told it I wanted it to use the proxy. If I don't want to use the proxy I won't specify it.
+
+> As it stands, the constructor new InetSocketAddress(host, port) will use the local definition if there is one.
+To force the use of the remote mapping, one would need to use InetSocketAddress. InetSocketAddress(host,port)
+
+Not following the above you sure you wrote it correctly.","27/Jan/18 00:05;sebb;If the remote does not have a mapping, you have to use/remember the IP address.
+It would be nice to be able to define the IP as a local mapping.
+
+The NET code does not know that you defined the proxy on the command line.
+I don't think there is a way to find it out.","27/Jan/18 00:18;msm;> If the remote does not have a mapping, you have to use/remember the IP address.
+It would be nice to be able to define the IP as a local mapping.
+
+I'm not sure that gets very confusing in a number of contexts. I might like it in some cases but not sure I would want it on default. Have you actually tested that a name existing in both places but different ends up always using the local one? To my thinking I want the remote name mapping first. Maybe if it doesn't exist remotely then look locally. 
+
+I haven't looked at the actual InetSocketAddress code but some code does now about the proxy and InetSocketAddress may also know this or it may not if you have looked at the code and nothing about the proxy is in it OK but the proxy as I have outlined it is easly knowable simply by checking the property setting. Also keep in mind where this ticket came from which was adding support for something in common-net to know about a proxy so you could specifically configure it in the code. I'm sort of wondering if that has been done consistently with property settings what happens if they overlap.","27/Jan/18 00:28;sebb;bq. Maybe if it doesn't exist remotely then look locally.
+
+You only find out if the remote has the definition once you connect to it, so a fall back would require retrying the connection.
+
+bq. some code does [k]now about the proxy
+
+Yes, of course, but AFAICT that is buried deep (in the native code ?)
+
+Like I wrote, this needs more work and probably some additional options before it can be implemented.
+However you do have a simple work-round which you can use until a proper solution is developed.","27/Jan/18 00:40;msm;> Yes, of course, but AFAICT that is buried deep (in the native code ?)
+
+All that happens on the command line is system properties are set. Any code can get a system property value.
+
+Agree this needs more work.
+
+I think if you substitute InetSocketAddress in the correct place all your existing regression tests will still pass. Plus it will now support the command line. How things behave in edge cases is worth testing but my guess is that InetSocketAddress probably does what I have suggested. Which is to use the remote name mapping. I think it would be a fairly unusual situation that a local DNS infrastructure knows about a proxy remote infrastructure. But I could see that as a nice configurable feature.
+
+This also leaves investigation/testing in how the previous ticket implementation of proxy support interacts with all of this.","27/Jan/18 01:33;msm;If InetSocketAddress acts as I have indicated then if someone wants to add the feature of using a local mapping over a remote mapping they can easily add it simply by passing the connect the locally mapped name.
+
+InetSocketAddress simply passes IP's through as does the proxy so its easy to do on top of a InetSocketAddress base.
+
+However without InetSocketAddress we have no way to get a remote name properly resolved.
+
+So I think this could be very close it would be interesting to see if just making this InetSocketAddress change in the Common-Net socket code passes all existing tests. If it does then it fixes this bug at no cost to any existing functionality.","29/Jan/18 09:49;sebb;bq. If InetSocketAddress acts ...
+
+The above is ambiguous; the InetSocketAddress constructor behaves differently from InetSocketAddress.createUnresolved().
+Only the latter ignores local mappings.
+Since that would change existing behaviour, taking that approach would need to be optional.
+
+I agree that InetSocketAddress (ISA)  would need to be used somehow to solve the issue.
+The issue is how to do it without changing existing behaviour unnecessarily.
+
+Also note that passing existing tests does not guarantee that the behaviour is unchanged.
+This area is difficult to test thoroughly and the tests are likely to be incomplete.
+There are several independent conditions here:
+- proxy or no proxy
+- existing implementation or ISA constructor or createUnresolved
+- hostname is undefined or defined locally or defined remotely or both.
+That's 24 combinations without allowing for IP addresses or different ports.
+
+In my tests, there is a problem when using names that have no mapping.
+Currently this results in UnknownHostException with or without a proxy.
+
+But with the ISA constructor it results in the following error when a proxy is used:
+java.net.SocketException: Malformed reply from SOCKS server
+Not exactly obvious, and it may vary between proxies/OSes.
+I think this could problems for existing applications using NET.
+
+There may be other differences in behaviour (other than the desired one).
+
+Given that the problem only exists for hostnames that are not in public DNS and there are various simple work-rounds, I don't think the existing behaviour should be changed unconditionally. It may be worth adding optional behaviour to implement the feature.","29/Jan/18 20:00;msm;The question I had is can we add something without impacting current behavior.
+
+Focus on the no proxy case, hostname defined or undefined locally.
+
+If we replace existing implementation and use ISA constructor. This is what the source code is for it. (It has other constructors but lets assume this common case only)
+
+{code}
+ public More ...InetSocketAddress(String hostname, int port) {
+        if (port < 0 || port > 0xFFFF) {
+            throw new IllegalArgumentException(""port out of range:"" + port);
+        }
+        if (hostname == null) {
+            throw new IllegalArgumentException(""hostname can't be null"");
+        }
+        try {
+            addr = InetAddress.getByName(hostname);
+        } catch(UnknownHostException e) {
+            this.hostname = hostname;
+            addr = null;
+        }
+        this.port = port;
+    }
+{code}
+
+Does all existing behavior work.
+
+My guess is yes.
+
+If you have the hostname you get the local IP and we have no proxy so the local IP works and gets you to desired destination.
+
+If you have no hostname then you get the expected and desired response of UnknownHostException this is not a problem in this case it is a informative response.
+
+If all other existing regression tests pass then the above is a simple fix that keeps all current functionality.
+
+However the above allows the proxy to now also work in this fashion
+1. the host does not exist locally but does remotely (most common case I think)
+2. the host does exist locally and works remotely (sort of unusual case I think)
+3. the host does not exist locally or remotely (this you get an odd error for but an error is appropriate just might be nice to provide a better one)
+4. the host does exist locally but does not work remotely (sort of unusual case I think expect you would get some sort of error that may or may not be obvious but an error is appropriate)
+5. the host exists in both places but the local ip does not work on remote only the remote ip does (this case is broken in this initial implementation you think the remote name and ip are getting used but instead you are using a local ip remotely for the name you think would work)"
+TFTP sendFile retry broken,NET-640,13085293,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,clement.mangin,clement.mangin,06/Jul/17 18:07,13/Jul/17 18:53,28/Mar/20 23:28,,3.6,,,,,TFTP,,0,,,,,,"The latest TFTP client rewrite for 3.6 promised to fix NET-477 but the bug is still present.
+The sendFile method does not resend the last sent block when it times out while waiting for said block's ack.
+
+Fix patch: https://s3.amazonaws.com/clement-mangin-personal/TFTPClient.patch",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-07-06 19:04:40.001,,,false,,,,,,,,,,Patch,,,,,,,,,9223372036854775807,,,Thu Jul 13 18:53:40 UTC 2017,,,,,,,"0|i3h7hz:",9223372036854775807,,,,,,,,,,,,,,,,"06/Jul/17 19:04;ggregory;Are you able to provide a unit test perchance? ","11/Jul/17 13:39;clement.mangin;I'd love to, however I do not see an easy way to test for retries and timeouts without some quite heavy modifications to the TFTPServer class found in the existing tests, and I don't have the time to refactor it.","13/Jul/17 18:53;ggregory;If you do get the time, GitHub is the best place (IMO) to send us a patch through a pull request: https://github.com/apache/commons-net
+
+Thank you,
+Gary",,,,,,,,,,,,,,,,,,,,
+examples should be in org.apache.commons.net subpackage,NET-636,13065892,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,sebb,sebb,21/Apr/17 14:17,21/Apr/17 16:32,28/Mar/20 23:28,21/Apr/17 16:31,3.6,,,,3.7,,,0,,,,,,"The examples are currently under the top-level 'examples' package.
+
+This was fine when they were only documentation samples, but they are now working examples which are published (in a separate jar).
+
+The package needs to ge changed to be under org.apache.commons.net.
+
+Given that they are clearly marked as examples, they are not part of the public API (and are not in the standard binary jar). Thus the change will not impact  compatibility of the component proper.
+
+",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Apr 21 16:31:55 UTC 2017,,,,,,,"0|i3dxkn:",9223372036854775807,,,,,,,,,,,,,,,,"21/Apr/17 16:31;sebb;URL: http://svn.apache.org/viewvc?rev=1792230&view=rev
+Log:
+NET-636 examples should be in org.apache.commons.net subpackage
+
+Added:
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/
+      - copied from r1792229, commons/proper/net/trunk/src/main/java/examples/
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/package-info.java   (with props)
+    commons/proper/net/trunk/src/main/resources/org/
+    commons/proper/net/trunk/src/main/resources/org/apache/
+    commons/proper/net/trunk/src/main/resources/org/apache/commons/
+    commons/proper/net/trunk/src/main/resources/org/apache/commons/net/
+    commons/proper/net/trunk/src/main/resources/org/apache/commons/net/examples/
+      - copied from r1792229, commons/proper/net/trunk/src/main/resources/examples/
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/examples/
+      - copied from r1792229, commons/proper/net/trunk/src/test/java/examples/
+Removed:
+    commons/proper/net/trunk/src/main/java/examples/
+    commons/proper/net/trunk/src/main/resources/examples/
+    commons/proper/net/trunk/src/test/java/examples/
+Modified:
+    commons/proper/net/trunk/pom.xml
+    commons/proper/net/trunk/src/assembly/bin.xml
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/Main.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/cidr/SubnetUtilsExample.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/ftp/FTPClientExample.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/ftp/ServerToServerFTP.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/ftp/TFTPExample.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/mail/IMAPExportMbox.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/mail/IMAPImportMbox.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/mail/IMAPMail.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/mail/IMAPUtils.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/mail/POP3ExportMbox.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/mail/POP3Mail.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/mail/SMTPMail.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/mail/Utils.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/nntp/ArticleReader.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/nntp/ExtendedNNTPOps.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/nntp/ListNewsgroups.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/nntp/MessageThreading.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/nntp/NNTPUtils.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/nntp/PostMessage.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/ntp/NTPClient.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/ntp/SimpleNTPServer.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/ntp/TimeClient.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/telnet/TelnetClientExample.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/telnet/WeatherTelnet.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/unix/chargen.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/unix/daytime.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/unix/echo.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/unix/finger.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/unix/fwhois.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/unix/rdate.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/unix/rexec.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/unix/rlogin.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/unix/rshell.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/examples/util/IOUtil.java
+    commons/proper/net/trunk/src/main/resources/org/apache/commons/net/examples/examples.properties
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/examples/MainTest.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ntp/TestNtpClient.java
+",,,,,,,,,,,,,,,,,,,,,,
+Heap Inspection: Passwords can be revealed from heap,NET-616,13046973,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,dkwakkel,dkwakkel,28/Feb/17 13:45,28/Feb/17 21:38,28/Mar/20 23:28,,3.6,,,,,IMAP,,0,,,,,,"password is used as string in src/main/java/org/apache/commons/net/imap/AuthenticatingIMAPClient.java. This should be passed as bytes and be cleaned after usage.
+
+Abstract:
+
+The method newStringUtf8() in Base64.java stores sensitive data in a String object, making it impossible to reliably purge the data from memory.
+
+
+Explanation:
+
+Sensitive data (such as passwords, social security numbers, credit card numbers etc) stored in memory can be leaked if memory is not cleared after use. Often, Strings are used store sensitive data, however, since String objects are immutable, removing the value of a String from memory can only be done by the JVM garbage collector. The garbage collector is not required to run unless the JVM is low on memory, so there is no guarantee as to when garbage collection will take place. In the event of an application crash, a memory dump of the application might reveal sensitive data.",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-02-28 21:38:56.944,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Feb 28 21:38:56 UTC 2017,,,,,,,"0|i3aqdj:",9223372036854775807,,,,,,,,,,,,,,,,"28/Feb/17 21:38;sebb;Fixing Base64#encodeBase64StringUnChunked would not solve the problem, as the password is passed in using a String.
+
+AFAICT large parts of the NET code would have to be rewritten to allow bytes (or chars?) to be used instead of a String",,,,,,,,,,,,,,,,,,,,,,
+Heap Inspection: Passwords can be revealed from heap for ExtendedPop3Client,NET-617,13046975,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,dkwakkel,dkwakkel,28/Feb/17 13:48,28/Feb/17 13:48,28/Mar/20 23:28,,3.6,,,,,POP3,,0,,,,,,"In src/main/java/org/apache/commons/net/pop3/ExtendedPOP3Client.java password is a String. This should be bytes and be cleared after usage.
+ 
+Similair issue as https://issues.apache.org/jira/browse/NET-616
+
+Mitigation: proper protect memory of os process and heap dumps.
+
+Abstract:
+
+The method auth() in ExtendedPOP3Client.java stores sensitive data in a String object, making it impossible to reliably purge the data from memory.
+
+
+Explanation:
+
+Sensitive data (such as passwords, social security numbers, credit card numbers etc) stored in memory can be leaked if memory is not cleared after use. Often, Strings are used store sensitive data, however, since String objects are immutable, removing the value of a String from memory can only be done by the JVM garbage collector. The garbage collector is not required to run unless the JVM is low on memory, so there is no guarantee as to when garbage collection will take place. In the event of an application crash, a memory dump of the application might reveal sensitive data.
+",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,2017-02-28 13:48:58.0,,,,,,,"0|i3aqdz:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+VMS ftp LIST parsing results in emty file list,NET-678,13285772,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,,,bravehorsie,bravehorsie,17/Feb/20 12:30,17/Feb/20 12:31,28/Mar/20 23:28,,3.6,,,,3.7,FTP,,0,,,,,,"VMS ftp LIST parsing results in empty list when ""size / allocated"" part is missing slash and allocated value. I am not sure if there is any specification on that subject to make clear if this is a valid server output or not, however MultiNet FTP Server Process V5.1(16) does this reply, for example:
+
+ 
+
+FILE123.DAT;1
+ 64 4-MAR-2019 00:04 [USR,USRGROUP] (RWED,RWED,RWED,R)
+ FILE456.DAT;1
+ 102 28-APR-2013 23:12 [USR,USRGROUP] (RWED,RWED,RWED,R)}}
+
+ 
+
+{{No files would be returned from by FTPClient#listFiles(String path)}}",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Feb 17 12:31:59 UTC 2020,,,,,,,"0|z0bkrs:",9223372036854775807,,,,,,,,,,,,,,,,"17/Feb/20 12:31;bravehorsie;A PR is attached to fix this issue:
+
+[https://github.com/apache/commons-net/pull/47]",,,,,,,,,,,,,,,,,,,,,,
+NullPointerException when FTPClient remote verification fails,NET-663,13205970,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,,,mshenfield,mshenfield,21/Dec/18 13:54,23/May/19 22:32,28/Mar/20 23:28,,3.6,,,,,FTP,,0,NullPointerException,,,,,"At L934 of the {{FTPClient}} code, Apache does a check to see whether the data and control connections are at the same IP address ({{verifyRemote}}). If they differ, the data connection socket is closed and an exception is raised.  This can be disabled, but is the default behavior ({{__remoteVerificationEnabled = true}}).
+
+I'm connecting to the FTP via a proxy.  In my setup, the L934-939 code path where {{verifyRemote}} returns false always raises a {{java.lang.NullPointerException}}.  {{socket.getInetAddress()}} seems to return {{null}} after {{socket.close}} is called, leading to {{socket.getInetAdress().getHostAddress()}} to raise the {{java.lang.NullPointerException}} at L938.   This obfuscates a really useful error message (""Host attempting data connection is not the same as server"") with a difficult to debug {{NullPointerException}}.
+
+Example State:
+
+{code}
+this.__remoteVerificationEnabled -> true
+this.getRemoteAddress().toString() -> ""ftp.example.com/987.654.321.000""
+socket.getInetAddress().toString() -> ""/123.456.789.000""
+{code}",OS: Linux,"markt-asf commented on pull request #40: [NET-663] Retrieve socket host before closing in remote verification
+URL: https://github.com/apache/commons-net/pull/40
+ 
+ 
+   
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on to GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;01/May/19 20:42;githubbot;600","mshenfield commented on pull request #40: [NET-663] Retrieve socket host before closing in remote verification
+URL: https://github.com/apache/commons-net/pull/40
+ 
+ 
+   This retrieves the socket host before closing the socket when remote verification fails in order to get a non-null host address. In [NET-663](https://issues.apache.org/jira/browse/NET-663), `socket.getInetAddress()` returned a null after the socket was closed, causing a `NullPointerException` instead of the more helpful error message intended.
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on to GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;23/May/19 22:32;githubbot;600",,0,1200,,,0,1200,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sun Dec 23 04:06:47 UTC 2018,,,,,,,"0|u008eo:",9223372036854775807,,,,,,,,,,,,,,,,"23/Dec/18 04:06;mshenfield;Pull request submitted: https://github.com/apache/commons-net/pull/40",,,,,,,,,,,,,,,,,,,,,,
+FTPSClient not using the Socks Proxy when opening passive data connection,NET-637,13076598,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,,,segantim,segantim,01/Jun/17 18:05,08/Feb/18 14:15,28/Mar/20 23:28,,3.5,3.6,,,,FTP,,0,,,,,,"I'm routing FTPS traffic through a SOCKS proxy host.  I setup the proxy using: 
+
+FTPSClient ftps = new FTPSClient(""TLS"", false);
+InetSocketAddress sa = new InetSocketAddress(proxyHost,proxyPort);
+Proxy proxy = new Proxy(Proxy.Type.SOCKS, sa);
+System.out.println(""Using Proxy Server: "" + proxy);
+ftps.setProxy(proxy);
+...
+ftps.enterLocalPassiveMode();
+for (FTPFile f : ftps.listFiles()) {
+	System.out.println(f.getRawListing());
+}
+
+When establishing the connection, the above code does go through the proxy and I'm able to login.  When I try to do anything, say listFiles, It does the SYST and then attempts to enter passive mode, but the connection times out:
+227 Entering Passive Mode (123,45,678,9,11,243)
+java.net.ConnectException: Connection timed out: connect
+	at java.net.DualStackPlainSocketImpl.connect0(Native Method)
+	at java.net.DualStackPlainSocketImpl.socketConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.doConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connect(Unknown Source)
+	at java.net.PlainSocketImpl.connect(Unknown Source)
+	at java.net.SocksSocketImpl.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at sun.security.ssl.SSLSocketImpl.connect(Unknown Source)
+	at org.apache.commons.net.ftp.FTPClient._openDataConnection_(FTPClient.java:920)
+	at org.apache.commons.net.ftp.FTPSClient._openDataConnection_(FTPSClient.java:627)
+	at org.apache.commons.net.ftp.FTPClient._openDataConnection_(FTPClient.java:785)
+	at org.apache.commons.net.ftp.FTPClient.initiateListParsing(FTPClient.java:3409)
+	at org.apache.commons.net.ftp.FTPClient.initiateListParsing(FTPClient.java:3339)
+	at org.apache.commons.net.ftp.FTPClient.listFiles(FTPClient.java:3016)
+	at gov.nyc.ftputils.FTPConnection.listFiles(FTPConnection.java:1270)
+	at gov.nyc.ftputils.FTPClientUtil.main(FTPClientUtil.java:572)
+
+I then comment out the proxy code and added: 
+
+System.getProperties().put( ""socksProxyPort"", proxyPort);
+System.getProperties().put( ""socksProxyHost"" ,proxyHost);
+
+And then I'm able to get the listing, get files, etc.
+
+Adding -DsocksProxyHost=myproxy.host to the java command line also works.  
+",Windows,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,2017-06-01 18:05:18.0,,,,,,,"0|i3frkn:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+auto add a LF before a command,NET-654,13134367,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,,,smoking,smoking,29/Jan/18 07:15,05/Feb/18 02:28,28/Mar/20 23:28,,3.6,,,,,Telnet,,0,,,,,,"I use TelnetClient to connect to my H3C router. When I type the first command, it's ok. When I type the second command, TelnetClient automatically add a LF character before my second command, i.e. send an empty command before my second command.
+
+I review the source code of TelnetOutputStream.java, in function write(int ch). When I type the first character of my second command, variable __lastWasCR is true, variable __convertCRtoCRLF is true, and because I set nothing of TelnetOption.BINARY, __client._requestedWont(TelnetOption.BINARY) also returns true。 lead to cause my issue.",all environment ,,,,,,,,,,,,"05/Feb/18 02:23;suzl;Main.java;https://issues.apache.org/jira/secure/attachment/12909171/Main.java","05/Feb/18 02:25;suzl;sendb.png;https://issues.apache.org/jira/secure/attachment/12909174/sendb.png","05/Feb/18 02:25;suzl;sendcr.png;https://issues.apache.org/jira/secure/attachment/12909173/sendcr.png","05/Feb/18 02:23;suzl;telnetClient.pcap;https://issues.apache.org/jira/secure/attachment/12909172/telnetClient.pcap",,4.0,,,,,,,,,,,,,,,,,,,,2018-02-03 10:00:16.141,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Feb 05 02:28:31 UTC 2018,,,,,,,"0|i3ph1r:",9223372036854775807,,,,,,,,,,,,,,,,"03/Feb/18 10:00;sebb;What OS are you using?
+What code did you use to start the client?
+
+Please also see
+http://www.freesoft.org/CIE/RFC/1123/31.htm
+
+AFAICT the NET code is behaving correctly; you may have to set binary mode if the server on the H3C box cannot handle CRLF correctly.","05/Feb/18 02:25;suzl;My OS is Microsoft windows.
+
+My code is Main.java
+
+[^Main.java]
+
+^The net traffic I captured is TelnetClient.pcap^
+
+^[^telnetClient.pcap]^
+
+^!sendcr.png!^
+
+^!sendb.png!^
+
+ ","05/Feb/18 02:28;suzl;I think the problem is, when I send a \r in my code, TelnetClient should send '\r\n' together.",,,,,,,,,,,,,,,,,,,,
+"SubnetUtils.SubnetInfo.isInRange(""0.0.0.0"") returns true for CIDR/31, 32",NET-641,13085780,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,pin_ptr,pin_ptr,09/Jul/17 16:55,04/Aug/17 15:03,28/Mar/20 23:28,04/Aug/17 11:39,3.6,,,,3.7,,,0,,,,,,"Code:
+import org.apache.commons.net.util.SubnetUtils;
+
+public class A {
+  public static void main(String[] args) {
+    System.out.println(new SubnetUtils(""192.168.1.0/30"").getInfo().isInRange(""0.0.0.0""));
+    System.out.println(new SubnetUtils(""192.168.1.0/31"").getInfo().isInRange(""0.0.0.0""));
+    System.out.println(new SubnetUtils(""192.168.1.0/32"").getInfo().isInRange(""0.0.0.0""));
+  }
+}
+
+Result:
+false
+true
+true
+
+Expected:
+false
+false
+false
+","Windows; JDK8; common-net 3.6",,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-08-03 15:14:34.484,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Aug 04 15:03:55 UTC 2017,,,,,,,"0|i3hahb:",9223372036854775807,,,,,,,,,,,,,,,,"03/Aug/17 15:14;sebb;I agree; 0.0.0.0 cannot be in range for any address spec.","03/Aug/17 15:19;sebb;URL: http://svn.apache.org/viewvc?rev=1804012&view=rev
+Log:
+NET-641 SubnetUtils.SubnetInfo.isInRange(""0.0.0.0"") returns true for CIDR/31, 32
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/util/SubnetUtils.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/SubnetUtilsTest.java
+","03/Aug/17 17:32;pin_ptr;It seems to return false to follwing code, it should be true.
+
+SubnetUtils su = new SubnetUtils(""0.0.0.0/8"");
+su.setInclusiveHostCount(true);
+su.getInfo().isInRange(""0.0.0.0"");
+","03/Aug/17 17:40;pin_ptr;My idea:
+
+public boolean isInRange(int address) { 
+    long addLong = address & UNSIGNED_INT_MASK;
+    if (inclusiveHostCount) {
+        return networkLong() <= addLong && addLong <= broadcastLong();
+    } else {
+        return networkLong() < addLong && addLong < broadcastLong();
+    }
+}
+","04/Aug/17 11:38;sebb;No.
+
+If you look at the Javadoc for isInRange(String), which calls isInRange(integer), you will see that 0.0.0.0 can never be in the range because it always excludes the broadcast and network addresses.
+
+Changing that would be a change to the published API.","04/Aug/17 13:47;pin_ptr;How about 255.255.255.255 for /0 or x.x.x.0/x.x.x.255 for /24 if isInclusiveHostCount is true?","04/Aug/17 13:55;sebb;isInRange ignores isInclusiveHostCount in order to do what the Javadoc says it will do.
+
+If there is a use-case for a new method that takes this into account then please raise an enhancement request.
+Ideally with test cases.","04/Aug/17 14:23;pin_ptr;import org.apache.commons.net.util.SubnetUtils;
+
+public class B {
+  public static void main(String[] args) {
+    SubnetUtils c = new SubnetUtils(""192.168.1.0/24"");
+    System.out.println(c.getInfo().isInRange(""192.168.1.0""));
+    System.out.println(c.getInfo().isInRange(""192.168.1.255""));
+
+    c.setInclusiveHostCount(true);
+    System.out.println(c.getInfo().isInRange(""192.168.1.0""));
+    System.out.println(c.getInfo().isInRange(""192.168.1.255""));
+  }
+}
+
+Javadoc says this code output 4x false, but commons-net 3.6's actual output is false, false, true and true.
+
+I looked through SVN log and found isInclusiveHostCount was added in r920235 (Mar 2008),
+and then low(), high() and isInRange() changed their behavior. (because isInRange() uses low() and high())
+In other words, isInRange never ignored isInclusiveHostCount for 9 years.
+
+I am worried that commons-net changes it's behavior only if isInclusiveHostCount is true and network address is 0.0.0.0.","04/Aug/17 14:45;sebb;Then either the Javadoc is wrong or the code is wrong","04/Aug/17 15:03;pin_ptr;In my opinion, javadoc is wrong.
+
+It does not cause confusion if number of IP addresses that returns true when passed to isInRange() and number of IP addresses returned from getAddressCount() is always the same.
+(Javadoc says they are differ if isInclusiveHostCount is true)",,,,,,,,,,,,,
+"Bug in MVSFTPEntryParser.preParse - MVS, z/OS",NET-639,13084251,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,baloo66,baloo66,03/Jul/17 13:33,03/Jul/17 15:40,28/Mar/20 23:28,03/Jul/17 15:40,3.6,,,,3.7,FTP,,0,MVS,z/OS,,,,"Some PS-files couldn't be retrieved from ftp host (during FTPClient.listFiles(""xxx"")). After investigation we've noticed, that the file has an unusual large allocation info (reading 
+
+{code:java}
+Volume Unit    Referred Ext Used Recfm Lrecl BlkSz Dsorg Dsname
+   :     :          :     :   :    :      :    :    :      :
+PEZ320 3390   2017/07/03  215807  FB   29600 29600  PS  'LBP.TX.FTP.LAZAGDOM.WORK.HILF'
+   :     :          :     :   :    :      :    :    :      :
+
+{code}
+
+so the values of ext and used column merged. As a result, the pattern FILE_LIST_REGEX in MVSFTPEntryParser doesn't match -> the file is ignored.
+
+Quick Fix in Comments described ...","different clients running Windows 7, AIX, Ubuntu 16.04
+IBM FTP CS V2R1 as ftp host running z/OS 02.01.00",,,,,,,,,,,,"03/Jul/17 14:06;baloo66;MVSFTPEntryParser.patch;https://issues.apache.org/jira/secure/attachment/12875515/MVSFTPEntryParser.patch","03/Jul/17 14:06;baloo66;MVSFTPEntryParserTest.patch;https://issues.apache.org/jira/secure/attachment/12875514/MVSFTPEntryParserTest.patch",,,,2.0,,,,,,,,,,,,,,,,,,,,2017-07-03 15:17:02.667,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jul 03 15:40:37 UTC 2017,,,,,,,"0|i3h13j:",9223372036854775807,,,,,,,,,,,,,,,,"03/Jul/17 13:56;baloo66;After further examination of the pattern, I changed the pattern FILE_LIST_REGEX as a first fix. As - despite the long pattern - only the ""recfm"" (via pattern) and the ""dataset organisation"" and ""dataset name"" (via group) are used, I changed the pattern part concerning the ""used"" column to be optional (from ""\\S+\\s+"" to ""\\S*\\s+"") - now the above line  matches and the line is part of the result.
+
+First of all (breaking test first ;-)
+
+in  MVSFTPEntryParserTest.java added at the end of goodsamplesDatasetList 
+
+{code:java}
+ ""PEX26F 3390   2017/07/03  115807  FB   29600 29600  PS    INCOMING.FIN.D170630.T160630"", 
+{code}
+
+voila - test is breaking. Now make it green again: In MVSFTPEntryParser.java line 64ff
+
+{code:java}
+ static final String FILE_LIST_REGEX = ""\\S+\\s+"" + // volume
+                                                                // ignored
+            ""\\S+\\s+"" + // unit - ignored
+            ""\\S+\\s+"" + // access date - ignored
+            ""\\S+\\s+"" + // extents -ignored
+            // ellera: ""\\S+\\s+"" replaced ...
+            // change respects too large used values and therefor missing delimiter between extents and used
+            ""\\S*\\s+"" + // used - ignored 
+            ""[FV]\\S*\\s+"" + // recfm - must start with F or V
+            ""\\S+\\s+"" + // logical record length -ignored
+            ""\\S+\\s+"" + // block size - ignored
+            ""(PS|PO|PO-E)\\s+"" + // Dataset organisation. Many exist
+            // but only support: PS, PO, PO-E
+            ""(\\S+)\\s*""; // Dataset Name (file name)
+{code}
+
+voila, tests are green - hope this helps ...","03/Jul/17 15:17;sebb;Thanks!
+
+Seems like a bug in the OS - once the fields are merged, it's presumably impossible to know where the change occurs","03/Jul/17 15:40;sebb;Thanks for the report and patches. Applied with minor tweaks:
+
+URL: http://svn.apache.org/viewvc?rev=1800686&view=rev
+Log:
+NET-639 - MVSFTPEntryParser.preParse - MVS, z/OS - allow for merged Ext/Used fields
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/MVSFTPEntryParser.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ftp/parser/MVSFTPEntryParserTest.java
+
+BTW, the patches were reversed so did not work initially (had to use reverse option).",,,,,,,,,,,,,,,,,,,,
+Problems with German summertime,NET-635,13059437,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,triumvir,triumvir,27/Mar/17 15:43,27/Mar/17 18:24,28/Mar/20 23:28,27/Mar/17 18:24,3.6,,,,,FTP,,0,,,,,,"There is a problem at the funktion org.apache.commons.net.ftp.parser.FTPTimestampParserImpl.parseTimestamp
+At the ftp Server exists a file with the timestamp ""Mar 26 02:29""
+In Germany, the clock will be switched at 2:00 from wintertime to summertime Mar 26 2:00 -> Mar 26 3:00.
+So the time ""Mar 26 02:29"" is invalid if the commons-net function will run on a german server.
+The workaround is, to set the servertimezone to GMT
+",linux,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-03-27 15:58:49.387,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Mar 27 18:24:15 UTC 2017,,,,,,,"0|i3cudb:",9223372036854775807,,,,,,,,,,,,,,,,"27/Mar/17 15:58;sebb;I'm not sure what the issue is here.
+What does NET do? What should it do instead?
+
+Looks to me more like a problem with the FTP server which has allowed a file to be created with an invalid timestamp.
+Remember it is the server that generates the listing; if it generates an invalid timestamp that is not an error in NET.
+
+Also if you are concerned about timestamps, it would be better to use FTPClient.mlistFile() or mdtmFile().
+However not all servers support MLIST and MDTM.","27/Mar/17 18:21;triumvir;I think you are right with your arguments. If the ftp Server works with GMT timezone, the time 26 March 2:29 is OK, for the client with CET it's an invalid time. 
+So it is absolute necessary to use the setServerTimeZoneId function if you will not have invalid times by the switch summer/winter Time.
+","27/Mar/17 18:24;triumvir;It's no bug. You have to use the setServerTimeZoneId function, in order to
+ the server AND Client calculate the timestamps in the same timezone.",,,,,,,,,,,,,,,,,,,,
+System Information Leak in ftp parser,NET-618,13046980,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,dkwakkel,dkwakkel,28/Feb/17 14:00,28/Feb/17 21:22,28/Mar/20 23:28,28/Feb/17 21:22,3.6,,,,3.7,FTP,,0,,,,,,"Exception is printed to console in src/main/java/org/apache/commons/net/ftp/parser/MVSFTPEntryParser.java which can leak system information:
+{code}
+    private boolean parseMemberList(FTPFile file, String entry) {
+        if (matches(entry)) {
+            file.setRawListing(entry);
+            String name = group(1);
+            String datestr = group(2) + "" "" + group(3);
+            file.setName(name);
+            file.setType(FTPFile.FILE_TYPE);
+            try {
+                file.setTimestamp(super.parseTimestamp(datestr));
+            } catch (ParseException e) {
+                e.printStackTrace();
+                // just ignore parsing errors.
+                // TODO check this is ok
+                return false; // this is a parsing failure too.
+            }
+            return true;
+        }
+
+        return false;
+    }
+{code}
+
+",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-02-28 21:22:14.77,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Feb 28 21:22:14 UTC 2017,,,,,,,"0|i3aqf3:",9223372036854775807,,,,,,,,,,,,,,,,"28/Feb/17 21:22;sebb;Thanks for the report - probably left-over debug
+
+URL: http://svn.apache.org/viewvc?rev=1784819&view=rev
+Log:
+NET-618 System Information Leak in ftp parser
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/MVSFTPEntryParser.java
+",,,,,,,,,,,,,,,,,,,,,,
+Java Doc FTPClient setControlKeepAliveTimeout() wrong comment,NET-659,13151892,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Trivial,Invalid,,jiramuellerdm,jiramuellerdm,12/Apr/18 09:02,04/May/19 09:55,28/Mar/20 23:28,04/May/19 09:55,3.6,,,,,FTP,,0,,,,,,"In the java doc of the class FTPClient (head) is following line:
+
+{{ ftpClient.setControlKeepAliveTimeout(300); // set timeout to 5 minutes }}
+
+But the parameter timeout is in milliseconds, so 5 minutes are 300.000 milliseconds.",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-05-04 09:55:34.718,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sat May 04 09:55:34 UTC 2019,,,,,,,"0|i3sghz:",9223372036854775807,,,,,,,,,,,,,,,,"04/May/19 09:55;sebb;The setControlKeepAliveTimeout parameter is in seconds (it is multiplied by 1000 before being stored in __controlKeepAliveTimeout)",,,,,,,,,,,,,,,,,,,,,,

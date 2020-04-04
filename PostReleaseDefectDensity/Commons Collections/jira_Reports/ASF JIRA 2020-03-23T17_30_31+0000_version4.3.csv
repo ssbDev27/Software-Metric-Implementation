@@ -1,0 +1,217 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Component/s,Component/s,Due Date,Votes,Labels,Description,Environment,Log Work,Log Work,Log Work,Log Work,Original Estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Custom field (Affects version (Component)),Custom field (Attachment count),Custom field (Blog - New Blog Administrators),Custom field (Blog - New Blog PMC),Custom field (Blog - Write access),Custom field (Blog Administrator?),Custom field (Blogs - Admin for blog),Custom field (Blogs - Email Address),Custom field (Blogs - Existing Blog Access Level),Custom field (Blogs - Existing Blog Name),Custom field (Blogs - New Blog Write Access),Custom field (Blogs - Username),Custom field (Bug Category),Custom field (Bugzilla - Email Notification Address),Custom field (Bugzilla - List of usernames),Custom field (Bugzilla - PMC Name),Custom field (Bugzilla - Project Name),Custom field (Bugzilla Id),Custom field (Bugzilla Id),Custom field (Change Category),Custom field (Complexity),Custom field (Date of First Response),Custom field (Discovered By),Custom field (Docs Text),Custom field (Enable Automatic Patch Review),Custom field (Epic Link),Custom field (Estimated Complexity),Custom field (Evidence Of Open Source Adoption),Custom field (Evidence Of Registration),Custom field (Evidence Of Use On World Wide Web),Custom field (Existing GitBox Approval),Custom field (External issue ID),Custom field (External issue URL),Custom field (Fix version (Component)),Custom field (Flags),Custom field (Git Notification Mailing List),Custom field (Git Repository Import Path),Custom field (Git Repository Name),Custom field (Git Repository Type),Custom field (GitHub Options),Custom field (Github Integration),Custom field (Github Integrations - Other),Custom field (Global Rank),Custom field (INFRA - Subversion Repository Path),Custom field (Initial Confluence Contributors),Custom field (Last public comment date),Custom field (Level of effort),Custom field (Machine Readable Info),Custom field (New-TLP-TLPName),Custom field (Priority),Custom field (Project),Custom field (Protected Branch),Custom field (Rank),Custom field (Rank (Obsolete)),Custom field (Review Date),Custom field (Reviewer),Custom field (Severity),Custom field (Severity),Custom field (Skill Level),Custom field (Skill Level),Custom field (Source Control Link),Custom field (Space Description),Custom field (Space Key),Custom field (Space Name),Custom field (Tags),Custom field (Test and Documentation Plan),Custom field (Testcase included),Custom field (Tester),Custom field (Workaround),Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment
+PatriciaTrie ignores trailing null characters in keys,COLLECTIONS-714,13231018,Bug,Open,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Critical,,,rohanpadhye,rohanpadhye,30/Apr/19 23:11,19/Mar/20 08:32,23/Mar/20 17:30,,4.3,,,Collection,Map,,0,,"In Java, strings are not null terminated. The string ""x"" (of length = 1 char) is different from the string ""x\u0000"" (of length = 2 chars). However, PatriciaTrie does not seem to distinguish between these strings.
+
+To reproduce: 
+{code:java}
+public void testNullTerminatedKey1() {
+    Map<String, Integer> map = new HashMap<>();
+    map.put(""x"", 0);         // key of length 1
+    map.put(""x\u0000"", 1);   // key of length 2
+    map.put(""x\u0000y"", 2);  // key of length 3
+    Assert.assertEquals(3, map.size());  // ok, 3 distinct keys
+
+    PatriciaTrie<Integer> trie = new PatriciaTrie<>(map);
+    Assert.assertEquals(3, trie.size());  // fail; actual=2
+}{code}
+In the above example, the resulting trie has only two keys: ""x\u0000"" and ""x\u0000y"". The key ""x"" gets overwritten. Here is another way to repro the bug: 
+{code:java}
+public void testNullTerminatedKey2() {
+    PatriciaTrie<Integer> trie = new PatriciaTrie<>();
+    trie.put(""x"", 0);
+    Assert.assertTrue(trie.containsKey(""x"")); // ok
+    trie.put(""x\u0000"", 1);
+    Assert.assertTrue(trie.containsKey(""x"")); // fail
+}
+{code}
+In the above example, the key ""x"" suddenly disappears when an entry with key ""x\u0000"" is inserted.
+
+The PatriciaTrie docs do not mention anything about null-terminated strings. In general, I believe this also breaks the JDK Map contract since the keys ""x"".equals(""x\u0000"") is false. 
+
+This bug was found automatically using JQF: [https://github.com/rohanpadhye/jqf].
+
+ ",,"melloware commented on pull request #99: [COLLECTIONS-714] Throw exception when put \u0000 to trie
+URL: https://github.com/apache/commons-collections/pull/99#discussion_r341851667
+ 
+ 
+
+ ##########
+ File path: src/main/java/org/apache/commons/collections4/trie/analyzer/StringKeyAnalyzer.java
+ ##########
+ @@ -82,6 +82,9 @@ public int bitIndex(final String key, final int offsetInBits, final int lengthIn
+                 k = 0;
+             } else {
+                 k = key.charAt(index1);
++                if (k == 0) {
++                    throw new IllegalArgumentException(""Don't support '\\u0000' in the key."");
++                }
+ 
+ Review comment:
+   A better message might be ""Character '\\u0000' is not supported in the key.""
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on to GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;03/Nov/19 13:29;githubbot;600","dota17 commented on pull request #99: [COLLECTIONS-714] Throw exception when put \u0000 to trie
+URL: https://github.com/apache/commons-collections/pull/99#discussion_r341914871
+ 
+ 
+
+ ##########
+ File path: src/main/java/org/apache/commons/collections4/trie/analyzer/StringKeyAnalyzer.java
+ ##########
+ @@ -82,6 +82,9 @@ public int bitIndex(final String key, final int offsetInBits, final int lengthIn
+                 k = 0;
+             } else {
+                 k = key.charAt(index1);
++                if (k == 0) {
++                    throw new IllegalArgumentException(""Don't support '\\u0000' in the key."");
++                }
+ 
+ Review comment:
+   '\\u0000' is shown as \u0000, '\u0000' is shown as blank space.
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on to GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;04/Nov/19 06:37;githubbot;600","dota17 commented on pull request #99: [COLLECTIONS-714] Throw exception when put \u0000 to trie
+URL: https://github.com/apache/commons-collections/pull/99#discussion_r341914871
+ 
+ 
+
+ ##########
+ File path: src/main/java/org/apache/commons/collections4/trie/analyzer/StringKeyAnalyzer.java
+ ##########
+ @@ -82,6 +82,9 @@ public int bitIndex(final String key, final int offsetInBits, final int lengthIn
+                 k = 0;
+             } else {
+                 k = key.charAt(index1);
++                if (k == 0) {
++                    throw new IllegalArgumentException(""Don't support '\\u0000' in the key."");
++                }
+ 
+ Review comment:
+   '\\u0000' is shown as '\u0000', '\u0000' is shown as blank space.
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on to GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;04/Nov/19 06:38;githubbot;600","dota17 commented on issue #99: [COLLECTIONS-714] Throw exception when put \u0000 to trie
+URL: https://github.com/apache/commons-collections/pull/99#issuecomment-601052060
+ 
+ 
+   @melloware Thank you for your suggestion. 
+   If anyone has time to review, it would be really nice. ;-)
+   
+   Thanks
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on to GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;19/Mar/20 08:32;githubbot;600",,0,2400,,,0,2400,,,0.0,,,,,,,,,,,,,,,,,,,,2019-07-05 15:29:37.155,,,false,,,,,,,,https://github.com/apache/commons-collections/pull/78,,,,,,,,,,9223372036854775807,,,Mon Oct 28 13:12:18 UTC 2019,,,,,,,"0|z02alk:",9223372036854775807,,,,,,,,,,,,,,,,"02/May/19 19:25;rohanpadhye;Upon further investigation I noticed that the problem lies in the way PatriciaTrie uses the results of StringKeyAnalyzer.
+
+The insertion of entry with key ""x\u0000"" when key ""x"" already exists, hits this path in AbstractPatriciaTrie.put():
+{code:java}
+} else if (KeyAnalyzer.isEqualBitKey(bitIndex)) {
+    // This is a very special and rare case.
+
+    /* REPLACE OLD KEY+VALUE */
+    if (found != root) { // NOPMD
+        incrementModCount();
+        return found.setKeyValue(key, value);
+    }
+}
+{code}
+ 
+
+I'm not sure what the ""very special and rare case"" is that the original developer intended, but it incorrectly overwrites the found key ""x"" with new key ""x\u0000"".
+
+The above branch is executed because the call to AbstractPatriciaTrie.bitIndex(""x"", ""x\u0000"") returns EQUAL_BIT_KEY, which seems incorrect. The bug may be rooted in the way StringKeyAnalyzer.bitIndex() handles cases where index1 >= endIndex1: with the placeholder value `0`, which is actually a valid character in Java.
+
+I cannot think of a simple fix at the top of my head, since the entire XOR-based algorithm seems to rely on the assumption that two non-equal keys must have a bit-index where their corresponding bits differ. This algorithm does not consider the fact that two keys can be non-equal simply because they have different lengths.","05/Jul/19 15:29;ggregory;[~rohanpadhye]
+
+Thank you for your report.
+
+A start would be to provide a PR on GitHub with a failing unit test.
+
+Gary","18/Jul/19 08:46;rohanpadhye;Started a PR: [https://github.com/apache/commons-collections/pull/78]","19/Sep/19 09:00;Guoping1;Hi, [~rohanpadhye], [~ggregory]
+This problem is case by StringKeyAnalyzer#bitIndex don't support \u0000.
+Because k=0=f=\u0000, so there should not use k!=f.
+I think when index1>=endIndex1, we should set some sign instead of setting k=0, then use the sign to instead of k!=f.
+{code:java}
+            if (index1 >= endIndex1) {
+                k = 0;
+            } else {
+                k = key.charAt(index1);
+            }
+            
+            if (other == null || index2 >= endIndex2) {
+                f = 0;
+                fflag = true;
+            } else {
+                f = other.charAt(index2);
+            }
+
+            if ( (k != f ) {
+               final int x = k ^ f;
+               return i * LENGTH + Integer.numberOfLeadingZeros(x) - LENGTH;
+            }
+{code}
+
+
+but, when run testNullTerminatedKey2, trie.containsKey(""x"") fail.
+{code:java}
+public void testNullTerminatedKey2() {
+    PatriciaTrie<Integer> trie = new PatriciaTrie<>();
+    trie.put(""x"", 0);
+    Assert.assertTrue(trie.containsKey(""x"")); // ok
+    trie.put(""x\u0000"", 1);
+    Assert.assertTrue(trie.containsKey(""x\u0000"")); // ok
+    Assert.assertTrue(trie.containsKey(""x"")); // fail
+}
+{code}","19/Sep/19 14:14;ggregory;The current PR fails:
+{noformat}
+[ERROR] Failures: 
+[ERROR]   PatriciaTrieTest.testNullTerminatedKey1:440 expected:<3> but was:<2>
+[ERROR]   PatriciaTrieTest.testNullTerminatedKey2:451
+[INFO] 
+[ERROR] Tests run: 24948, Failures: 2, Errors: 0, Skipped: 0
+{noformat}","25/Sep/19 11:23;Guoping1;Because 0=‘\u0000’ we can't fix this problem, we need to add comments to explain this situation at PatriciaTrie.
+Don't support '\u0000' in the key.
+","25/Sep/19 15:54;rohanpadhye;If there is no fix, then silently failing (with only comments in the doc) does not seem like a great idea. The data structure is quite unstable if a previously inserted key disappears because another distinct key gets added. Also, this breaks the JDK Map contract since two non-equals() keys cannot be distinguished by two Map entries. If PatriciaTrie cannot support trailing null bytes in keys, it needs to throw an IllegalArgumentException or something in the put() method, constructor, and other places where new entries are created.","28/Oct/19 13:12;Guoping1;throw IllegalArgumentException in StringKeyAnalyzer#bitIndex when we call put?
+"
+functors.InvokerTransformer backward incompatibility bug,COLLECTIONS-721,13239832,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Not A Bug,,lingchao,lingchao,16/Jun/19 21:48,24/Jul/19 18:57,23/Mar/20 17:29,24/Jul/19 18:56,4.1,4.2,4.3,,,,0,performance,"The following code snippets throw a NotSerializableException. It works well before commons-collections4 4.0 and commons-collection3. When I update it to 4.1 or newer versions, it failed.
+
+
+{code:java}
+	@Test
+	public void Demo() throws IOException{
+		InvokerTransformer transformer = new InvokerTransformer(""toString"", new Class[]{}, new Object[]{});
+        Queue priorityQueue = new PriorityQueue(2, new TransformingComparator(transformer));
+        priorityQueue.add(1);
+        
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bout);
+        out.writeObject(priorityQueue);
+		
+		}
+{code}
+",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-07-24 03:20:46.377,,,false,,,,,,,,,,Important,,,,,,,,9223372036854775807,,,Wed Jul 24 18:57:00 UTC 2019,,,,,,,"0|z03suo:",9223372036854775807,,,,,,,,,,,,,,,,"24/Jul/19 03:20;oota;InvokerTransformerクラスから﻿﻿Serializableの実装を外したことが原因です。
+JavaDocコメントでは脆弱性対応のためとあります。","24/Jul/19 03:33;oota;The documents translated into English at the translation site are as follows:
+It is caused by removing the implementation of Serializable from the InvokerTransformer class.
+JavaDoc comments are for vulnerability support.","24/Jul/19 18:57;ggregory;Serializable was removed for -COLLECTIONS-580.-",,,,,

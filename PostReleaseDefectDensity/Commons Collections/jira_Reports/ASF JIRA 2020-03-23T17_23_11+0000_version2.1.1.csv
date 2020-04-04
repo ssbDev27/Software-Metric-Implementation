@@ -1,0 +1,86 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Affects Version/s,Affects Version/s,Component/s,Due Date,Votes,Labels,Labels,Description,Environment,Original Estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Custom field (Affects version (Component)),Custom field (Attachment count),Custom field (Blog - New Blog Administrators),Custom field (Blog - New Blog PMC),Custom field (Blog - Write access),Custom field (Blog Administrator?),Custom field (Blogs - Admin for blog),Custom field (Blogs - Email Address),Custom field (Blogs - Existing Blog Access Level),Custom field (Blogs - Existing Blog Name),Custom field (Blogs - New Blog Write Access),Custom field (Blogs - Username),Custom field (Bug Category),Custom field (Bugzilla - Email Notification Address),Custom field (Bugzilla - List of usernames),Custom field (Bugzilla - PMC Name),Custom field (Bugzilla - Project Name),Custom field (Bugzilla Id),Custom field (Bugzilla Id),Custom field (Change Category),Custom field (Complexity),Custom field (Date of First Response),Custom field (Discovered By),Custom field (Docs Text),Custom field (Enable Automatic Patch Review),Custom field (Epic Link),Custom field (Estimated Complexity),Custom field (Evidence Of Open Source Adoption),Custom field (Evidence Of Registration),Custom field (Evidence Of Use On World Wide Web),Custom field (Existing GitBox Approval),Custom field (External issue ID),Custom field (External issue URL),Custom field (Fix version (Component)),Custom field (Git Notification Mailing List),Custom field (Git Repository Import Path),Custom field (Git Repository Name),Custom field (Git Repository Type),Custom field (GitHub Options),Custom field (Github Integration),Custom field (Github Integrations - Other),Custom field (Global Rank),Custom field (INFRA - Subversion Repository Path),Custom field (Initial Confluence Contributors),Custom field (Last public comment date),Custom field (Level of effort),Custom field (Machine Readable Info),Custom field (New-TLP-TLPName),Custom field (Priority),Custom field (Project),Custom field (Protected Branch),Custom field (Rank),Custom field (Rank (Obsolete)),Custom field (Review Date),Custom field (Reviewer),Custom field (Severity),Custom field (Severity),Custom field (Skill Level),Custom field (Skill Level),Custom field (Source Control Link),Custom field (Space Description),Custom field (Space Key),Custom field (Space Name),Custom field (Tags),Custom field (Test and Documentation Plan),Custom field (Testcase included),Custom field (Tester),Custom field (Workaround),Comment,Comment,Comment
+"Inconsistent Javadoc comment and code in addAll(Collection, Object[]) in org.apache.commons.collections.CollectionUtils",COLLECTIONS-385,12528956,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Not A Problem,,shinhwei,shinhwei,26/Oct/11 20:27,27/Nov/15 21:47,23/Mar/20 17:22,26/Jul/12 21:06,2.1,2.1.1,3.0,3.1,3.2,Collection,,0,javadoc,nullpointerexception,"The Javadoc comment below states that the method ""throws NullPointerException if the collection or array is null"". 
+    /** 
+     * Adds all elements in the array to the given collection.
+     * 
+     * @param collection  the collection to add to, must not be null
+     * @param elements  the array of elements to add, must not be null
+     * @throws NullPointerException if the collection or array is null
+     */
+    public static void addAll(Collection collection, Object[] elements) {
+        for (int i = 0, size = elements.length; i < size; i++) {
+            collection.add(elements[i]);
+        }
+    }    
+
+However, when called with an empty array and a null collection (i.e., ""addAll((Collection)null, new Object[])""), the method executes normally without throwing any exception.
+
+Suggested Fixes:
+1. Add code ""if (collection == null) throw NullPointerException();"" at the beginning of the method body.
+or
+2. Remove ""@throws NullPointerException if the collection or array is null"" from the Javadoc.
+or
+3. Change ""@throws NullPointerException if the collection or array is null"" to ""@throws NullPointerException if the array is null or (the array is non-empty and the collection is null)"".",Platform Independent,300,300,,0%,300,300,,,,0.0,,,,,,,,,,,,,,,,,,,,2011-10-29 21:11:47.1,,,false,,,,,,,,,,,,,,,,,214816,,,Sun Oct 30 00:51:03 UTC 2011,,,,,,,"0|i0shuv:",164370,,,,,,,,,,,,,,,,"29/Oct/11 20:41;shinhwei;I found the same problem for overloaded method CollectionUtils#public static void addAll(Collection collection,Iterator iterator) and CollectionUtils#public static void addAll(Collection collection,Enumeration enumeration)","29/Oct/11 21:11;ggregory;I do not think this applies to trunk.","30/Oct/11 00:51;shinhwei;Yes, the trunk currently have:
+
+           /**
+	     * Adds all elements in the iteration to the given collection.
+	     *
+	     * @param collection
+	     *            the collection to add to, must not be null
+	     * @param iterator
+	     *            the iterator of elements to add, must not be null
+	     * @return a boolean indicating whether the collection has changed or not.
+	     * @throws NullPointerException
+	     *             if the collection or iterator is null
+	     */
+	    public static <C> boolean addAll(Collection<C> collection, Iterator<? extends C> iterator) {
+	        boolean changed = false;
+	        while (iterator.hasNext()) {
+	            changed |= collection.add(iterator.next());
+	        }
+	        return changed;
+	    }
+
+           /**
+	     * Adds all elements in the array to the given collection.
+	     *
+	     * @param collection
+	     *            the collection to add to, must not be null
+	     * @param elements
+	     *            the array of elements to add, must not be null
+	     * @throws NullPointerException
+	     *             if the collection or array is null
+	     */
+	    public static <C> boolean addAll(Collection<C> collection, C[] elements) {
+                 ............
+            }
+
+           /**
+	     * Adds all elements in the iteration to the given collection.
+	     *
+	     * @param collection
+	     *            the collection to add to, must not be null
+	     * @param iterator
+	     *            the iterator of elements to add, must not be null
+	     * @return a boolean indicating whether the collection has changed or not.
+	     * @throws NullPointerException
+	     *             if the collection or iterator is null
+	     */
+	    public static <C> boolean addAll(Collection<C> collection, Iterator<? extends C> iterator) {
+
+           /**
+	     * Adds all elements in the iteration to the given collection.
+	     *
+	     * @param collection
+	     *            the collection to add to, must not be null
+	     * @param iterator
+	     *            the iterator of elements to add, must not be null
+	     * @return a boolean indicating whether the collection has changed or not.
+	     * @throws NullPointerException
+	     *             if the collection or iterator is null
+	     */
+	    public static <C> boolean addAll(Collection<C> collection, Iterator<? extends C> iterator) {
+                    .....
+            }
+
+When called with an empty iterator/elements and a null collection (i.e., ArrayList al=new ArrayList(); addAll((Collection)null, new al.iterator())""), the method still executes normally without throwing any exception."

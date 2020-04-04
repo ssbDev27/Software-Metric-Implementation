@@ -1,0 +1,2163 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Affects Version/s,Fix Version/s,Component/s,Component/s,Component/s,Component/s,Due Date,Votes,Labels,Labels,Labels,Labels,Description,Environment,Original Estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Outward issue link (Cloners),Outward issue link (Duplicate),Outward issue link (Reference),Outward issue link (Regression),Attachment,Attachment,Attachment,Attachment,Custom field (Affects version (Component)),Custom field (Attachment count),Custom field (Blog - New Blog Administrators),Custom field (Blog - New Blog PMC),Custom field (Blog - Write access),Custom field (Blog Administrator?),Custom field (Blogs - Admin for blog),Custom field (Blogs - Email Address),Custom field (Blogs - Existing Blog Access Level),Custom field (Blogs - Existing Blog Name),Custom field (Blogs - New Blog Write Access),Custom field (Blogs - Username),Custom field (Bug Category),Custom field (Bugzilla - Email Notification Address),Custom field (Bugzilla - List of usernames),Custom field (Bugzilla - PMC Name),Custom field (Bugzilla - Project Name),Custom field (Bugzilla Id),Custom field (Bugzilla Id),Custom field (Change Category),Custom field (Complexity),Custom field (Date of First Response),Custom field (Discovered By),Custom field (Docs Text),Custom field (Enable Automatic Patch Review),Custom field (Epic Link),Custom field (Estimated Complexity),Custom field (Evidence Of Open Source Adoption),Custom field (Evidence Of Registration),Custom field (Evidence Of Use On World Wide Web),Custom field (Existing GitBox Approval),Custom field (External issue ID),Custom field (External issue URL),Custom field (Fix version (Component)),Custom field (Flags),Custom field (Git Notification Mailing List),Custom field (Git Repository Import Path),Custom field (Git Repository Name),Custom field (Git Repository Type),Custom field (GitHub Options),Custom field (Github Integration),Custom field (Github Integrations - Other),Custom field (Global Rank),Custom field (INFRA - Subversion Repository Path),Custom field (Initial Confluence Contributors),Custom field (Last public comment date),Custom field (Level of effort),Custom field (Machine Readable Info),Custom field (New-TLP-TLPName),Custom field (Priority),Custom field (Project),Custom field (Protected Branch),Custom field (Rank),Custom field (Rank (Obsolete)),Custom field (Review Date),Custom field (Reviewer),Custom field (Severity),Custom field (Severity),Custom field (Skill Level),Custom field (Skill Level),Custom field (Source Control Link),Custom field (Space Description),Custom field (Space Key),Custom field (Space Name),Custom field (Tags),Custom field (Test and Documentation Plan),Custom field (Testcase included),Custom field (Tester),Custom field (Workaround),Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment
+SSL/TLS SocketClients do not verify the hostname against the certificate,NET-579,12858047,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Critical,Fixed,,simonarlott,simonarlott,22/Aug/15 09:14,26/Nov/15 16:37,28/Mar/20 23:26,24/Aug/15 00:25,3.3,,,,3.4,FTP,IMAP,POP3,SMTP,,0,security,,,,"Every subclass of SocketClient that does SSL/TLS will never verify the hostname of the server against the certificate. This means that any valid certificate for any CA in the default trust store will be accepted without error.
+
+SocketClient should be modified to store the hostname, and SMTPSClient/FTPSClient/IMAPSClient/POP3SClient should use it when negotiating SSL/TLS.
+
+Java 1.7 has support for verifying the hostname if SSLParameters.setEndpointIdentificationAlgorithm(""HTTPS"") is used.",Java 1.7 (earlier versions cannot verify the hostname),7200,7200,,0%,7200,7200,,,,,,,"22/Aug/15 09:24;simonarlott;NET-579.patch;https://issues.apache.org/jira/secure/attachment/12751872/NET-579.patch","23/Aug/15 22:35;simonarlott;NET-579_2.patch;https://issues.apache.org/jira/secure/attachment/12751936/NET-579_2.patch",,,,2.0,,,,,,,,,,,,,,,,,,,,2015-08-22 14:21:32.433,,,false,,,,,,,,,,Patch,,,,,,,,9223372036854775807,,,Mon Aug 24 00:25:57 UTC 2015,,,,,,,"0|i2j8t3:",9223372036854775807,,,,,,,,,,,,,,,,"22/Aug/15 09:17;simonarlott;Note, on Android there is no SSLParameters.setEndpointIdentificationAlgorithm(""HTTPS"") and the only viable option appears to be to extend the client (to gain access to _socket_) and use HttpsURLConnection.getDefaultHostnameVerifier() to perform the check.","22/Aug/15 14:21;bogdro;The patch looks nice, but you can already achieve this functionality - you can always set  your own TrustManager in the client instance, e.g. FTPSClient.setTrustManager(), or use a custom SocketFactory.
+This wouldn't require Java 7 by Commons-NET, would allow to set even more parameters than these and enable any certificate validations you would wish. Sure, it's less convenient, because you have to code more on the client side.
+I'm not a Commons-NET developer, but I don't think I'd like such a change in the code. The problem is that a certificate can be issued to a host name and thus connecting using an IP address would fail or vice versa (a test certificate issued for an IP address inside some local network, and clients connecting with hostnames by a local DNS).","22/Aug/15 16:52;simonarlott;The connection is supposed to fail when it's not secure, and there is no TrustManager that checks the hostname. There's also no API in commons-net to replace the SSLSocketFactory that is used. Even with a custom TrustManager/SSLSocketFactory you still don't have access to the hostname because the code in commons-net discards it.","23/Aug/15 21:31;sebb;bq. ""The connection is supposed to fail when it's not secure""
+
+Is that documented anywhere in NET?
+
+I agree with [~bogdro] that it does not seem sensible to change NET as suggested.
+
+However if there are some additions to the API needed in order to support custom code please provide details.
+","23/Aug/15 21:37;simonarlott;The hostname has to be retained (there's no API change required for that).
+
+For Java 1.7+, there needs to be a way to call setEndpointIdentificationAlgorithm(""HTTPS"") on the SSLParameters for the SSLSocket, before negotiating TLS.
+
+For everything else (i.e. Android), there needs to a post-TLS verification check using the SSLSession (which can be obtained from the SSLSocket) and the hostname. This could either be a protected method that has to be overridden or a callback interface that takes a hostname and SSLSocket/SSLSession and returns a boolean verification result.","23/Aug/15 21:40;sebb;Have you a patch that would meet the requirements?","23/Aug/15 22:35;simonarlott;This patch adds setEndpointCheckingEnabled() for use with Java 1.7+ and setHostnameVerifier() for use with older JVMs and Android.
+
+It's not enabled by default, primarily because the default implementation of HostnameVerifier that Java provides always returns false...","24/Aug/15 00:25;sebb;Thanks very much.
+Patch applied with some minor changes (e.g. always blocks for conditional statements)
+
+URL: http://svn.apache.org/r1697287
+Log:
+NET-579 SSL/TLS SocketClients do not verify the hostname against the certificate
+
+Added:
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/util/SSLSocketUtils.java   (with props)
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/SocketClient.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPSClient.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/imap/IMAPSClient.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/pop3/POP3SClient.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/smtp/SMTPSClient.java
+",,,,,,,
+Strict CRLF handling in Commons-NET FTP breaks compatibility with some FTP servers,NET-620,13047689,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Abandoned,,Unsta,Unsta,02/Mar/17 14:24,08/Feb/18 11:13,28/Mar/20 23:26,08/Feb/18 11:13,3.3,3.4,3.5,3.6,,FTP,,,,,0,,,,,"The fix for FTP.java in NET-401 to switch from using BufferedReader to CRLFLineReader breaks the ability to connect to servers that have varying LF and CRLF line termination in the banner.
+
+I've run into 2 different cases with slightly different banner configs, one where you end up hung indefinitely by not reading far enough (this is the sigquit from when it is hung):
+
+1. Thread=FTP Provider Protocol Provider Thread: class com.xxxx.xxxxx.xxx (00007F35A1AF4A00) Status=Running
+       at java/net/SocketInputStream.socketRead0(Ljava/io/FileDescriptor;[BIII)I (Native Method)
+       at java/net/SocketInputStream.read([BIII)I (SocketInputStream.java:164) (Compiled Code)
+       at java/net/SocketInputStream.read([BII)I (SocketInputStream.java:134) (Compiled Code)
+       at sun/nio/cs/StreamDecoder.readBytes()I (StreamDecoder.java:323) (Compiled Code)
+       at sun/nio/cs/StreamDecoder.implRead([CII)I (StreamDecoder.java:365) (Compiled Code)
+       at sun/nio/cs/StreamDecoder.read([CII)I (StreamDecoder.java:211) (Compiled Code)
+       at java/io/InputStreamReader.read([CII)I (InputStreamReader.java:206) (Compiled Code)
+       at java/io/BufferedReader.fill()V (BufferedReader.java:166) (Compiled Code)
+       at java/io/BufferedReader.read()I (BufferedReader.java:187) (Compiled Code)
+       at org/apache/commons/net/io/CRLFLineReader.readLine()Ljava/lang/String; (CRLFLineReader.java:58)
+       at org/apache/commons/net/ftp/FTP.__getReply(Z)V (FTP.java:357)
+       at org/apache/commons/net/ftp/FTP.__getReply()V (FTP.java:300)
+       at org/apache/commons/net/ftp/FTP._connectAction_(Ljava/io/Reader;)V (FTP.java:438)
+       at org/apache/commons/net/ftp/FTPClient._connectAction_(Ljava/io/Reader;)V (FTPClient.java:962)
+       at org/apache/commons/net/ftp/FTPClient._connectAction_()V (FTPClient.java:950)
+       at org/apache/commons/net/SocketClient._connect(Ljava/net/InetAddress;ILjava/net/InetAddress;I)V (SocketClient.java:244)
+       at org/apache/commons/net/SocketClient.connect(Ljava/net/InetAddress;I)V (SocketClient.java:181)
+
+
+2. And one where you error out by reading too far and getting a null back:
+
+Caused by:
+org.apache.commons.net.ftp.FTPConnectionClosedException: Connection closed without indication.
+    at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:317)
+    at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:294)
+    at org.apache.commons.net.ftp.FTP.sendCommand(FTP.java:483)
+    at org.apache.commons.net.ftp.FTP.sendCommand(FTP.java:608)
+    at org.apache.commons.net.ftp.FTP.user(FTP.java:753)
+    at org.apache.commons.net.ftp.FTPClient.login(FTPClient.java:1034)
+
+I do have hex data available to show the source data, but the end result is there's a mix of 0d0a (CRLF) and 0a (LF) termination in the FTP banner (220-)
+
+I can modify the library to undo the NET-401 change, but ideally it'd be nice to have a strictNewline type of setting you could set on the FTPClient object to decide if you want to be ultra-strict, or ultra compatible. I will be filing a defect with Cisco about this as well, but it would be great if the FTPClient had the option to handle it instead of forced compatibility with no options to relax it.
+
+This is kind of hinted at in one of the comments on NET-402 by Bogdan Drozdowski on 12/Apr/11
+""So, on one hand, we stop supporting non-conforming servers (which could mean that we're supporting less servers now), but on the other hand we're fixing a bug that someone has found in a real-life system.""
+
+Giving users the option to relax the conformity requirements (but strict by default) would allow the end user to choose the option.
+
+Any thoughts on this?",Java RHEL Linux,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-03-02 15:16:51.615,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Apr 04 13:09:59 UTC 2017,,,,,,,"0|i3aus7:",9223372036854775807,,,,,,,,,,,,,,,,"02/Mar/17 15:16;sebb;The proper fix for this is for servers to abide by the RFC and send CRLF as the line terminator.
+
+Reverting NET-401 may cause problems with well-behaved servers so is not acceptable.
+
+An option to allow less strict behaviour might be feasible.
+However this will have to be carefully done to ensure EOL is not detected incorrectly.
+
+===
+
+It looks as though it might be possible to override 
+protected void _connectAction_()
+and have it call
+protected void _connectAction_(Reader)
+
+where the Reader is defined as
+new InputStreamReaderFixEOL(_input_, getControlEncoding())
+
+InputStreamReaderFixEOL would have to convert bare LF to CRLF
+This could probably be derived from ToNetASCIIInputStream
+
+The net result would be that the CRLF reader would only see CRLFs
+","02/Mar/17 19:49;Unsta;So I was hoping originally to be able to just use the library as-is and extend FTPClient in my code and override _connectAction_ but to recreate it and use a different reader as it is I couldn't as __initDefaults() and  __autodetectEncoding are both private and not accessible by subclasses. Maybe I'm just missing something here but it doesn't seem possible with the current code.
+
+(from commons-net-3.3)
+
+{noformat}
+    protected void _connectAction_() throws IOException
+    {
+        super._connectAction_(); // sets up _input_ and _output_
+        __initDefaults();
+        // must be after super._connectAction_(), because otherwise we get an
+        // Exception claiming we're not connected
+        if ( __autodetectEncoding )
+        {
+            ArrayList<String> oldReplyLines = new ArrayList<String> (_replyLines);
+            int oldReplyCode = _replyCode;
+            if ( hasFeature(""UTF8"") || hasFeature(""UTF-8"")) // UTF8 appears to be the default
+            {
+                 setControlEncoding(""UTF-8"");
+                 _controlInput_ =
+                     new BufferedReader(new InputStreamReader(_input_, getControlEncoding())); //Changed from CRLFLineReader for my purposes
+                 _controlOutput_ =
+                    new BufferedWriter(new OutputStreamWriter(_output_, getControlEncoding()));
+            }
+            // restore the original reply (server greeting)
+            _replyLines.clear();
+            _replyLines.addAll(oldReplyLines);
+            _replyCode = oldReplyCode;
+        }
+    }
+{noformat}
+At least then I can choose to use the BufferedReader instead and deal with whatever issues I hit.
+
+So I'm 100% not saying the CRLFLineReader should be reverted, I'm asking if we can look at a way of having the strictness be optional. Even restructuring to allow someone to override a method that lets you pass in your reader would suffice but a property that allows you to toggle it would certainly be more user-friendly similar to what setStrictMultilineParsing(boolean strictMultilineParsing) allows you to do currently.","02/Mar/17 21:52;sebb;Code it as follows:
+
+{code}
+    protected void _connectAction_() throws IOException
+    {
+        _connectAction_(new InputStreamReaderFixEOL(input, getControlEncoding()));
+    }
+{code}
+
+No need to rewrite the method, just provide a Reader that adds CRs as necessary.","02/Mar/17 23:06;Unsta;This would still require modifying the commons-net library though would it not? If I have to modify commons-net for my own purposes I've certainly got lots of options but ideally if I could extend a class in my own code and override a method to make it work then I *should* be able to drop any future version of commons-net in without modification (unless something major changes).
+
+So am I missing something here? Just want to make sure the above change would still require a modified version of the current (or 3.3 in my case) release.
+
+If there's no way to extend and override in the currently released code I'll need to ship a modified version with our production code and maintain that while we work to get functionality added to the released version (by contribution or helping in some way).
+
+I appreciate the assistance and the quick response, many thanks!
+
+
+
+","02/Mar/17 23:24;sebb;You should be able to subclass FTPClient and override the method.
+No need to edit the code.
+
+BTW 3.6 was released recently and my suggestion is based on the current code, but I don't think that area has changed much.","02/Mar/17 23:34;Unsta;Aha moment... 3.6 has this method:
+
+{noformat}
+    protected void _connectAction_(Reader socketIsReader) throws IOException
+{noformat}
+
+3.3 does not.
+
+I'll go down that road and since it's available now you might as well close this issue out unless you think you'd like to make it easier for someone to toggle this behaviour via a property (like strictReplyParsing and strictMultilineParsing). It'd certainly be nice to be able to just call a method on the FTPClient object and toggle it!
+
+Thanks again for the help Sebb and I'll post back here with a success/fail.
+
+-Chris","03/Mar/17 00:43;Unsta;So rather than bothering with an extra class in my code I'm just going to handle it like this:
+
+{noformat}
+public class FTPClient extends org.apache.commons.net.ftp.FTPClient
+{
+    /**
+     * Overridden version of org.apache.commons.net.ftp.FTPClient to convert all
+     * line termination to CRLF regardless of source for compatibility with non-conforming
+     * FTP servers.
+     */
+    @Override
+    protected void _connectAction_() throws IOException
+    {
+    	ToNetASCIIInputStream toNetAsciiIs = new ToNetASCIIInputStream(_input_);
+    	InputStreamReader isr = new InputStreamReader(toNetAsciiIs, getControlEncoding());
+    	_connectAction_(isr);
+    }	
+}
+
+{noformat}
+
+This should handle it in-line, I'll give this a go later and see how I make out. Thanks for the tip and hopefully the *very* useful referral to ToNetASCIIInputStream.","03/Mar/17 03:36;Unsta;Well it definitely used it upon connection, but gets an NPE on the reader.
+
+{noformat}
+java.lang.NullPointerException
+   at org.apache.commons.net.io.ToNetASCIIInputStream.available(ToNetASCIIInputStream.java:177)
+   at org.apache.commons.net.io.ToNetASCIIInputStream.read(ToNetASCIIInputStream.java:139)
+   at sun.nio.cs.StreamDecoder.readBytes(StreamDecoder.java:323)
+   at sun.nio.cs.StreamDecoder.implRead(StreamDecoder.java:365)
+   at sun.nio.cs.StreamDecoder.read(StreamDecoder.java:211)
+   at java.io.InputStreamReader.read(InputStreamReader.java:206)
+   at java.io.BufferedReader.fill(BufferedReader.java:166)
+   at java.io.BufferedReader.read(BufferedReader.java:187)
+   at org.apache.commons.net.io.CRLFLineReader.readLine(CRLFLineReader.java:58)
+   at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:321)
+   at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:300)
+   at org.apache.commons.net.ftp.FTP._connectAction_(FTP.java:438)
+   at org.apache.commons.net.ftp.FTPClient._connectAction_(FTPClient.java:962)
+   at com.q1labs.semsources.sources.remote.transferprotocol.ftp.FTPClient._connectAction_(FTPClient.java:28)
+   at org.apache.commons.net.SocketClient._connect(SocketClient.java:244)
+   at org.apache.commons.net.SocketClient.connect(SocketClient.java:181)
+{noformat}
+
+ToNetASCIIInputStream.java:177 is 
+{noformat}
+        result = in.available();
+{noformat}
+
+Having a look through though \_input\_ is initialized in SocketClient \_connectAction\_ which is called by FTP.java \_connectAction\_ which is called by FTPClient.java \_connectAction\_ so it presumably should be populated.
+
+So the inputStream must be null at that point, but I'll have to remote debug it to dig further.","03/Mar/17 13:17;Unsta;Ok, so it appears that the breaking up of \_connectAction\_() and \_connectAction\_(Reader reader) was done to re-use existing readers when possible instead of creating new ones, but doesn't allow you do define your own reader and pass it in.
+
+This appears to be due to \_input\_ not being initialized until SocketClient.\_connectAction\_ is called through the chain mentioned in the previous comment. I thought that maybe ToNetASCIIInputStream might get \_input\_ initialized if the inputstream was passed by reference but it doesn't appear to. Through remote debugging I can clearly see that when the reader is passed in FTP.\_\_getReply:321 is definitely working on a null InputStream within the InputStreamReader. If I reformat FTPClient.\_connectAction\_ like this for testing purposes everything works fine including the newlines getting fixed:
+
+{noformat}
+    protected void _connectAction_(Reader socketIsReader) throws IOException {
+        super._connectAction_(); // sets up _input_ and _output_
+        if(socketIsReader == null) {
+            _controlInput_ =
+                    new CRLFLineReader(new InputStreamReader(new ToNetASCIIInputStream(_input_), getControlEncoding()));
+        } else {
+            _controlInput_ = new CRLFLineReader(socketIsReader);
+        }
+{noformat}
+
+This shows that wrapping the InputStream in ToNetASCIIInputStream does in fact fix my issue, so maybe I'm back to making a strictNewlineProcessing option that can be set and create the reader accordingly.
+
+Looking at these results and how things are organized and where initializations happen does this Null InputStream make sense to you as well Sebb?","13/Mar/17 11:51;Unsta;Does anyone have any other ideas or am I best to work out a solution that allows configuration on which reader to use based on a parameter and then submit a patch for consideration?","04/Apr/17 13:09;Unsta;If there's no other methods to extend or override that have visibility into the variables/methods needed then I'll have to move forward with putting in a submission to allow the strict CR/LF handling to be a parameter that can be toggled by the client.",,,,
+FTPS client through http proxy,NET-578,12845369,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Cannot Reproduce,,jeffemada,jeffemada,15/Jul/15 19:26,17/Jul/17 11:58,28/Mar/20 23:26,08/Feb/17 00:00,3.3,,,,,FTP,,,,,0,,,,,"I'm trying to develop a Java FTPS client using Apache Commons Net library. To run de code I'm using Java 8, update 45.
+
+The exception occurs when I'm invoking the method ""retrieveFile"". I'm not sure, but I belive the connection used to tranfer the file is not using the HTTP proxy specified in code.
+
+With FileZilla client I can tranfer files using the same configurations.
+
+How can I fix this problem?
+
+{code:title=My code|borderStyle=solid}
+// client with explicit security
+FTPSClient ftps = new FTPSClient(false);
+// HTTP proxy configuration
+Proxy proxy = new Proxy(Type.HTTP, new InetSocketAddress(""<REMOVED_FOR_SERCURITY>"", <REMOVED_FOR_SERCURITY>));
+ftps.setProxy(proxy);
+// to show FTP commands in prompt
+ftps.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out), true));
+// disable remote host verification
+ftps.setRemoteVerificationEnabled(false);
+// trust in ALL
+ftps.setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());
+// send keepAlive every 30 seconds
+ftps.setControlKeepAliveTimeout(10l);
+// data transfer timeout
+ftps.setDataTimeout(30000);
+
+// connect
+ftps.connect(""<REMOVED_FOR_SERCURITY>"", <REMOVED_FOR_SERCURITY>);
+ftps.login(""<REMOVED_FOR_SERCURITY>"", ""<REMOVED_FOR_SERCURITY>"");
+
+// config
+ftps.setCharset(Charset.forName(""UTF-8""));
+ftps.setBufferSize(0);
+ftps.setFileType(FTP.BINARY_FILE_TYPE);
+ftps.enterLocalPassiveMode();
+ftps.execPROT(""P"");
+
+// ... do some operations
+ftps.retrieveFile(""/dir1/dir2/fileX.zip"", new ByteArrayOutputStream());
+
+// close
+ftps.logout();
+ftps.disconnect();
+{code}
+
+The output:
+{noformat}
+220 (vsFTPd 2.2.2)
+AUTH TLS
+234 Proceed with negotiation.
+USER *******
+331 Please specify the password.
+PASS *******
+230 Login successful.
+TYPE I
+200 Switching to Binary mode.
+PROT P
+200 PROT now Private.
+PASV
+227 Entering Passive Mode (<REMOVED_FOR_SERCURITY>).
+Exception in thread ""main"" java.net.ConnectException: Connection timed out: connect
+    at java.net.DualStackPlainSocketImpl.connect0(Native Method)
+    at java.net.DualStackPlainSocketImpl.socketConnect(DualStackPlainSocketImpl.java:79)
+    at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:345)
+    at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:206)
+    at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:188)
+    at java.net.PlainSocketImpl.connect(PlainSocketImpl.java:172)
+    at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+    at java.net.Socket.connect(Socket.java:589)
+    at sun.security.ssl.SSLSocketImpl.connect(SSLSocketImpl.java:656)
+    at org.apache.commons.net.ftp.FTPClient._openDataConnection_(FTPClient.java:894)
+    at org.apache.commons.net.ftp.FTPSClient._openDataConnection_(FTPSClient.java:600)
+    at org.apache.commons.net.ftp.FTPClient._retrieveFile(FTPClient.java:1854)
+    at org.apache.commons.net.ftp.FTPClient.retrieveFile(FTPClient.java:1845)
+    at br.com.bat.crm.test.util.FTPSClientTest.main(FTPSClientTest.java:57)
+{noformat}","Linux 3.0.101-0.21-default x86_64
+Java 1.8 update 45 64-bit",,,,,,,,,,,,,"01/Aug/15 21:21;jeffemada;FTPSHTTPClient_source_code.zip;https://issues.apache.org/jira/secure/attachment/12748331/FTPSHTTPClient_source_code.zip",,,,,1.0,,,,,,,,,,,,,,,,,,,,2017-02-08 00:00:08.961,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jul 17 11:58:32 UTC 2017,,,,,,,"0|i2hau7:",9223372036854775807,,,,,,,,,,,,,,,,"01/Aug/15 21:21;jeffemada;I downloaded the source code of commons-net 3.3 and implemented my own FTPS through HTTP Proxy client.
+It has a problem when calling the method keepAlive, is giving the exception ""java.net.SocketTimeoutException: Read timed out"". I don't know what is causing this error. For me is not a problem, because I'm not using this feature.
+
+Follow implemented customizations:
+In FTPClient.java I created the method:
+protected int getDataTimeout()
+    {
+        return __dataTimeout;
+    }
+
+In FTPSClient.java I created the method:
+protected SSLContext getContext() {
+        return context;
+    }
+
+Created the class FTPSHTTPClient.java (is attached).
+Created the class FTPSHTTPClientTest.java for tests  (is attached).","08/Feb/17 00:00;sebb;Version 3.3 is rather old now; please re-open with a test case if it still fails in 3.5","17/Jul/17 11:58;DJGummikuh;I'm still having the issue with commons-net-3.6 When trying to issue an MLSD.
+The problem appears to lie in execPROT in FTPSClient.java:534 - setSocketFactory(new FTPSSocketFactory(context)); triggers setSocketFactory, which sets connProxy to null. In turn, any call that is attempted which requires a data connection to be established actually CIRCUMVENTS the proxy settings (attempting to contact the ftp server directly), which of course fails.
+
+Further note: I'm using PROT P to enforce encryption of the data connections as well, which triggers the else statement. Without explicitly setting PROT, the proxy communication is working as intended.",,,,,,,,,,,,
+FTPClient.setPassiveNatWorkaround assumes host is outside site local range,NET-588,12945508,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,davenice,davenice,29/Feb/16 16:20,14/Feb/17 22:22,28/Mar/20 23:26,07/Feb/17 20:05,3.1,3.3,3.4,,3.6,FTP,,,,,0,,,,,"We have a NAT firewall between two ""site local"" 10.x networks. The effect is that the FTP library tries to make data connections to the wrong host because the passive NAT workaround doesn't operate if the FTP connection is made to a ""site local"" private address and the host returned in the PASV reply is also ""site local"".
+
+I see that Damon Dan references pretty much the exact issue within bug NET-363 when the workaround was originally introduced.
+
+Users with ""site local"" networks would be quite at liberty to subnet within the network, I guess, to suit their administrative needs, so this seems like a valid issue.
+
+Options I can see:
+1) Include a way of forcing the workaround in place
+2) Remove the selectivity around rewriting the host only if the PASV reply is ""site local"" and original host isn't... Issue here is around a server that has multiple endpoints for data connections?
+3) Allow the user to specify their own data host via API
+4) Check for whether the PASV reply address is in a different subnet to the original host we connected to and apply the workaround if so
+
+I haven't yet identified a workaround within the current code!",,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-12-05 05:09:19.697,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Feb 07 20:05:00 UTC 2017,,,,,,,"0|i2tx5z:",9223372036854775807,,,,,,,,,,,,,,,,"05/Dec/16 05:09;nexus7tha;I've just created a pull request at https://github.com/apache/commons-net/pull/5
+The change will allow overwriting PASV reply address by implementing method  ""String resolve(String hostname) ""","02/Jan/17 14:34;nexus7tha;Can someone help to review the fix? Thanks.","07/Feb/17 20:05;sebb;Thanks for the report and the PR.
+Applied:
+
+URL: http://svn.apache.org/viewvc?rev=1782074&view=rev
+Log:
+NET-588 FTPClient.setPassiveNatWorkaround assumes host is outside site local range
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClient.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ftp/FTPClientTest.java
+",,,,,,,,,,,,
+"Failure to parse times from SYST_L8 systems that report as ""WINDOWS Type: L8""",NET-602,13003735,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,rossb,rossb,09/Sep/16 02:32,14/Feb/17 22:22,28/Mar/20 23:26,07/Feb/17 23:24,3.3,3.5,,,3.6,FTP,,,,,0,,,,,"When getting file entries from a Type: L8 system running on a Windows server the code cannot extract the timestamp of the file correctly (it returns null).
+
+The entry format returned by the server is as follows:
+-rwxrwxrwx    1 user     group             2490 Sep    7 2016 file.txt
+
+The reason for this appears to be a bug in the way the DefaultFTPFileEntryParserFactory constructs the CompositeFileEntryParser (createNTFTPEntryParser method), as when it passes the config object through to the NTFTPEntryParser first, the config passed through is updated with the Default timestamp format for Windows FTP servers ""MM-dd-yy hh:mma"", and then when the same config object is passed to the UnixFTPEntryParser it picks up this default and tries to use it instead of what it should be which is ""MMM d yyyy"".
+
+Not sure when this bug was introduced but it is at least present in 3.3 and 3.5.
+
+The problem may also be present for the createOS400FTPEntryParser, though I have not confirmed this.
+
+Potential Solution:
+When passing the config through to the parsers for each part of the CompositeFileEntryParser they should be using a clone of the original to avoid this kind of cross-contamination between different parser types.",Windows Type: L8 FTP servers,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-02-07 23:24:34.019,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Feb 07 23:24:34 UTC 2017,,,,,,,"0|i33f7j:",9223372036854775807,,,,,,,,,,,,,,,,"07/Feb/17 23:24;sebb;URL: http://svn.apache.org/viewvc?rev=1782089&view=rev
+Log:
+NET-602 Failure to parse times from SYST_L8 systems that report as ""WINDOWS Type: L8""
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClientConfig.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/DefaultFTPFileEntryParserFactory.java
+",,,,,,,,,,,,,,
+UnixFTPEntryParser Drops Leading Spaces from File Names,NET-566,12764403,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,grussell,grussell,31/Dec/14 17:12,06/Feb/17 16:27,28/Mar/20 23:26,17/Jan/15 23:16,3.3,,,,3.4,FTP,,,,,0,,,,,"The {{UnixFTPEntryParser}} [regular expression | http://svn.apache.org/viewvc/commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/UnixFTPEntryParser.java?view=markup] (line 106) consumes all spaces between the timestamp and the file name.
+
+The {{FTPFile.name}} property ends up getting a value with stripped leading spaces.
+
+Reported by Spring Integration user at https://jira.spring.io/browse/INT-3591","OSX client, Linux ftpd",,,,,,,,,,,,NET-609,"02/Jan/15 22:20;grussell;unixParser.patch;https://issues.apache.org/jira/secure/attachment/12689886/unixParser.patch",,,,,1.0,,,,,,,,,,,,,,,,,,,,2015-01-01 16:52:26.724,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Feb 06 16:27:38 UTC 2017,,,,,,,"0|i23vtj:",9223372036854775807,,,,,,,,,,,,,,,,"01/Jan/15 16:52;sebb;Thanks for the very clear bug report.
+
+Are Unix ftp listings guaranteed to always have just one space after the timestamp?
+As far as I can tell, there is no standard format; the listing is intended to be human readable, not machine parseable.
+What if some servers return 2 spaces?
+So before the Regex can be changed, we need to be sure that changing it would not break other usages.
+
+
+Note that if the server supports MLSD or MLST that would be a better solution.","01/Jan/15 18:24;grussell;Yes, I agree it's tricky to change this; it's a little odd to have a file start with a space, but possible, I guess (based on the reporter's issue).
+
+Thanks for the pointer to the MLSD/T - I'll take a look at changing our code to use that by default and falling back to LIST if it's not supported.
+
+Maybe that's something that could be considered in a future version of the {{FTPClient}} ?","01/Jan/15 23:26;sebb;Unix file names can contain just about any character except '/'.
+They can start with a space, but creating such files is not a good idea as it makes them tricky to process.
+Unix even supports a file name consisting of a single space.
+
+NET already supports MLSD, for example:
+
+http://commons.apache.org/proper/commons-net/javadocs/api-3.3/org/apache/commons/net/ftp/FTPClient.html#mlistDir%28%29
+
+and MLST
+
+http://commons.apache.org/proper/commons-net/javadocs/api-3.3/org/apache/commons/net/ftp/FTPClient.html#mlistFile%28java.lang.String%29
+
+See also
+
+http://commons.apache.org/proper/commons-net/javadocs/api-3.3/org/apache/commons/net/ftp/FTPClient.html#listNames%28%29
+
+which may be useful.
+
+However note that MLSD/MLST are not supported by all ftp servers. Not sure about NLST.","01/Jan/15 23:31;sebb;Having said that, it would be good if NET could support file names with leading spaces (it already supports embedded spaces) provided that this can be done in a compatible way.
+","02/Jan/15 15:46;grussell;Right; I realize NET already supports {{MLS*}}. What I am suggesting is a new method, maybe {{smartList(pathname)}} which will use MLST if supported and fall back to LIST if not.
+
+That's what I am going to try to do in our code, but it would be nice if the NET library handled it for me.","02/Jan/15 15:57;sebb;I see.
+Please file a new JIRA issue for this enhancement.
+Patches welcome!","02/Jan/15 18:46;grussell;FYI, there is a bug with {{MLST}} in the Apache Mina {{FtpServer}} (see FTPSERVER-464).
+
+Also the standard linux {{ftpd}} doesn't support MLST so it won't help the original reporter of this issue.","02/Jan/15 18:57;sebb;OK, useful info
+
+What about NLST? Does Linux support that in standard ftp?","02/Jan/15 20:11;grussell;Yes, NLST works (the filenames are returned with the leading space in the path), but it's not very useful if the target directory has subdirectories because you can't filter them out; but I'll check with him if it would work for his use case.","02/Jan/15 22:20;grussell;Here's one solution (patch attached); run the client with
+
+{{-Dorg.apache.commons.net.ftp.systemType=UNIX_STRICT}}
+
+or an appropriately configured {{FTPClientConfig}}.","17/Jan/15 15:14;sebb;Thanks!
+
+I've checked many of the ftp mirrors used by the ASF and they all return a single space between date and filename, so I'm leaning towards making that the default behaviour. But it should still be possible to select the original behaviour if necessary.
+
+As part of this, the following commit allows the user to disable leading space trimming:
+
+URL: http://svn.apache.org/r1652621
+Log:
+NET-566 UnixFTPEntryParser Drops Leading Spaces from File Names
+Add option to parser to not skip leading spaces
+TODO make this the default but still allow reversion
+
+Modified:
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/UnixFTPEntryParser.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ftp/parser/UnixFTPEntryParserTest.java
+
+More work remains to be done on this to ensure that all existing uses of the Unix parser are catered for.
+e.g. the NT Parser may use the Unix parser, it must be possible for it to continue to use the old parser settings if the default is changed.","17/Jan/15 23:16;sebb;RL: http://svn.apache.org/r1652696
+Log:
+NET-566 UnixFTPEntryParser Drops Leading Spaces from File Names
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClientConfig.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/DefaultFTPFileEntryParserFactory.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/UnixFTPEntryParser.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ftp/parser/UnixFTPEntryParserTest.java
+","26/Jun/15 14:53;grussell;Any ideas when 3.4 will be released? I see 3.3 is 2 years old.","06/Feb/17 16:27;sebb;FTR 3.4 was released 2015-11-26",
+FTPClient.getReplyString() returns wrong value after connect(),NET-583,12916576,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,ickzon,ickzon,27/Nov/15 09:17,05/May/16 00:53,28/Mar/20 23:26,15/Apr/16 19:08,3.3,,,,3.5,FTP,,,,,0,,,,,"If the FTPClient's automatic server encoding detection is enabled, a FEAT command is issued in method _connectAction_() [indirectly via hasFeature(String)]. After that, the _replyCode and _replyLines fields are stored back to their previous values in _connectAction_(), but the _newReplyString flag isn't set to true. Because of that, you will then get back the reply to the FEAT command from getReplyString(), instead of the server's welcome message. Furthermore, you may get back a reply code that doesn't match that reply string. We have encountered a case when we got back reply code 220 after FTPClient.connect(), but reply string was ""530 Not logged in."".
+
+This error can easily be fixed by adding the following line to FTPClient.java around line 944:
+_newReplyString = true;
+
+Patch:
+===================================================================
+--- src/org/apache/commons/net/ftp/FTPClient.java
++++ src/org/apache/commons/net/ftp/FTPClient.java	(working copy)
+@@ -941,6 +941,7 @@
+            _replyLines.clear();
+            _replyLines.addAll(oldReplyLines);
+            _replyCode = oldReplyCode;
++           _newReplyString = true;
+        }
+    }",,600,600,,0%,600,600,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-04-15 19:08:28.112,,,false,,,,,,,,,,Patch,,,,,,,,9223372036854775807,,,Fri Apr 15 19:08:28 UTC 2016,,,,,,,"0|i2p01b:",9223372036854775807,,,,,,,,,,,,,,,,"15/Apr/16 19:08;sebb;Thanks for the bug report and suggested fix.
+URL: http://svn.apache.org/viewvc?rev=1739351&view=rev
+Log:
+NET-583 FTPClient.getReplyString() returns wrong value after connect()
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClient.java
+",,,,,,,,,,,,,,
+SMTPClient.sendSimpleMessage() silently ignores failed recipients,NET-580,12858209,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,simonarlott,simonarlott,24/Aug/15 06:50,15/Apr/16 19:14,28/Mar/20 23:26,15/Apr/16 19:14,3.3,,,,3.4,SMTP,,,,,0,,,,,"When SMTPClient.sendSimpleMessage() is used to send a message to multiple recipients, it ignores a failure to add a recipient as long as there is at least one successful recipient. This undocumented behaviour is unusual given that the API does not indicate which recipients were successful.",,3600,3600,,0%,3600,3600,,,,,,,"24/Aug/15 06:52;simonarlott;NET-580.patch;https://issues.apache.org/jira/secure/attachment/12751979/NET-580.patch",,,,,1.0,,,,,,,,,,,,,,,,,,,,2015-08-24 09:38:11.658,,,false,,,,,,,,,,Patch,,,,,,,,9223372036854775807,,,Fri Apr 15 19:14:34 UTC 2016,,,,,,,"0|i2j9rr:",9223372036854775807,,,,,,,,,,,,,,,,"24/Aug/15 06:52;simonarlott;Patch to return false if any recipient fails attached.","24/Aug/15 09:38;sebb;Thanks for the patch.
+I'm not sure it's safe to change the behaviour like this after so long (it has been like this since before 2.0)
+
+However it obviously makes sense to document the current behaviour.
+And it would perhaps make sense to add a new method to support the new behaviour, though I'm not sure what failures are possible (apart from syntax errors in the email address).
+
+
+","24/Aug/15 10:30;sebb;URL: http://svn.apache.org/r1697351
+Log:
+NET-580 SMTPClient.sendSimpleMessage() silently ignores failed recipients
+Update Javadoc
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/smtp/SMTPClient.java
+","15/Apr/16 19:14;sebb;It's an easy work-round so won't create the new method",,,,,,,,,,,
+IMAP APPEND multiple issues in IMapClient,NET-514,12660823,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,sebb,sebb,31/Jul/13 00:03,26/Nov/15 16:34,28/Mar/20 23:26,31/Jul/13 00:43,3.3,,,,3.4,,,,,,0,,,,,"There are multiple issues in the way APPEND is handled in IMapClient.
+
+1) According to RFC3501 [1] the date-time field in an APPEND command is enclosed in double quotes. The code currently uses { } which is incorrect
+
+2) The APPEND command has the following arguments [2]:
+
+Arguments:  mailbox name
+           OPTIONAL flag parenthesized list
+           OPTIONAL date/time string
+           message literal
+
+However, the existing methods don't support the message literal; there needs to be a method that supports the message literal. The existing methods should be deprecated as they serve no purpose.
+
+[1] http://tools.ietf.org/html/rfc3501#page-85
+[2] http://tools.ietf.org/html/rfc3501#section-6.3.11",,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,341012,,,Wed Jul 31 00:43:29 UTC 2013,,,,,,,"0|i1mtbz:",341330,,,,,,,,,,,,,,,,"31/Jul/13 00:43;sebb;URL: http://svn.apache.org/r1508693
+Log:
+NET-514 IMAP APPEND multiple issues in IMapClient.
+Deprecated unusable append methods.
+Added new append method, as well as example IMapImportMbox class to make use of it.
+
+Added:
+    commons/proper/net/trunk/src/main/java/examples/mail/IMAPImportMbox.java   (with props)
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/imap/IMAPClient.java
+",,,,,,,,,,,,,,
+Util copyReader calls CopyStreamListener.bytesTransferred with the incorrect value for bytesTransferred,NET-551,12732646,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,sebb,sebb,07/Aug/14 19:29,26/Nov/15 16:34,28/Mar/20 23:26,07/Aug/14 19:52,3.3,,,,3.4,,,,,,0,,,,,"Util copyReader calls CopyStreamListener.bytesTransferred with the incorrect value for bytesTransferred parameter if it reads a single character.
+
+It uses the value of the field chars which at that point contains the character, rather than the number read.
+
+The code also re-uses the chars field for both the number of characters read and the single character, which is quite confusing. [The copyStream also re-uses the bytes field, but uses the correct bytesTransferred parameter]",,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,410674,,,Thu Aug 07 19:52:55 UTC 2014,,,,,,,"0|i1ynlr:",410667,,,,,,,,,,,,,,,,"07/Aug/14 19:52;sebb;URL: http://svn.apache.org/r1616574
+Log:
+NET-551 Util copyReader calls CopyStreamListener.bytesTransferred with the incorrect value for bytesTransferred
+
+Added:
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/util/UtilTest.java
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/io/Util.java
+
+
+URL: http://svn.apache.org/r1616578
+Log:
+NET-551 Util copyReader calls CopyStreamListener.bytesTransferred with the incorrect value for bytesTransferred
+Rename confusing fields
+
+Modified:
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/io/Util.java
+",,,,,,,,,,,,,,
+Apache Commons Net 3.3 has a performance issue,NET-519,12680654,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,Bambmam2,Bambmam2,22/Nov/13 00:58,26/Nov/15 16:34,28/Mar/20 23:26,06/Dec/13 22:21,3.2,3.3,,,3.4,FTP,,,,,0,,,,,"We use Apache Commons Net FTP 3.1. That version had a bug for transferring files with size 0 that was resolved in Apache Commons 3.2.
+Apache Commons 3.2 and 3.3 however both have a performance problem for files that do not have a size of 0.
+
+For example a 30MB file using 3.1 takes approximately 40 seconds on our system from point A to point B. 
+Using Apache 3.3, the same file takes 2 minutes and 5 seconds. 
+Using Apache 3.2, the same file took over 4 minutes. 
+This is not acceptable. 
+
+If there are any workarounds, we would like to know. If not this is a major bug. ",Windows 7,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2013-11-22 01:23:25.028,,,false,,,,,,,,,,,,,,,,,,359919,,,Tue Mar 17 16:32:38 UTC 2015,,,,,,,"0|i1q1nb:",360218,,,,,,,,,,,,,,,,"22/Nov/13 01:23;ggregory;Hello,
+
+Your report is pretty vague. Can you provide a test case to show us how you use the API? This would let us all run the same code and see how performance differs from version to version. Are you sure network latency is not an issue? A good test would be to have it all running on the same machine or on machines ""next"" to each other on the same LAN.
+
+Gary","22/Nov/13 07:32;tn;This is most likely related to this issue.
+There reports on the user ml that there is still a slowdown in 3.3 compared to the 3.1 version.","06/Dec/13 15:39;Bambmam2;The commons-net-3.4-20130923.012224-9.jar located under the https://repository.apache.org/content/groups/snapshots/commons-net/commons-net/3.4-SNAPSHOT/
+directoy seems to resolve the performance problem. Rebuilding our application with the 3.4 snapshot the download time is the same as it was in 3.1 version. 
+Is there a planned date when will the 3.4 version be released?","06/Dec/13 17:20;sebb;Thanks!
+This is very useful to know, and was one of the issues that needed to be resolved for the next release.","17/Mar/15 16:32;Bambmam2;Has there been any progress on when the next release will be?
+",,,,,,,,,,
+SubnetUtils.SubnetInfo.getAddressCount() can overflow as it returns an int,NET-521,12686718,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,sebb,sebb,30/Dec/13 03:24,26/Nov/15 16:34,28/Mar/20 23:26,30/Dec/13 22:56,3.3,,,,3.4,,,,,,0,,,,,"The method SubnetUtils.SubnetInfo.getAddressCount() returns an int.
+
+However a CIDR with 0 or 1 bits in the routing mask can represent more than Integer.MAX_VALUE entries, so the method cannot currently return the correct value.
+
+Unfortunately, if the method were changed to return a long it would break binary compatibility (the return type is part of the API signature).
+
+One possible solution is to provide a new method which returns a long, and deprecate the old method.
+
+If the original method cannot return the correct value, it should probably throw a runtime error.",,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,365711,,,Mon Dec 30 22:56:37 UTC 2013,,,,,,,"0|i1r1fb:",366018,,,,,,,,,,,,,,,,"30/Dec/13 22:56;sebb;URL: http://svn.apache.org/r1554332
+Log:
+NET-521 SubnetUtils.SubnetInfo.getAddressCount() can overflow as it returns an int
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/util/SubnetUtils.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/SubnetUtilsTest.java
+",,,,,,,,,,,,,,
+FTPClient#reinitialize is package protected,NET-517,12672784,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,dkocher@sudo.ch,dkocher@sudo.ch,08/Oct/13 10:29,26/Nov/15 16:34,28/Mar/20 23:26,06/Dec/13 22:18,3.3,,,,3.4,FTP,,,,,0,,,,,Expected to have public modifier.,,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2013-12-06 22:18:30.496,,,false,,,,,,,,,,,,,,,,,,352407,,,Fri Dec 06 22:18:30 UTC 2013,,,,,,,"0|i1orbz:",352694,,,,,,,,,,,,,,,,"06/Dec/13 22:18;sebb;URL: http://svn.apache.org/r1548732
+Log:
+NET-517 FTPClient#reinitialize is package protected
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClient.java
+",,,,,,,,,,,,,,
+SocketTimeoutException connecting a FTP server via an HTTP Proxy,NET-552,12733436,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,qdevriendt,qdevriendt,12/Aug/14 09:56,26/Nov/15 16:34,28/Mar/20 23:26,08/Jan/15 23:44,3.3,,,,3.4,FTP,,,,,0,FTP,HTTP,Proxy,SocketTimeout,"Randomly, we're experiencing SocketTimoutException when we connect an FTP via an Http Proxy :
+
+{noformat}
+java.io.IOException: Timed out waiting for initial connect reply
+	at org.apache.commons.net.ftp.FTP._connectAction_(FTP.java:403)
+	at org.apache.commons.net.ftp.FTPClient._connectAction_(FTPClient.java:931)
+	at org.apache.commons.net.ftp.FTPClient._connectAction_(FTPClient.java:925)
+	at org.apache.commons.net.ftp.FTPHTTPClient.connect(FTPHTTPClient.java:144)
+Caused by: java.net.SocketTimeoutException: Read timed out
+	at java.net.SocketInputStream.socketRead0(Native Method)
+	at java.net.SocketInputStream.read(SocketInputStream.java:150)
+	at java.net.SocketInputStream.read(SocketInputStream.java:121)
+	at sun.nio.cs.StreamDecoder.readBytes(StreamDecoder.java:284)
+	at sun.nio.cs.StreamDecoder.implRead(StreamDecoder.java:326)
+	at sun.nio.cs.StreamDecoder.read(StreamDecoder.java:178)
+	at java.io.InputStreamReader.read(InputStreamReader.java:184)
+	at java.io.BufferedReader.fill(BufferedReader.java:161)
+	at java.io.BufferedReader.read(BufferedReader.java:182)
+	at org.apache.commons.net.io.CRLFLineReader.readLine(CRLFLineReader.java:58)
+	at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:315)
+	at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:295)
+	at org.apache.commons.net.ftp.FTP._connectAction_(FTP.java:397)
+	... 6 more
+{noformat}
+
+After analysis, I think the problem is that commons-net opens 2 BufferedReader on the same InputStream : first in the FTPHTTPClient.tunnelHandshake method, and the second in FTP._connectAction() method.
+If the first BufferedReader reads all datas in the socket, the second waits until SocketTimeout.",All,,,,,,,,,,,,,"08/Jan/15 15:00;qdevriendt;ftp.patch;https://issues.apache.org/jira/secure/attachment/12690858/ftp.patch",,,,,1.0,,,,,,,,,,,,,,,,,,,,2015-01-07 16:25:01.135,,,false,,,,,,,,,,,,,,,,,,411464,,,Thu Jan 08 23:44:41 UTC 2015,,,,,,,"0|i1ysef:",411455,,,,,,,,,,,,,,,,"25/Aug/14 14:56;qdevriendt;I have written a patch that fixing this bug :
+I pass the first java.io.Reader (created in tunnelHandshake method of FTPHTTPClient class) to the method that affects the instance variable Reader \_controlInput\_ to keep datas that has already been read.","07/Jan/15 16:25;sebb;Only just got around to looking at the patch.
+
+Although it applies cleanly, the code does not compile.
+There appears to be some text missing in the FTPClient part of the patch.
+Is there supposed to be a closing brace between the following?
+
+{code}
+super._connectAction_(); // sets up _input_ and _output_
+{code}
+and
+{code}
+public void _connectAction_(Reader socketIsReader) throws IOException {
+{code}
+
+Also, why is the above method public rather than protected?","08/Jan/15 15:00;qdevriendt;Sorry,
+
+I certainly made a mistake at patch generation.
+Here's a new patch (ftp.patch) with my modifications.
+I have also change method visibility (actually, there's no reason that is public).","08/Jan/15 23:44;sebb;Thanks, that's much easier to follow.
+I think there was still a minor issue - the patch removed the method {{FTPClient#_connectAction_()}}.
+This would mean any callers of the original method would not invoke the code now in the method {{FTPClient#_connectAction_(Reader)}}.
+I've restored the method.
+
+URL: http://svn.apache.org/r1650420
+Log:
+NET-552 SocketTimeoutException connecting a FTP server via an HTTP Proxy
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTP.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClient.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPHTTPClient.java
+
+The code will be in snapshot builds from Jan 08 23:39",,,,,,,,,,,
+Default FTPClient bufferSize results in very slow retrieve transfers,NET-550,12732582,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,geoffhardy,geoffhardy,07/Aug/14 16:33,26/Nov/15 16:34,28/Mar/20 23:26,03/Jul/15 16:40,3.3,,,,3.4,,,,,,0,,,,,"While experimenting with FTPClient, I discovered that if I don't call setBufferSize(), the default value is zero.  This results in retrieveFile() calling the version of InputStream.read() with no parameters, reading one byte at a time.  For comparison, the downloading a CD ISO image of about ~648MB took 18m10s with the default settings.  In contrast, calling setBufferSize(8192) took only 7.9s, an improvement of ~137x.
+
+Here is some sample code:
+
+{code:java}
+FTPClient ftp = new FTPClient();
+// ftp.setBufferSize(8192);
+ftp.setControlKeepAliveTimeout(300);
+ftp.setCopyStreamListener(new CopyStreamListener() {
+    @Override
+    public void bytesTransferred(long totalBytesTransferred, int bytesTransferred, long streamSize) {
+        System.out.println(""totalBytesTransferred: "" + totalBytesTransferred
+            + "", bytesTransferred: "" + bytesTransferred + "", streamSize: "" + streamSize);
+    }
+
+    @Override public void bytesTransferred(CopyStreamEvent event) {}
+});
+ftp.connect(host);
+ftp.login(user, pass);
+ftp.retrieveFile(file, outputStream);
+{code}
+
+The log message from the stream listener printed lots messages ""bytesTransferred: 1"" and totalBytesTransferred incremented by 1 each time.  This corresponds to the part of the code which reads one byte at a time with {{int inputStream.read()}}.
+",,,,,,,,,,,NET-519,NET-496,,"07/Aug/14 19:53;b.eckenfels;net-buffercopy-ext.patch;https://issues.apache.org/jira/secure/attachment/12660445/net-buffercopy-ext.patch","07/Aug/14 19:40;b.eckenfels;net-buffercopy.patch;https://issues.apache.org/jira/secure/attachment/12660441/net-buffercopy.patch",,,,2.0,,,,,,,,,,,,,,,,,,,,2014-08-07 19:07:14.534,,,false,,,,,,,,,,,,,,,,,,410610,,,Mon Jul 06 23:04:04 UTC 2015,,,,,,,"0|i1yn7r:",410604,,,,,,,,,,,,,,,,"07/Aug/14 17:16;geoffhardy;I _strongly_ disagree that this is a duplicate.  My complaint is the _default_ value for bufferSize.  I read several existing bug reports before posting this, but nothing directly addresses the default value of zero.  
+
+I also looked at the source code in the head, and bufferSize still has a default size of zero.  This is very annoying for new users of the client library -- it causes a dramatic effect on performance, and is very difficult to diagnose.  I discovered this by accident, and it took a lot of testing to figure it out.
+
+I also tried the proposed solution -- downloading a 3.4 snapshot -- but that did *not* resolve the problem for me.
+","07/Aug/14 19:07;b.eckenfels;Hm, I was looking at the usage of this in VFS, because it is affected: it does not set an explicite buffer size. 
+
+When I drill down into the 3.3 code, it looks like it correctly generated getBufferedXXXStream() for __bufferSize==0 (using default buffer size of 8k from Java bufferedxxxStream). However besides the buffered streams it also uses the buffer size for the copy loop. And in this case it does not use a default buffer. Which is quite strange because I wonder why read[byte[0]) works anywy. It only works because it has a read() fallback, which is clearly not the intention of the code.
+
+Attached is a proposed minimal fix, but instead of that the buffering should be reconsidered completely.","07/Aug/14 19:15;b.eckenfels;NB: the ""use default when 0"" is even documented in the Javadoc, so this is a mandatory fix anyway.","07/Aug/14 19:28;b.eckenfels;Actually looking at 3.4 the buffering situation is a bit better, but still two instances can be avoided:
+
+{code}
+Index: src/main/java/org/apache/commons/net/ftp/FTPClient.java                                                                
+===================================================================                                                           
+--- src/main/java/org/apache/commons/net/ftp/FTPClient.java     (Revision 1616569)                                            
++++ src/main/java/org/apache/commons/net/ftp/FTPClient.java     (Arbeitskopie)                                                
+@@ -656,7 +656,7 @@                                                                                                           
+         if (__fileType == ASCII_FILE_TYPE) {                                                                                 
+             output = new ToNetASCIIOutputStream(getBufferedOutputStream(socket.getOutputStream()));                          
+         } else {                                                                                                             
+-            output = getBufferedOutputStream(socket.getOutputStream());                                                      
++            output = socket.getOutputStream();                                                                               
+         }                                                                                                                    
+                                                                                                                              
+         CSL csl = null;                                                                                                      
+@@ -1878,7 +1878,7 @@                                                                                                         
+         if (__fileType == ASCII_FILE_TYPE) {                                                                                 
+             input = new FromNetASCIIInputStream(getBufferedInputStream(socket.getInputStream()));                            
+         } else {                                                                                                             
+-            input = getBufferedInputStream(socket.getInputStream());                                                         
++            input = socket.getInputStream();                                                                                 
+         }                                                                                                                    
+                                                                                                                              
+         CSL csl = null;                                                                                                      
+{code}
+
+BTW: the default buffer of Util.copyStream is 1k, when removing the above buffered wrappers I would also increase the default buffer of the Util to saner 8k.","07/Aug/14 19:36;sebb;bq. NB: the ""use default when 0"" is even documented in the Javadoc, so this is a mandatory fix anyway.
+
+The same fix must be applied to the copyReader function.","07/Aug/14 19:38;sebb;Fix in NET-496 had correct Javadoc but used the wrong size check","07/Aug/14 19:40;b.eckenfels;New patch version, fixing copyStream and copyReader.","07/Aug/14 19:53;b.eckenfels;net-buffercopy-ext.patch: Version using 8k, avoiding double-buffering and fixing javadocs. (does not include NET-551)","07/Aug/14 20:02;sebb;Please can we fix one problem at a time?
+
+The original issue was caused by the incorrect size check, which effectively caused the code to use a buffer size of 1.
+
+If the default buffer size is to be changed, that should be done in a separate JIRA.
+Likewise changes to double buffering need a new JIRA.
+Changes to Javadoc formatting are yet another item.","07/Aug/14 20:12;b.eckenfels;Sure, I am not going to commit into that project, anyway. Feel free to disect the patch.","07/Aug/14 22:53;sebb;@Geoffrey Thanks for raising the issue; sorry it was originally closed as a duplicate.
+
+Fixed:
+
+URL: http://svn.apache.org/r1616617
+Log:
+NET-550 Default FTPClient bufferSize results in very slow retrieve transfers
+Fix code in Util#copyStream (also copyReader) that failed to use the proper default for buffer size 0
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/io/Util.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/util/UtilTest.java
+
+============
+
+Note: other potential changes raised in the comments have not been addressed.","07/May/15 15:20;geoffhardy;I commented on this issue in Aug 2014 that I didn't agree that it was a duplicate.  The problem is with the _default_ value of {{bufferSize}}.  I'm reopening this because the default value causes the library to be extremely inefficient.  There is a workaround--to set the value of {{bufferSize}} explicitly, but I think it should have a more reasonable default value--e.g., 4KB.","03/Jun/15 22:55;sebb;The default is currently 1024. Is that really very inefficient?","03/Jul/15 16:40;sebb;Unless there is strong evidence that the default of 1k is inadequate, there seems to be nothing left to do here.","06/Jul/15 23:04;geoffhardy;Oops, I think I must have misread the comments.  My post from 07/May/15 doesn't make sense.
+
+Thanks for addressing this issue.  :-)"
+FTPClient#initFeatureMap should not initialize empty map if reply code is 530,NET-518,12672785,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,dkocher@sudo.ch,dkocher@sudo.ch,08/Oct/13 10:33,26/Nov/15 16:34,28/Mar/20 23:26,06/Dec/13 20:47,3.3,,,,3.4,FTP,,,,,0,,,,,"Some servers reply with 530 when requesting features before being logged in. However sending FEAT is used to determine if the server supports secured connection before attempting to login using an unsecured connection.
+
+Due to the caching of the empty map subsequent feature detection fails.",,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2013-12-06 20:47:50.675,,,false,,,,,,,,,,,,,,,,,,352408,,,Fri Dec 06 20:47:50 UTC 2013,,,,,,,"0|i1orc7:",352695,,,,,,,,,,,,,,,,"06/Dec/13 20:47;sebb;URL: http://svn.apache.org/r1548716
+Log:
+NET-518 FTPClient#initFeatureMap should not initialize empty map if reply code is 530
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClient.java",,,,,,,,,,,,,,
+SubnetUtils throws exception on valid input,NET-529,12701919,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,Lapkritinis,Lapkritinis,17/Mar/14 15:38,26/Nov/15 16:34,28/Mar/20 23:26,22/Mar/14 02:10,3.3,,,,3.4,,,,,,0,SubnetUtils,,,,"I think that xx.yy.zz.aa/0 should be accepted value by SubnetUtils, where xx.yy.zz.aa is any valid IPv4 IP address.
+
+Test case:
+SubnetUtils subnetUtils = new SubnetUtils(""10.10.10.10/0"");
+
+However it throws exception:
+
+java.lang.IllegalArgumentException: Value [0] not in range (0,32]
+	org.apache.commons.net.util.SubnetUtils.rangeCheck(SubnetUtils.java:304)
+	org.apache.commons.net.util.SubnetUtils.calculate(SubnetUtils.java:229)
+	org.apache.commons.net.util.SubnetUtils.<init>(SubnetUtils.java:52)
+
+(I have updated issue description from original, to reflect that issue is not only with 0.0.0.0/0)",,,,,,,,,,,,NET-511,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-03-19 20:44:48.872,,,false,,,,,,,,,,,,,,,,,,380259,,,Sat Mar 22 02:10:15 UTC 2014,,,,,,,"0|i1tion:",380542,,,,,,,,,,,,,,,,"19/Mar/14 20:14;Lapkritinis;I provided example of 0.0.0.0/0 as most ""obvious"" one. Bug was closed only for ""0.0.0.0/0"", but actually CIDR /0 is valid with any IP.
+
+For example 10.10.10.10/0 is valid syntax. Here is output of popular unix utility ""whatmask"":
+
+whatmask 10.10.10.10/0
+
+------------------------------------------------
+           TCP/IP NETWORK INFORMATION
+------------------------------------------------
+IP Entered = ..................: 10.10.10.10
+CIDR = ........................: /0
+Netmask = .....................: 0.0.0.0
+Netmask (hex) = ...............: 0x00000000
+Wildcard Bits = ...............: 255.255.255.255
+------------------------------------------------
+Network Address = .............: 0.0.0.0
+Broadcast Address = ...........: 255.255.255.255
+Usable IP Addresses = .........: 4294967294
+First Usable IP Address = .....: 0.0.0.1
+Last Usable IP Address = ......: 255.255.255.254
+
+
+I would expect java class behave same.","19/Mar/14 20:44;sebb;NET-511 added the check for address == 0","19/Mar/14 20:52;Lapkritinis;Patch in 3.4 (NET-511) is also not correct - IllegalArgumentException is thrown with valid input:
+
+{code}
++            if (cidrPart == 0 && address != 0) {
++                throw new IllegalArgumentException(""Cannot have /0 cidr with non-zero address"");
++            }
+{code}","22/Mar/14 02:10;sebb;URL: http://svn.apache.org/r1580123
+Log:
+NET-529 SubnetUtils throws exception on valid input
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/util/SubnetUtils.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/SubnetUtilsTest.java
+",,,,,,,,,,,
+Telnet does not convert LF to CRLF in ASCII mode,NET-549,12729244,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,pnatarajan,pnatarajan,23/Jul/14 19:13,26/Nov/15 16:34,28/Mar/20 23:26,30/Jul/14 22:45,3.3,,,,3.4,Telnet,,,,,0,2.2,3.3.0,telnet,windows,"Hi,
+
+We are using your library to connect/login to some Windows and Foundary devices via Telnet.
+The source(client) is a Windows 7 professional windows machine and all the servers we are trying to connect are Windows machines running Microsoft(R) Windows(R) Server 2003, Standard Edition.
+In version 2.2 we were able to connect and then login successfully to these devices with no issues.
+However, on upgrade to 3.3 version, we are unable to login to these devices successfully.
+In v 3.3, after entering the username and hitting enter, there is no response at all. However in v 2.2, as soon as you enter the username and hit enter, password prompt comes back for us to enter the password and we are logged in successfully. 
+
+I compraed the packet captures between the two versions for the same target server machine. The only difference I can see is when the user name is set, in v2.2 a '\r' is appended to the end of the username where is v 3.3, this '\r' is missing. Is this due to any change in library?
+
+I can provide the packet capture/logs if required. Please let us know if this is a known issue or if there are any workarounds. 
+
+
+
+Thanks
+-Pradeep","Windows 7, Java 1.7.",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-07-30 22:45:24.903,,,false,,,,,,,,,,,,,,,,,,407318,,,Tue Aug 05 15:55:10 UTC 2014,,,,,,,"0|i1y3a7:",407333,,,,,,,,,,,,,,,,"30/Jul/14 22:45;sebb;I can confirm the problem when using the TelnetClientExample on MacOS.
+
+It looks like the fix for NET-387 caused the issue.
+
+It looks like what is needed is a combination of the original and new behaviour.
+i.e. for binary connections the new behaviour is needed, and for ASCII, the old behaviour, which converts LF to CRLF.
+
+Fix applied:
+
+URL: http://svn.apache.org/r1614785
+Log:
+NET-549 - Telnet does not convert LF to CRLF in ASCII mode
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/telnet/TelnetOutputStream.java
+
+If you want to try the latest automated snapshot build (no guarantees), it can be found at
+
+https://repository.apache.org/content/repositories/snapshots/commons-net/commons-net/3.4-SNAPSHOT/
+
+Build ids from 20140730.224154-1 contain the fix.","04/Aug/14 21:40;pnatarajan;Thanks Sebb!  I downloaded the snapshot and verified that your fix works very well. Could you please let me know if a full version 3.4 will be released anytime soon or any updates on when the next official version will be released? 
+
+Thanks,
+-Pradeep","05/Aug/14 15:55;sebb;Thanks for confirming that the fix works.
+
+Version 3.4 will be released when someone has time to do so.",,,,,,,,,,,,
+Fails to parse FEAT response from Gene6 FTP server,NET-577,12841679,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Won't Fix,,jkemnade,jkemnade,30/Jun/15 12:16,23/Aug/15 21:37,28/Mar/20 23:26,23/Aug/15 21:37,3.3,,,,,FTP,,,,,0,,,,,"This is probably rather a bug in the server implementation, but anyway.
+The response from a Microsoft FTP Service I'm trying to work with looks like that:
+{noformat}
+211-FEAT
+    SIZE
+    MDTM
+211 END
+{noformat}
+So, after parsing the response, the entries in the features map are {{  SIZE}} and {{  MDTM}}.
+While it doesn't adhere to the RFC (there's supposed to be a single leading space for each feature), it should be possible to work around that kind of broken response.",,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-07-03 15:56:19.106,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Jul 09 10:28:06 UTC 2015,,,,,,,"0|i2gon3:",9223372036854775807,,,,,,,,,,,,,,,,"03/Jul/15 15:56;sebb;It would of course be possible to allow for multiple leading spaces.
+However this is definitely a violation of the RFC, so it seems wrong to do so.
+
+What do other FTP clients do?","05/Jul/15 10:49;sebb;Also, what is the FTP server software? Version etc?","05/Jul/15 10:51;sebb;Relevant RFC
+
+https://tools.ietf.org/html/rfc2389#section-3.2","09/Jul/15 10:28;jkemnade;It's a Gene6 FTP server 3.9.0 (Build 2) (www.g6ftpserver.com). I haven't checked whether the current version also behaves like that. And yes, the behavior is wrong according to the RFC.",,,,,,,,,,,
+FTPClient.mlistFile returns null timestamps in FTPFile.getTimestamp,NET-574,12838771,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Invalid,,nleclerc78,nleclerc78,18/Jun/15 11:57,18/Jun/15 22:17,28/Mar/20 23:26,18/Jun/15 13:16,3.3,,,,,FTP,,,,,0,,,,,"In FTPClient mlistFile(""test.txt"") :
+{code:title=FTPClient.java|borderStyle=solid}
+    public FTPFile mlistFile(String pathname) throws IOException
+    {
+        boolean success = FTPReply.isPositiveCompletion(sendCommand(FTPCmd.MLST, pathname));
+        if (success){
+            String entry = getReplyStrings()[1].substring(1); // skip leading space for parser
+            return MLSxEntryParser.parseEntry(entry);
+        } else {
+            return null;
+        }
+    }
+{code}
+getReplyStrings() return :
+250-Start of list for test.txt
+250-modify=20150616133640;perm=adfrw;size=83752220;type=file;unique=23U8FE039C;UNIX.group=32;UNIX.mode=0644;UNIX.owner=2005; /data/test.txt
+250 End of list
+So getReplyStrings()[1].substring(1) return 
+50-modify=20150616133640;perm=adfrw;size=83752220;type=file;unique=23U8FE039C;UNIX.group=32;UNIX.mode=0644;UNIX.owner=2005; /data/test.txt
+
+{code:title=MLSxEntryParser.java|borderStyle=solid}
+public FTPFile parseFTPEntry(String entry) {
+        String parts[] = entry.split("" "",2); // Path may contain space
+        if (parts.length != 2) {
+            return null;
+        }
+        FTPFile file = new FTPFile();
+        file.setRawListing(entry);
+        file.setName(parts[1]);
+        String[] facts = parts[0].split("";"");
+        boolean hasUnixMode = parts[0].toLowerCase(Locale.ENGLISH).contains(""unix.mode="");
+        for(String fact : facts) {
+            String []factparts = fact.split(""="");
+// Sample missing permission
+// drwx------   2 mirror   mirror       4096 Mar 13  2010 subversion
+// modify=20100313224553;perm=;type=dir;unique=811U282598;UNIX.group=500;UNIX.mode=0700;UNIX.owner=500; subversion
+            if (factparts.length != 2) {
+                continue; // nothing to do here
+            }
+            String factname = factparts[0].toLowerCase(Locale.ENGLISH);
+            String factvalue = factparts[1];
+            String valueLowerCase = factvalue.toLowerCase(Locale.ENGLISH);
+            if (""size"".equals(factname)) {
+                file.setSize(Long.parseLong(factvalue));
+            }
+            else if (""sizd"".equals(factname)) { // Directory size
+                file.setSize(Long.parseLong(factvalue));
+            }
+            else if (""modify"".equals(factname)) {
+(...)
+{code}
+50-modify not correspond to modify, so the parser not find the date
+
+Possible patch :
+{code:title=FTPClient.java|borderStyle=solid}
+    public FTPFile mlistFile(String pathname) throws IOException
+    {
+        boolean success = FTPReply.isPositiveCompletion(sendCommand(FTPCmd.MLST, pathname));
+        if (success){
+            String entry = getReplyStrings()[1].substring(4); // skip leading 
+(...)
+{code}",On Debian linux with proftpd server,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-06-18 13:16:54.086,,,false,,,,,,,,,,Patch,,,,,,,,9223372036854775807,,,Thu Jun 18 19:08:16 UTC 2015,,,,,,,"0|i2g7ef:",9223372036854775807,,,,,,,,,,,,,,,,"18/Jun/15 13:16;sebb;The correct response to a MLST request is as follows:
+
+{noformat}
+250-Start of list for test.txt
+ modify=20150616133640;perm=adfrw;size=83752220;type=file;unique=23U8FE039C;UNIX.group=32;UNIX.mode=0644;UNIX.owner=2005; /data/test.txt
+250 End of list
+{noformat}
+
+i.e. the second line should start with a single space.
+
+See https://tools.ietf.org/html/rfc3659#section-7.2
+
+It looks to me as though the server is not following the RFC.","18/Jun/15 13:35;sebb;Note: I just tried connecting to ibiblio.org; it responds:
+
+{noformat}
+220 ProFTPD Server
+Connected to ibiblio.org on 21
+...
+MLST
+250-Start of list for /
+ modify=20110406221708;perm=fle;type=cdir;unique=13U40;UNIX.group=0;UNIX.mode=0755;UNIX.owner=0; /
+250 End of list
+{noformat}
+
+So the ProFTPD server can return correctly formatted output. I don't know why it is failing in your case.
+
+Note that you can use the examples jar as follows to send an MLST request:
+
+{noformat}
+java -jar commons-net-examples-3.3.jar FTPClientExample -t host username password path
+{noformat}
+
+The examples jar must be in the same folder as the main NET jar.
+
+http://commons.apache.org/proper/commons-net/#Examples","18/Jun/15 19:08;nleclerc78;Strange :
+{noformat}
+$ java -jar commons-net-examples-3.3.jar FTPClientExample -t xxxx.yyyy.fr mylogin passwd data
+220 ProFTPD 1.3.4a Server (xxxx) [::ffff:10.10.10.10]
+Connected to xxxx.yyyy.fr on 21
+USER *******
+331 Password required for mylogin
+PASS *******
+230 User mylogin logged in
+SYST
+215 UNIX Type: L8
+Remote system is UNIX Type: L8
+TYPE A
+200 Type set to A
+MLST data
+250-Start of list for data
+250-modify=20150616154133;perm=flcdmpe;type=dir;unique=20U8FE0390;UNIX.group=32;UNIX.mode=02755;UNIX.owner=2005; /data
+250 End of list
+drwxr-xr-x    0 32       2005           -1 /data
+NOOP
+200 NOOP command successful
+QUIT
+221 Goodbye.
+{noformat}",,,,,,,,,,,,
+apache commons net FTPHTTP client not able to conect to ftp server,NET-569,12782224,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,amit7391,amit7391,16/Mar/15 15:04,16/Mar/15 15:41,28/Mar/20 23:26,,3.0.1,3.3,,,,FTP,,,,,0,features,,,,"if i will do 
+FTPClient ftp = new FTPClient();
+ftp.connect(""FtpserverName"", port(21));
+ftp.Login(""******"",""****"");
+ 
+
+i am able to connect but if i will do
+
+Ftpclient ftp = FTPHTTPclient(""proxyName"", ""port"", ""userId"", ""Pass"");
+ftp.connect(""FtpserverName"", port(21));
+ftp.Login(""******"",""****"");
+
+i am getting 
+
+java.io.IOException: Could not connect to tovms3.fr.eu.airbus.corp
+	at org.apache.commons.net.ftp.FTPHTTPClient.connect(FTPHTTPClient.java:93)
+	at com.ftp.ftpClient.FTPClientExample.main(FTPClientExample.java:148)
+Caused by: java.lang.RuntimeException: Parameter supplied to Base64 encode is not a byte[]
+	at org.apache.commons.net.util.Base64.encode(Base64.java:885)
+	at org.apache.commons.net.ftp.FTPHTTPClient.tunnelHandshake(FTPHTTPClient.java:107)
+	at org.apache.commons.net.ftp.FTPHTTPClient.connect(FTPHTTPClient.java:90)
+	... 1 more","java 7 , windows 7",86400,86400,,0%,86400,86400,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Mar 16 15:41:06 UTC 2015,,,,,,,"0|i26t6v:",9223372036854775807,,,,,,,,,,,,,,,,"16/Mar/15 15:41;amit7391;now i am able to connect i used Inet4address
+but if i will try to list directories
+i will get below error
+
+java.net.ConnectException: connect: Address is invalid on local machine, or port is not valid on remote machine
+	at java.net.PlainSocketImpl.socketConnect(Native Method)
+	at java.net.PlainSocketImpl.doConnect(Unknown Source)
+	at java.net.PlainSocketImpl.connectToAddress(Unknown Source)
+	at java.net.PlainSocketImpl.connect(Unknown Source)
+	at java.net.SocksSocketImpl.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at org.apache.commons.net.ftp.FTPHTTPClient._openDataConnection_(FTPHTTPClient.java:71)
+	at org.apache.commons.net.ftp.FTPClient.initiateListParsing(FTPClient.java:2990)
+	at org.apache.commons.net.ftp.FTPClient.initiateListParsing(FTPClient.java:2965)
+	at org.apache.commons.net.ftp.FTPClient.listFiles(FTPClient.java:2685)
+	at org.apache.commons.net.ftp.FTPClient.listDirectories(FTPClient.java:2769)
+	at org.apache.commons.net.ftp.FTPClient.listDirectories(FTPClient.java:2728)
+	at com.ftp.ftpClient.FTPClientExample.main(FTPClientExample.java:156)
+
+please help me out with this",,,,,,,,,,,,,,
+Order of client configuration and connection is ambiguous,NET-568,12771985,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Not A Problem,,vychtrle,vychtrle,03/Feb/15 09:40,12/Feb/15 20:35,28/Mar/20 23:26,12/Feb/15 20:35,3.3,,,,,FTP,,,,,0,,,,,"Hey,
+
+according to the FTPClientExample client should be first configured and set and connection made afterwards. But if I do this :
+
+{code:title=FTPClient.java}
+      FTPClient c = new FTPClient()
+      customConf(c)
+      val config = new FTPClientConfig(""UNIX"")
+      config.setUnparseableEntries(true)
+      c.configure(config)
+      c.enterLocalPassiveMode() // required, otherwise firewall issues happen
+      c.setDefaultTimeout(conf.ftpTimeout)
+      c.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out), true))
+      c.connect(conf.ftpHost)
+{code}
+
+Then it basically ends up this way : 
+{code}
+230 Anonymous access granted, restrictions apply
+PORT 192,168,1,100,177,38
+500 Illegal PORT command
+{code}
+
+But if I call connect() before all the client setting including enterLocalPassiveMode, then it works as expected. 
+{code}
+230 Anonymous access granted, restrictions apply
+PASV
+227 Entering Passive Mode (80,251,0,59,175,235).
+RETR welcome.msg
+150 Opening ASCII mode data connection for welcome.msg (321 bytes)
+226 Transfer complete
+PASV
+227 Entering Passive Mode (80,251,0,59,167,178).
+RETR welcome.msg
+150 Opening ASCII mode data connection for welcome.msg (321 bytes)
+226 Transfer complete
+PASV
+227 Entering Passive Mode (80,251,0,59,174,58).
+RETR welcome.msg
+150 Opening ASCII mode data connection for welcome.msg (321 bytes)
+226 Transfer complete
+{code}
+
+But in the FTPClientExample the connect() occurs at the end.
+
+It is thread-safe, running within a single thread... What is going on here?
+","linux, java 7",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-02-12 20:34:54.118,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Feb 12 20:34:54 UTC 2015,,,,,,,"0|i2548n:",9223372036854775807,,,,,,,,,,,,,,,,"12/Feb/15 20:34;sebb;The FTPClientExample code includes an example of calling enterLocalPassiveMode [1]
+
+This is done AFTER the connect [2] has occurred.
+
+Also the Javadoc for enterLocalPassiveMode [3] says that connect resets the mode.
+
+The code is working as documented.
+ 
+[1] http://commons.apache.org/proper/commons-net/xref/examples/ftp/FTPClientExample.html#324
+[2] http://commons.apache.org/proper/commons-net/xref/examples/ftp/FTPClientExample.html#263
+[3] http://commons.apache.org/proper/commons-net/javadocs/api-3.3/org/apache/commons/net/ftp/FTPClient.html#enterLocalPassiveMode()",,,,,,,,,,,,,,
+"listFiles(String) returns an empty list, even though FTP Server has sent back data",NET-553,12733767,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Not A Problem,,pault,pault,13/Aug/14 13:48,03/Feb/15 01:00,28/Mar/20 23:26,03/Feb/15 01:00,2.0,3.3,,,,FTP,,,,,1,,,,,"We've been using the Apache Commons 2.0 and 3.3 library for a while now, and have just run into an issue.
+
+The FTP client application and the FTP Server are running on different AIX systems.
+
+When the FTP application calls the:
+
+  FTPClient.listFiles(String) 
+
+command to get some information about a file stored on the FTP Server,  the method intermittently returns an array containing no elements. However, looking at documentation from both the FTP Server and the network, it can be seen that the FTP Server is actually sending back what appears to be a valid response to the LIST command issued by FTPClient.listFiles(String).
+
+The response sent by the FTP Server contains the file name and attribute information, which is what we expect to see. For some reason, that information is not returned back to the application by the FTPClient.listFiles(String) method.
+
+The problem only seems to occur under load.
+
+Has anyone seen this before, or have any suggestions as to what might be causing it? 
+
+Thanks in advance
+
+Paul",AIX,,,,,,,,,,,NET-528,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-12-12 01:13:36.137,,,false,,,,,,,,,,,,,,,,,,411795,,,Mon Feb 02 21:54:23 UTC 2015,,,,,,,"0|i1yuef:",411786,,,,,,,,,,,,,,,,"12/Dec/14 01:13;sebb;Most likely cause is a problem with parsing the response listing.
+Response lines that are not recognised are ignored by default.
+To fix the parsing would require examples that don't work, together with the system type.
+
+There are a couple of ways to get the raw listing.
+
+Add a ProtocolCommandListener.
+
+Alternatively, the latest version of the code (not yet released) has a new method:
+
+FTPClientConfig.setUnparseableEntries(boolean saveUnparseable)
+
+If set to true, then unparseable entries are stored as FTPFile entries; the original entry can be obtained using the getRawListing() method.
+The isValid() method returns true if the entry was parsed OK.
+
+The FTPClientExample has been updated to support a -U flag.
+
+So for example one could try:
+
+java -jar commons-net-examples-3.4-SNAPSHOT.jar FTPClientExample -A -l -U hostname [path]
+","02/Feb/15 21:26;vychtrle;Guys the setUnparseableEntries trick doesn't do it. I'm on linux, Java 7, commons-net 3.4-SNAPSHOT, you may reproduce  this way : 
+{code:title=FTPClient.java}
+      FTPClient c = new FTPClient()
+      c.connect(""ftp.ncdc.noaa.gov"")
+      c.login(""anonymous"", ""test@evil.com"")
+      c.setDefaultTimeout(timeout)
+      FTPClientConfig config = new FTPClientConfig()
+      config.setUnparseableEntries(true)
+      c.configure(config)
+      client.listFiles()
+{code}
+
+I tried everything I could think of, including encoding setup, 10 commons-net versions, different java versions etc... ","02/Feb/15 21:54;vychtrle;Got it, I don't know why, but this solved the problem :
+{code:title=FTPClient.java}
+  client.enterLocalPassiveMode()
+{code}
+What a stuck...",,,,,,,,,,,,
+FTPFile.getTimestamp() does not give precise time,NET-560,12759666,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Not A Problem,,dhirajpraj,dhirajpraj,05/Dec/14 13:28,10/Dec/14 12:17,28/Mar/20 23:26,08/Dec/14 22:43,3.3,,,,,FTP,,,,,0,,,,,"FTPFile.getTimestamp() does not give precise time upto seconds and milliseconds.  For example, the modification time of a file on the ftp server is 2014-12-05 16:28:45.41 but this function gives a calendar object which when converted to timestamp is equivalent to 2014-12-05 16:28:00.0. The seconds and milliseconds information is lost.","Linus, CentOS",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-12-05 18:07:19.323,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Wed Dec 10 12:17:20 UTC 2014,,,,,,,"0|i233hr:",9223372036854775807,,,,,,,,,,,,,,,,"05/Dec/14 18:07;sebb;What code did you use to get the listing?
+
+FTPClient#listFiles uses the LIST command to fetch the details; this does not normally return anything more precise than minutes.
+
+You may have better luck with the mlistDir method which uses MLSD; however not all servers support it.
+MLSD should return seconds, but may not return milliseconds.
+Also some servers don't return user and group information
+
+Use an FTP command line client to check.","08/Dec/14 06:39;dhirajpraj;Yes, I am using listFiles to list the files. The server does not support MLSD. Can we configure the server to support MLSD? Or is there any other alternative?","08/Dec/14 22:43;sebb;JIRA is not a discussion forum, and there is no NET bug here.
+
+Please subscribe to the Commons user list and ask there.","10/Dec/14 12:17;sebb;Note: another possible option is MDTM / getModificationTime()
+This is fairly widely supported and is supposed to return the time in GMT/UTC.
+It only applies to a single file and does not list directory contents.",,,,,,,,,,,
+FTPClient unable to handle a recursive listing,NET-533,12706773,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Not A Problem,,yecril71pl,yecril71pl,05/Apr/14 06:12,02/Dec/14 08:36,28/Mar/20 23:26,01/Dec/14 00:54,3.3,,,,,FTP,,,,,0,,,,,"The expression (ftpClient .listFiles (""-lR"")) 
+evaluates to (FTPFile [] { ""a"", ""b/"", ""a""  }) 
+rather than (FTPFile [] { ""a"", ""b/"", ""b/a""  }).",Android 4.0.4,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-12-01 00:54:33.746,,,false,,,,,,,,,,,,,,,,,,385096,,,Tue Dec 02 08:36:17 UTC 2014,,,,,,,"0|i1ucbz:",385363,,,,,,,,,,,,,,,,"01/Dec/14 00:54;sebb;As far as I am aware, FTP is not guaranteed to support any qualifiers for the LS command.
+
+If a particular server does respond to the recursive qualifier, then NET will only show the file names as returned by the server.","01/Dec/14 22:59;yecril71pl;And this is exactly the problem.  Your decision is inappropriate.","01/Dec/14 23:01;yecril71pl;I would like to explain that the server returns two kinds of lines: file lines and path lines.  It is possible to reconstruct the paths of files using the path lines and return them instead of bare names.","01/Dec/14 23:03;yecril71pl;For the time being, I have solved the problem by sniffing on the text as it is processed and generating the file list myself.  But a systematic solution to the problem would be better of course.","02/Dec/14 02:29;sebb;Do any command-line FTP clients offer the same functionality?
+
+At best, this is a feature request - it is definitely not a bug - but I think it is out of scope for NET.","02/Dec/14 08:36;yecril71pl;CLI FTP clients do not return a list of files, they return a stream of text.  How the text is formatted is up to the server.",,,,,,,,,
+NPE in nntp.Threader.thread() when all messages  in a derived thread are missing.,NET-532,12706443,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Cannot Reproduce,,clonezone,clonezone,03/Apr/14 15:26,01/Dec/14 00:40,28/Mar/20 23:26,01/Dec/14 00:40,3.0,3.3,,,,NNTP,,,,,0,,,,,"I'm threading emails using the References: header. When I've got an incomplete set of messages (in this specific case, it's from one of the C++ standards committee lists) such that I'm missing an entire thread, I get exceptions like this:
+
+{noformat}
+Exception in thread ""main"" java.lang.NullPointerException
+     at org.apache.commons.net.nntp.Threader.gatherSubjects(Threader.java:342)
+     at org.apache.commons.net.nntp.Threader.thread(Threader.java:81)
+     at org.apache.commons.net.nntp.Threader.thread(Threader.java:47)
+{noformat}
+
+What happens is that the graph returned by findRootSet() at line 71 will look something like
+
+{noformat}
+     ...
+     <ThreadContainer A with Threadable>
+         ...
+     <ThreadContainer B without Threadable>
+         <ThreadContainer ... without Threadable>
+             <ThreadContainer ... without Threadable>
+             <ThreadContainer ... without Threadable>
+         <ThreadContainer ... without Threadable>
+             <ThreadContainer ... without Threadable>
+                 <ThreadContainer ... without Threadable>
+     <ThreadContainer C with Threadable>
+         ...
+     ...
+{noformat}
+
+And, after pruneEmptyContainers() has had its way with things on line 75, the graph will be
+
+{noformat}
+     ...
+     <ThreadContainer A with Threadable>
+         ...
+     <ThreadContainer B without Threadable>
+     <ThreadContainer C with Threadable>
+         ...
+     ...
+{noformat}
+
+when it should be
+
+{noformat}
+     ...
+     <ThreadContainer A with Threadable>
+         ...
+     <ThreadContainer C with Threadable>
+         ...
+     ...
+{noformat}
+
+I.e., ThreadContainer B should be eliminated entirely.
+
+As it is, with ThreadContainer B present, but not containing any children or a Threadable, gatherSubjects() chokes.",,,,,,,,,,,,,,"03/Apr/14 18:23;clonezone;messages-referencing-CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com.tar.gz;https://issues.apache.org/jira/secure/attachment/12638534/messages-referencing-CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA%40mail.gmail.com.tar.gz","03/Apr/14 18:23;clonezone;threader-3.3-debug.patch;https://issues.apache.org/jira/secure/attachment/12638533/threader-3.3-debug.patch","03/Apr/14 15:30;clonezone;threader.patch;https://issues.apache.org/jira/secure/attachment/12638495/threader.patch",,,3.0,,,,,,,,,,,,,,,,,,,,2014-04-03 15:49:51.74,,,false,,,,,,,,,,,,,,,,,,384766,,,Mon Dec 01 00:40:54 UTC 2014,,,,,,,"0|i1uaav:",385033,,,,,,,,,,,,,,,,"03/Apr/14 15:30;clonezone;Patch against current trunk that fixes my issue.
+
+Rather than only pruning a completely empty node, it prunes nodes that have no Threadable on the node or any of its children.","03/Apr/14 15:49;sebb;Thanks for the patch.
+
+Can you provide details of the news group and some threads that exhibit the problem please?","03/Apr/14 16:15;clonezone;Specifically, it’s the list c++std-ext.accu.org. For one specific thread, I've got the following 18 messages:
+
+Date: Fri, 18 Oct 2013 11:14:21 -0500
+From: Gabriel Dos Reis <gdr@axiomatics.org>
+Message-ID: <878uxqr1ya.fsf_-_@euclid.axiomatics.org>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14555] Sized integer types and char bits
+
+Date: Fri, 18 Oct 2013 19:26:25 +0300
+From: Ville Voutilainen <ville.voutilainen@gmail.com>
+Message-ID:
+<CAFk2RUaiDj-Fu_QVktwZBp-S-Kkr2DfBsJ+dLQNdTp6qZ7SKHQ@mail.gmail.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14556] Re: [ub] Sized integer types and char bits
+
+Date: Fri, 18 Oct 2013 19:05:41 +0000
+From: ""Stephan T. Lavavej"" <stl@exchange.microsoft.com>
+Message-ID:
+<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14557] Re: Sized integer types and char bits
+
+Date: Fri, 18 Oct 2013 12:54:38 -0700
+From: Matt Austern <austern@google.com>
+Message-ID:
+<CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14558] Re: [ub] Sized integer types and char bits
+
+Date: Fri, 18 Oct 2013 20:22:30 +0000
+From: Gabriel Dos Reis <gdr@microsoft.com>
+Message-ID:
+<394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14559] Re: [ub] Sized integer types and char bits
+
+Date: Fri, 18 Oct 2013 16:32:21 -0400
+From: John Spicer <jhs@edg.com>
+Message-ID: <BD55E214-3752-45E0-AE06-D453C9F18862@edg.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14560] Re: [ub] Sized integer types and char bits
+
+Date: Fri, 18 Oct 2013 20:37:09 +0000
+From: Gabriel Dos Reis <gdr@microsoft.com>
+Message-ID:
+<cad3f73261094d738dc5b98f13eb4618@DM2PR03MB304.namprd03.prod.outlook.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14561] Re: Sized integer types and char bits
+
+Date: Fri, 18 Oct 2013 20:15:57 -0700
+From: Lawrence Crowl <Lawrence@Crowl.org>
+Message-ID:
+<CAA+UVZTx+ZDBdQ2USFn+D=SNQ-OLrGbRG3NxUBisY6SMYF17fg@mail.gmail.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14563] Re: Sized integer types and char bits
+
+Date: Fri, 18 Oct 2013 20:19:31 -0700
+From: Lawrence Crowl <Lawrence@Crowl.org>
+Message-ID:
+<CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14564] Re: [ub] Sized integer types and char bits
+
+Date: Sat, 19 Oct 2013 08:37:03 +0200
+From: =?UTF-8?B?SW9uIEdhenRhw7FhZ2E=?= <igaztanaga@gmail.com>
+Message-ID: <5262288F.2070107@gmail.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+ <CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>
+ <CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>
+ <CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>
+ <CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>
+ <c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>  <4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>  <87ob6m37qj.fsf@euclid.axiomatics.org>  <37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>  <878uxqr1ya.fsf_-_@euclid.axiomatics.org>  <b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>  <CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>  <394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com>  <BD55E214-3752-45E0-AE06-D453C9F18862@edg.com> <CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.com>
+Subject: [c++std-ext-14565] Re: [ub] Sized integer types and char bits
+
+Date: Sat, 19 Oct 2013 02:03:47 -0500
+From: Gabriel Dos Reis <gdr@axiomatics.org>
+Message-ID: <87r4bh7ne4.fsf@euclid.axiomatics.org>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14566] Re: [ub] Sized integer types and char bits
+
+Date: Sat, 19 Oct 2013 10:02:14 +0200
+From: Jean-Marc Bourguet <jm@bourguet.org>
+Message-ID: <52623C86.5070004@bourguet.org>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>
+<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>
+<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>
+<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>
+<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com> <4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>
+<87ob6m37qj.fsf@euclid.axiomatics.org>
+<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com> <878uxqr1ya.fsf_-_@euclid.axiomatics.org>
+<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com> <CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>
+<394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com> <BD55E214-3752-45E0-AE06-D453C9F18862@edg.com>
+<CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.co
+Subject: [c++std-ext-14567] Re: [ub] Sized integer types and char bits
+
+Date: Sat, 19 Oct 2013 21:37:31 +0000
+From: Herb Sutter <hsutter@microsoft.com>
+Message-ID:
+<dae22e95c446444a8b3c8d7c54c8bfc8@BN1PR03MB107.namprd03.prod.outlook.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14568] Re: [ub] Sized integer types and char bits
+
+Date: Sat, 19 Oct 2013 23:51:06 -0400
+From: Jason Merrill <jason@redhat.com>
+Message-ID: <5263532A.7040208@redhat.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+ <8fdbbcb040164f1f97a25e609fc549b2@DM2PR03MB304.namprd03.prod.outlook.com>  <CA+jCFLt5o_TmO9tnSMr3b=w3ZCdVayAkBcd3mpU4jq-AEFSjDw@mail.gmail.com>  <CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>  <CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>  <CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>  <CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>  <c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>  <4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>  <87ob6m37qj.fsf@euclid.axiomatics.org>  <37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>  <878uxqr1ya.fsf_-_@euclid.axiomatics.org>  <b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com> <CAA+UVZTx+ZDBdQ2USFn+D=SNQ-OLrGbRG3NxUBisY6SMYF17fg@mail.gmail.com>
+Subject: [c++std-ext-14569] Re: [ub] Re: Sized integer types and char bits
+
+Date: Sun, 20 Oct 2013 13:18:10 +0200
+From: =?windows-1252?Q?Ion_Gazta=F1aga?= <igaztanaga@gmail.com>
+Message-ID: <5263BBF2.7070103@gmail.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+ <CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>
+ <CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>
+ <c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>  <4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>  <87ob6m37qj.fsf@euclid.axiomatics.org>  <37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>  <878uxqr1ya.fsf_-_@euclid.axiomatics.org>  <b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>  <CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>  <394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com>  <BD55E214-3752-45E0-AE06-D453C9F18862@edg.com>  <CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.com>  <5262288F.2070107@gmail.com> <dae22e95c446444a8b3c8d7c54c8bfc8@BN1PR03MB107.namprd03.prod.outlook.com>
+Subject: [c++std-ext-14570] Re: [ub] Sized integer types and char bits
+
+Date: Mon, 21 Oct 2013 16:22:38 +0000
+From: Herb Sutter <hsutter@microsoft.com>
+Message-ID:
+<084fdfce6dda46cc99edea348b28b1d9@BN1PR03MB107.namprd03.prod.outlook.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14577] Re: [ub] Sized integer types and char bits
+
+Date: Thu, 24 Oct 2013 15:40:47 -0700
+From: Richard Smith <richardsmith@google.com>
+Message-ID:
+<CAGL0aWeP8Ku=4B66xss4QMLJUXKxE9sMiPG7Pfvm3rorxQG-Fg@mail.gmail.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14587] Re: [ub] Re: Sized integer types and char bits
+
+Date: Thu, 24 Oct 2013 22:50:30 +0000
+From: Gabriel Dos Reis <gdr@microsoft.com>
+Message-ID:
+<4ed19f87c10c46b28c6a8514583d3354@DM2PR03MB304.namprd03.prod.outlook.com>
+References:
+<CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>
+Subject: [c++std-ext-14589] Re: [ub] Re: Sized integer types and char bits","03/Apr/14 17:03;sebb;Thanks!
+However I am having problems finding a news server that carries the group. Is there a public on you know of?","03/Apr/14 18:23;clonezone;threader-3.3-debug.patch is a patch against the v3.3 tag that dumps the message graph prior to and after pruning and that will indicate the node that is about to cause an NPE in gatherSubjects(). Note that this uses some Unicode characters, so you can't look at this in an editor that can't handle UTF-8.
+
+messages-referencing-CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com.tar.gz contains the 18 messages (with some slightly sanitized headers).
+
+When I run over this set of messages, I get the following:
+
+{noformat}
+Pre-prune: «504820309 - ‹root›: no message, even on child»
+Pre-prune: |   «1954527713 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<8fdbbcb040164f1f97a25e609fc549b2@DM2PR03MB304.namprd03.prod.outlook.com>	<CA+jCFLt5o_TmO9tnSMr3b=w3ZCdVayAkBcd3mpU4jq-AEFSjDw@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>	<CAA+UVZTx+ZDBdQ2USFn+D=SNQ-OLrGbRG3NxUBisY6SMYF17fg@mail.gmail.com>	<5263532A.7040208@redhat.com›: no message»
+Pre-prune: |   |   [c++std-ext-14587] Re: [ub] Re: Sized integer types and char bits (‹references: CAGL0aWeP8Ku=4B66xss4QMLJUXKxE9sMiPG7Pfvm3rorxQG-Fg@mail.gmail.com›)
+Pre-prune: |   |   |   [c++std-ext-14589] Re: [ub] Re: Sized integer types and char bits (4ed19f87c10c46b28c6a8514583d3354@DM2PR03MB304.namprd03.prod.outlook.com)
+Pre-prune: |   «1837407879 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<048653ed07b04544bc3f6183592e1b79@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O_+DugEN-5UTZbXm8ecz+N=reOrox9w5rsxEYw+YBBEQ@mail.gmail.com>	<389e2109e5094aaf88703287e9d9b52b@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O7-Qco_08CNLn=Sgg=hSuqokmknUqnMUxt+YgmqkRSBg@mail.gmail.com>	<87fvs890bq.fsf@euclid.axiomatics.org>	<CAGg_6+M8qRYjmHXxTaHW9QEVaiYr7oRZ2=99uQnd0zTGo9Wapg@mail.gmail.com>	<87fvs81tb9.fsf@euclid.axiomatics.org>	<CAGg_6+NG-vgNn-bSO6d_V9G+_JYLkr6iho0DtVZbN=ivEoqYPw@mail.gmail.com>	<bbb97395cde546348bb7fa90d8ac27ea@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+OLzJ2DgOpbAieDssv-06CSfWc227t0L8yRPCYzi0KFhA@mail.gmail.com>	<8fdbbcb040164f1f97a25e609fc549b2@DM2PR03MB304.namprd03.prod.outlook.com>	<CA+jCFLt5o_TmO9tnSMr3b=w3ZCdVayAkBcd3mpU4jq-AEFSjDw@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com›: no message»
+Pre-prune: |   |   [c++std-ext-14555] Sized integer types and char bits (‹references: 878uxqr1ya.fsf_-_@euclid.axiomatics.org›)
+Pre-prune: |   |   |   [c++std-ext-14557] Re: Sized integer types and char bits (‹references: b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com›)
+Pre-prune: |   |   |   |   [c++std-ext-14561] Re: Sized integer types and char bits (cad3f73261094d738dc5b98f13eb4618@DM2PR03MB304.namprd03.prod.outlook.com)
+Pre-prune: |   «499378493 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<8fdbbcb040164f1f97a25e609fc549b2@DM2PR03MB304.namprd03.prod.outlook.com>	<CA+jCFLt5o_TmO9tnSMr3b=w3ZCdVayAkBcd3mpU4jq-AEFSjDw@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com›: no message and no child»
+Pre-prune: |   «688239375 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>	<CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>	<394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com>	<BD55E214-3752-45E0-AE06-D453C9F18862@edg.com>	<CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.com›: no message and no child»
+Pre-prune: |   «892252883 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>	<CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>	<394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com>	<BD55E214-3752-45E0-AE06-D453C9F18862@edg.com>	<CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.com>	<5262288F.2070107@gmail.com›: no message and no child»
+Pre-prune: |   «215897580 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<048653ed07b04544bc3f6183592e1b79@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O_+DugEN-5UTZbXm8ecz+N=reOrox9w5rsxEYw+YBBEQ@mail.gmail.com>	<389e2109e5094aaf88703287e9d9b52b@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O7-Qco_08CNLn=Sgg=hSuqokmknUqnMUxt+YgmqkRSBg@mail.gmail.com>	<87fvs890bq.fsf@euclid.axiomatics.org>	<CAGg_6+M8qRYjmHXxTaHW9QEVaiYr7oRZ2=99uQnd0zTGo9Wapg@mail.gmail.com>	<87fvs81tb9.fsf@euclid.axiomatics.org>	<CAGg_6+NG-vgNn-bSO6d_V9G+_JYLkr6iho0DtVZbN=ivEoqYPw@mail.gmail.com>	<bbb97395cde546348bb7fa90d8ac27ea@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+OLzJ2DgOpbAieDssv-06CSfWc227t0L8yRPCYzi0KFhA@mail.gmail.com>	<8fdbbcb040164f1f97a25e609fc549b2@DM2PR03MB304.namprd03.prod.outlook.com>	<CA+jCFLt5o_TmO9tnSMr3b=w3ZCdVayAkBcd3mpU4jq-AEFSjDw@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org›: no message»
+Pre-prune: |   |   [c++std-ext-14556] Re: [ub] Sized integer types and char bits (CAFk2RUaiDj-Fu_QVktwZBp-S-Kkr2DfBsJ+dLQNdTp6qZ7SKHQ@mail.gmail.com)
+Pre-prune: |   «1490747277 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<048653ed07b04544bc3f6183592e1b79@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O_+DugEN-5UTZbXm8ecz+N=reOrox9w5rsxEYw+YBBEQ@mail.gmail.com>	<389e2109e5094aaf88703287e9d9b52b@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O7-Qco_08CNLn=Sgg=hSuqokmknUqnMUxt+YgmqkRSBg@mail.gmail.com>	<87fvs890bq.fsf@euclid.axiomatics.org>	<CAGg_6+M8qRYjmHXxTaHW9QEVaiYr7oRZ2=99uQnd0zTGo9Wapg@mail.gmail.com>	<87fvs81tb9.fsf@euclid.axiomatics.org>	<CAGg_6+NG-vgNn-bSO6d_V9G+_JYLkr6iho0DtVZbN=ivEoqYPw@mail.gmail.com>	<bbb97395cde546348bb7fa90d8ac27ea@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+OLzJ2DgOpbAieDssv-06CSfWc227t0L8yRPCYzi0KFhA@mail.gmail.com>	<8fdbbcb040164f1f97a25e609fc549b2@DM2PR03MB304.namprd03.prod.outlook.com>	<CA+jCFLt5o_TmO9tnSMr3b=w3ZCdVayAkBcd3mpU4jq-AEFSjDw@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com›: no message»
+Pre-prune: |   |   [c++std-ext-14558] Re: [ub] Sized integer types and char bits (‹references: CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com›)
+Pre-prune: |   |   |   [c++std-ext-14559] Re: [ub] Sized integer types and char bits (‹references: 394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com›)
+Pre-prune: |   |   |   |   [c++std-ext-14560] Re: [ub] Sized integer types and char bits (‹references: BD55E214-3752-45E0-AE06-D453C9F18862@edg.com›)
+Pre-prune: |   |   |   |   |   «297774990 - ‹references: CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.co›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   «1067359420 - ‹references: m›: no message»
+Pre-prune: |   |   |   |   |   |   |   [c++std-ext-14567] Re: [ub] Sized integer types and char bits (52623C86.5070004@bourguet.org)
+Pre-prune: |   |   [c++std-ext-14563] Re: Sized integer types and char bits (CAA+UVZTx+ZDBdQ2USFn+D=SNQ-OLrGbRG3NxUBisY6SMYF17fg@mail.gmail.com)
+Pre-prune: |   |   |   [c++std-ext-14569] Re: [ub] Re: Sized integer types and char bits (5263532A.7040208@redhat.com)
+Pre-prune: |   «1178868549 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   «559575821 - ‹references: 048653ed07b04544bc3f6183592e1b79@DM2PR03MB304.namprd03.prod.outlook.com›: no message, even on child»
+Pre-prune: |   |   |   «959933334 - ‹references: CAGg_6+O_+DugEN-5UTZbXm8ecz+N=reOrox9w5rsxEYw+YBBEQ@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   |   |   «1702388274 - ‹references: 389e2109e5094aaf88703287e9d9b52b@DM2PR03MB304.namprd03.prod.outlook.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   «1115092137 - ‹references: CAGg_6+O7-Qco_08CNLn=Sgg=hSuqokmknUqnMUxt+YgmqkRSBg@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   «263759190 - ‹references: 87fvs890bq.fsf@euclid.axiomatics.org›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   «594458922 - ‹references: CAGg_6+M8qRYjmHXxTaHW9QEVaiYr7oRZ2=99uQnd0zTGo9Wapg@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   |   «977176210 - ‹references: 87fvs81tb9.fsf@euclid.axiomatics.org›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   |   |   «1593112861 - ‹references: CAGg_6+NG-vgNn-bSO6d_V9G+_JYLkr6iho0DtVZbN=ivEoqYPw@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   |   |   |   «621744031 - ‹references: bbb97395cde546348bb7fa90d8ac27ea@DM2PR03MB304.namprd03.prod.outlook.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   |   |   |   |   «2143986362 - ‹references: CAGg_6+OLzJ2DgOpbAieDssv-06CSfWc227t0L8yRPCYzi0KFhA@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   |   |   |   |   |   «1350673121 - ‹references: 8fdbbcb040164f1f97a25e609fc549b2@DM2PR03MB304.namprd03.prod.outlook.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   |   |   |   |   |   |   «1860995857 - ‹references: CA+jCFLt5o_TmO9tnSMr3b=w3ZCdVayAkBcd3mpU4jq-AEFSjDw@mail.gmail.com›: no message and no child»
+Pre-prune: |   |   «1805533691 - ‹references: CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   |   «1660812527 - ‹references: CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   |   |   «283697583 - ‹references: CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   «691581141 - ‹references: CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   «1222739223 - ‹references: c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   «1307102818 - ‹references: 4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   |   «1866836963 - ‹references: 87ob6m37qj.fsf@euclid.axiomatics.org›: no message, even on child»
+Pre-prune: |   |   |   |   |   |   |   |   |   «1192754471 - ‹references: 37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com›: no message and no child»
+Pre-prune: |   «2012032999 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>	<CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>	<394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com>	<BD55E214-3752-45E0-AE06-D453C9F18862@edg.com›: no message and no child»
+Pre-prune: |   «1961108531 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>	<CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>	<394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com>	<BD55E214-3752-45E0-AE06-D453C9F18862@edg.com>	<CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.com>	<5262288F.2070107@gmail.com>	<dae22e95c446444a8b3c8d7c54c8bfc8@BN1PR03MB107.namprd03.prod.outlook.com›: no message and no child»
+Pre-prune: |   «772066361 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>	<CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>	<394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com>	<BD55E214-3752-45E0-AE06-D453C9F18862@edg.com>	<CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.com>	<5262288F.2070107@gmail.com›: no message»
+Pre-prune: |   |   [c++std-ext-14566] Re: [ub] Sized integer types and char bits (87r4bh7ne4.fsf@euclid.axiomatics.org)
+Pre-prune: |   «1023134153 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<048653ed07b04544bc3f6183592e1b79@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O_+DugEN-5UTZbXm8ecz+N=reOrox9w5rsxEYw+YBBEQ@mail.gmail.com>	<389e2109e5094aaf88703287e9d9b52b@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O7-Qco_08CNLn=Sgg=hSuqokmknUqnMUxt+YgmqkRSBg@mail.gmail.com>	<87fvs890bq.fsf@euclid.axiomatics.org>	<CAGg_6+M8qRYjmHXxTaHW9QEVaiYr7oRZ2=99uQnd0zTGo9Wapg@mail.gmail.com>	<87fvs81tb9.fsf@euclid.axiomatics.org>	<CAGg_6+NG-vgNn-bSO6d_V9G+_JYLkr6iho0DtVZbN=ivEoqYPw@mail.gmail.com>	<bbb97395cde546348bb7fa90d8ac27ea@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+OLzJ2DgOpbAieDssv-06CSfWc227t0L8yRPCYzi0KFhA@mail.gmail.com>	<8fdbbcb040164f1f97a25e609fc549b2@DM2PR03MB304.namprd03.prod.outlook.com>	<CA+jCFLt5o_TmO9tnSMr3b=w3ZCdVayAkBcd3mpU4jq-AEFSjDw@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com>	<CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com>	<394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com>	<BD55E214-3752-45E0-AE06-D453C9F18862@edg.com›: no message»
+Pre-prune: |   |   [c++std-ext-14564] Re: [ub] Sized integer types and char bits (CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.com)
+Pre-prune: |   |   |   [c++std-ext-14565] Re: [ub] Sized integer types and char bits (‹references: 5262288F.2070107@gmail.com›)
+Pre-prune: |   |   |   |   [c++std-ext-14568] Re: [ub] Sized integer types and char bits (‹references: dae22e95c446444a8b3c8d7c54c8bfc8@BN1PR03MB107.namprd03.prod.outlook.com›)
+Pre-prune: |   |   |   |   |   [c++std-ext-14570] Re: [ub] Sized integer types and char bits (5263BBF2.7070103@gmail.com)
+Pre-prune: |   |   |   |   |   |   [c++std-ext-14577] Re: [ub] Sized integer types and char bits (084fdfce6dda46cc99edea348b28b1d9@BN1PR03MB107.namprd03.prod.outlook.com)
+Post-prune:«504820309 - ‹root›: no message»
+Post-prune:|   [c++std-ext-14587] Re: [ub] Re: Sized integer types and char bits (‹references: CAGL0aWeP8Ku=4B66xss4QMLJUXKxE9sMiPG7Pfvm3rorxQG-Fg@mail.gmail.com›)
+Post-prune:|   |   [c++std-ext-14589] Re: [ub] Re: Sized integer types and char bits (4ed19f87c10c46b28c6a8514583d3354@DM2PR03MB304.namprd03.prod.outlook.com)
+Post-prune:|   [c++std-ext-14555] Sized integer types and char bits (‹references: 878uxqr1ya.fsf_-_@euclid.axiomatics.org›)
+Post-prune:|   |   [c++std-ext-14557] Re: Sized integer types and char bits (‹references: b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com›)
+Post-prune:|   |   |   [c++std-ext-14561] Re: Sized integer types and char bits (cad3f73261094d738dc5b98f13eb4618@DM2PR03MB304.namprd03.prod.outlook.com)
+Post-prune:|   [c++std-ext-14556] Re: [ub] Sized integer types and char bits (CAFk2RUaiDj-Fu_QVktwZBp-S-Kkr2DfBsJ+dLQNdTp6qZ7SKHQ@mail.gmail.com)
+Post-prune:|   «1490747277 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com>	<048653ed07b04544bc3f6183592e1b79@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O_+DugEN-5UTZbXm8ecz+N=reOrox9w5rsxEYw+YBBEQ@mail.gmail.com>	<389e2109e5094aaf88703287e9d9b52b@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+O7-Qco_08CNLn=Sgg=hSuqokmknUqnMUxt+YgmqkRSBg@mail.gmail.com>	<87fvs890bq.fsf@euclid.axiomatics.org>	<CAGg_6+M8qRYjmHXxTaHW9QEVaiYr7oRZ2=99uQnd0zTGo9Wapg@mail.gmail.com>	<87fvs81tb9.fsf@euclid.axiomatics.org>	<CAGg_6+NG-vgNn-bSO6d_V9G+_JYLkr6iho0DtVZbN=ivEoqYPw@mail.gmail.com>	<bbb97395cde546348bb7fa90d8ac27ea@DM2PR03MB304.namprd03.prod.outlook.com>	<CAGg_6+OLzJ2DgOpbAieDssv-06CSfWc227t0L8yRPCYzi0KFhA@mail.gmail.com>	<8fdbbcb040164f1f97a25e609fc549b2@DM2PR03MB304.namprd03.prod.outlook.com>	<CA+jCFLt5o_TmO9tnSMr3b=w3ZCdVayAkBcd3mpU4jq-AEFSjDw@mail.gmail.com>	<CAGg_6+Mz-bo2rs-RLnQgXoBKz1Hv17u7WkR924voatb7doHF8w@mail.gmail.com>	<CA+jCFLvCLODV59vyv_R6-vwHN5HXFs1mm0rRAc-PFJvh4bxhOg@mail.gmail.com>	<CAGg_6+NRXp_anbvmZnkunEdLcrrNH1xT+ssj7NiNAmyGYGJXAQ@mail.gmail.com>	<CANh-dXm8PNWHBJ49GV9vu3OdRB1MHC+XJY=JAy8PVyUe9=1c6w@mail.gmail.com>	<c7ee95de94e94f6db9ad38edef4fa3a8@BY2PR03MB091.namprd03.prod.outlook.com>	<4faee2ff47524ee1b37d0852ed530987@BN1PR03MB107.namprd03.prod.outlook.com>	<87ob6m37qj.fsf@euclid.axiomatics.org>	<37b63d23d2a045dd8ae24fa06f893ebc@BN1PR03MB107.namprd03.prod.outlook.com>	<878uxqr1ya.fsf_-_@euclid.axiomatics.org>	<b189ea5c75d242a5b795bb524b2ea810@SN2PR03MB093.namprd03.prod.outlook.com›: no message»
+Post-prune:|   |   [c++std-ext-14558] Re: [ub] Sized integer types and char bits (‹references: CAGuJnYd7bULjKn1TCpX0_hWsQ2PhuNEw8zypunS0Ty8wztSO_g@mail.gmail.com›)
+Post-prune:|   |   |   [c++std-ext-14559] Re: [ub] Sized integer types and char bits (‹references: 394d2a6c4d524ea49607aabbe8fc2f37@DM2PR03MB304.namprd03.prod.outlook.com›)
+Post-prune:|   |   |   |   [c++std-ext-14560] Re: [ub] Sized integer types and char bits (‹references: BD55E214-3752-45E0-AE06-D453C9F18862@edg.com›)
+Post-prune:|   |   |   |   |   [c++std-ext-14567] Re: [ub] Sized integer types and char bits (52623C86.5070004@bourguet.org)
+Post-prune:|   |   [c++std-ext-14563] Re: Sized integer types and char bits (CAA+UVZTx+ZDBdQ2USFn+D=SNQ-OLrGbRG3NxUBisY6SMYF17fg@mail.gmail.com)
+Post-prune:|   |   |   [c++std-ext-14569] Re: [ub] Re: Sized integer types and char bits (5263532A.7040208@redhat.com)
+Post-prune:|   «1178868549 - ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com›: no message and no child»
+Post-prune:|   [c++std-ext-14566] Re: [ub] Sized integer types and char bits (87r4bh7ne4.fsf@euclid.axiomatics.org)
+Post-prune:|   [c++std-ext-14564] Re: [ub] Sized integer types and char bits (CAA+UVZRVo-Wr9g2dONCOxiVe9XDsqF2T0vAd-Qzy_HgZy7jvbw@mail.gmail.com)
+Post-prune:|   |   [c++std-ext-14565] Re: [ub] Sized integer types and char bits (‹references: 5262288F.2070107@gmail.com›)
+Post-prune:|   |   |   [c++std-ext-14568] Re: [ub] Sized integer types and char bits (‹references: dae22e95c446444a8b3c8d7c54c8bfc8@BN1PR03MB107.namprd03.prod.outlook.com›)
+Post-prune:|   |   |   |   [c++std-ext-14570] Re: [ub] Sized integer types and char bits (5263BBF2.7070103@gmail.com)
+Post-prune:|   |   |   |   |   [c++std-ext-14577] Re: [ub] Sized integer types and char bits (084fdfce6dda46cc99edea348b28b1d9@BN1PR03MB107.namprd03.prod.outlook.com)
+About to blow up on ‹references: CANh-dXkxpwcgnCYP_tfvH0yXb6__mKbZfbcNoPeyUNZ_arv1SA@mail.gmail.com›!!!
+Exception in thread ""main"" java.lang.NullPointerException
+	at org.apache.commons.net.nntp.Threader.gatherSubjects(Threader.java:319)
+	at org.apache.commons.net.nntp.Threader.thread(Threader.java:80)
+	at org.apache.commons.net.nntp.Threader.thread(Threader.java:47)
+	at [redacted]
+{noformat}","15/Apr/14 23:17;sebb;I'm not getting the NPE with your test data.
+
+It would be a lot easier to test against a real NNTP server - is there a public one which carries this news-group?
+
+Or if not, can you provide the XOVER response for the messages in question?","16/Apr/14 01:16;clonezone;These are not being read via NNTP. These are emails being read from the local filesystem. The threading is being done via the IDs in the References: headers.","16/Apr/14 02:15;sebb;I realise that, but as already noted I cannot reproduce the NPE with your test data.
+
+I tried with both the tar.gz attachment and the header-only listing in the comments (BTW, one reference is truncated in the comments).
+
+Can you provide a complete test case that fails?
+
+Note that the class was originally designed for use with NNTP, in particular XOVER responses.
+It would be useful to know if these responses can trigger the bug, or if the response is adjusted to remove any missing threads so the problem does not occur.","01/Dec/14 00:40;sebb;If you can provide a test case that reproduces the error, please attach it an reopen.",,,,,,
+NPE because of returning wrong reply-code for openDataConnection while performing MPUT,NET-546,12725725,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Won't Fix,,jigsaw,jigsaw,07/Jul/14 11:23,29/Nov/14 03:06,28/Mar/20 23:26,17/Jul/14 09:58,3.3,,,,,FTP,,,,,0,,,,,"Hi there,
+
+I'm trying to transfer some data from a Windows 7 system to a System i (IBM server, former AS/400) by using MPUT.
+
+So what I am doing in detail:
+I have got a Java client on my Windows 7 machine. There apache commons net is in use. By using the class FTPClient I connect to an IBM machine (there is installed V7R1).
+
+These are the commands I fire:
+ftp.login(username, password);
+ftp.setFileType(FTP.BINARY_FILE_TYPE);
+ftp.changeWorkingDirectory(pathname);
+ftp.storeFileStream(remoteFile);
+ftp.disconnect();
+
+When performing the storeFileStream NULL is returned instead of the output stream. Connection can be established and everything is working well.
+
+The problem is that a wrong reply-code is checked during openDataConnection.
+
+Let me sum up the relevant steps:
+1. storeFileStream is called
+2. _storeFileStream(String, String) of FTPClient gets entered
+3. Then _openDataConnection_ is entered
+4. Inside this method the active connection mode part is executed
+5. Using IP4 the port method is called there
+6. Due to calling the PORT command for FTP a new return message is generated: “200 PORT subcommand request successful.”
+7. isPositiveCompletion returns true everything is fine up to here
+8. Going on with the active connection mode part this leads to the sendCommand method where – after executing the FTP command – the __getReply(boolean) method inside of __getReply() is called.
+9. And now the issue: _controlInput_.readLine() returns the PORT message mentioned before instead of “150 Sending file to [myFile]”. When calling readLine again, the correct message is returned.
+
+Why is the message important?
+Getting back to _openDataConnection_ after execution of sendCommand the method FTPReply.isPositivePreliminary checks the reply-code, which is 200 instead of 150. This will cause a fail and a returning of NULL as output stream.
+
+That’s my guess:
+There is missing a call of _controlInput_.readLine() to clear some information messages before calling a new FTP command.
+
+Thank you.","Win7, System i (IBM)",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-11-29 03:06:03.991,,,false,,,,,,,,,,,,,,,,,,403883,,,Sat Nov 29 03:06:03 UTC 2014,,,,,,,"0|i1xif3:",403926,,,,,,,,,,,,,,,,"16/Jul/14 14:37;jigsaw;During my debug session I determined two issues:
+1. I sent ftp.sendServer(""SITE NAMEFMT 1\n""). But the FTPClient closes commands by itself. Removing the “\n” resolved this problem
+2. The mput command is returning two messages but only one is removed by the getReply method. Performing another command after mput the getReply method is reading out the 2nd mput message so the wrong reply-code is checked.","16/Jul/14 14:57;jigsaw;I have written a unit test that fails but sholdn't:
+
+	@Test
+	public void testApacheFTP2Stores() throws IOException {
+		apacheFTP.connect(ATTR_SERVER);
+		
+		apacheFTP.login(ATTR_USER, ATTR_PASS);
+		apacheFTP.setFileType(FTP.BINARY_FILE_TYPE);
+		
+		apacheFTP.changeWorkingDirectory(ATTR_CHDIR);
+		OutputStream out = apacheFTP.storeFileStream(ATTR_PUTFILE);
+		out = apacheFTP.storeFileStream(ATTR_PUTFILE);
+		
+		apacheFTP.disconnect();
+		
+		assertNotNull(out);
+	}
+
+The variable apacheFTP means org.apache.commons.net.ftp.FTPClient.
+
+Even an out.close() between those two storeFileStream doesn't help.
+If the 2nd storeFileStream gets deleted the unit test will finish successfully.","17/Jul/14 09:57;jigsaw;Okay, there we are: ftp.completePendingCommand();
+
+After a few commands this call has to be performed. So in my case after the first storeFileStream has been invoked and the stream has been closed the ftp.completePendingCommand(); finishes the operation so all following commands do not get into trouble.
+
+In my opinion that is a rude solution because the programmer has to remember it all the time. But hey, that works. ;)","29/Nov/14 03:06;sebb;It's not possible for the storeFileStream method to tidy up the command stream itself, because it does not know when the user has finished writing the data (*)
+
+The Javadoc for storeFileStream states this:
+
+http://commons.apache.org/proper/commons-net/javadocs/api-3.3/org/apache/commons/net/ftp/FTPClient.html#storeFileStream(java.lang.String)
+
+(*) I suppose it would be possible to create a wrapper OutputStream that intercepted the close() method and called completePendingCommand.
+However, the caller would still need to fetch the reply status, so that would not achieve much.",,,,,,,,,,,
+Can't disable echo option,NET-541,12715175,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Not A Problem,,guntuka.ramakrishna,guntuka.ramakrishna,19/May/14 13:39,23/May/14 16:34,28/Mar/20 23:26,23/May/14 16:34,3.3,,,,,Telnet,,,,,0,,,,,"Using the Telnet client example provided in the examples, when I connect to one of my local server, it is echoing the data back. 
+
+For instance, I am trying to connect some <ip_address>, Usually from the server, I get the following response,
+
+User Access Verification
+
+Username : USER1
+
+When I enter this username, the same one is echoed back as,
+
+Username : USER1 USER1
+Password: 
+
+I tried in all ways by taking support from stackoverflow but no luck.
+
+Seriously some one have a look at this issue. 
+
+Thanks,
+RK","OS -Windows 7 
+SDK - Java 7
+",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-05-23 16:34:57.068,,,false,,,,,,,,,,,,,,,,,,393461,,,Fri May 23 16:34:57 UTC 2014,,,,,,,"0|i1vr3z:",393623,,,,,,,,,,,,,,,,"23/May/14 16:34;sebb;JIRA is not a support forum.
+
+Please subscribe to the Commons User list and ask there.
+
+But first please have a look a the TelnetClientExample.java code",,,,,,,,,,,,,,
+FTPSClient.storeFile() hangs indefinitely if network connection fails,NET-510,12653800,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,joeh,joeh,19/Jun/13 20:48,07/Dec/13 00:08,28/Mar/20 23:26,,3.3,,,,,FTP,,,,,1,,,,,"Background:
+
+I'm attempting to add some level of fault tolerance to an application that uses FTPSClient to transfer files. If the connection between the client and server fails, I'd like to capture the produced exception/return code, log the details, and attempt to reconnect/retry the transfer.
+
+What works:
+
+The retrieveFile() method. If the connection fails, (i.e. I disable the server's public interface), I receive a CopyStreamException caused by a SocketTimeoutException after the amount of time I specified as the timeout. Which makes sense if SO_TIMEOUT is getting set correctly...
+
+From the Javadocs:
+
+""Enable/disable SO_TIMEOUT with the specified timeout, in milliseconds. With this option set to a non-zero timeout, a read() call on the InputStream associated with this Socket will block for only this amount of time. If the timeout expires, a java.net.SocketTimeoutException is raised, though the Socket is still valid. The option must be enabled prior to entering the blocking operation to have effect. The timeout must be > 0. A timeout of zero is interpreted as an infinite timeout.""
+
+What doesn't work (as expected):
+
+The storeFile() method. If I initiate a transfer via storeFile() and disable the NIC on the server, the storeFile() method blocks/hangs indefinitely without throwing any exceptions. I think that this is the result of nothing listening, on the client side, to the DataSocket, which makes sense because I don't think there is anything being sent back to the client over the DataSocket. 
+
+So, it doesn't appear to be possible for the write() to ever timeout if the connection fails.
+
+Am I missing something?
+
+Thanks,
+
+Joe","Java 7, CentOS 6.4, commons.net 3.3",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,334077,,,2013-06-19 20:48:34.0,,,,,,,"0|i1lmo7:",334403,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+[patch attached]SubnetUtils.SubnetInfo.getAllAddresses() Doesn't return all addresses,NET-513,12658831,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Invalid,,akushwaha.manta@gmail.com,akushwaha.manta@gmail.com,19/Jul/13 21:23,06/Dec/13 19:53,28/Mar/20 23:26,06/Dec/13 19:52,3.3,,,,,,,,,,0,,,,,"SubnetInfo.getAllAddresses() Doesn't return all addresses, but return all but 2 addresses.
+Fixing code at following lines worked for me.
+	        private int low()           { return network() ; }
+	        private int high()          { return broadcast() ; }
+public int getAddressCount()                { return (broadcast() - low() + 1); }
+
+	            //j < addresses.length added as for loop will run infinitely when high is Integer.MAX_VALUE test case: 127.0.0.0/8
+	            for (int add = low(), j=0; add <= high() && j < addresses.length; ++add, ++j) {
+
+",,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2013-12-06 19:50:54.683,,,false,,,,,,,,,,,,,,,,,,339024,,,Fri Dec 06 19:52:59 UTC 2013,,,,,,,"0|i1mh3j:",339344,,,,,,,,,,,,,,,,"06/Dec/13 19:50;ggregory;Is it possible for you to provide your fix as a patch with a unit test?","06/Dec/13 19:52;sebb;Note that the addresses returned by SubnetInfo depend on the setting of isInclusiveHostCount.
+
+If this is false, then the network and broadcast addresses are not returned.
+This is by design.",,,,,,,,,,,,,
+CLONE - Retrieving files from AS400 FTP systems returns null timestamps in FTPFile.getTimestamp,NET-573,12831590,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Cannot Reproduce,,dalapple,dalapple,21/May/15 03:03,08/Feb/17 00:25,28/Mar/20 23:26,08/Feb/17 00:25,2.2,3.2,3.3,,,FTP,,,,,0,,,,,"We are trying to list files from AS400 systems and retrieve the timestamps from these files using the following code:
+
+{code}
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
+import org.apache.commons.net.PrintCommandListener;
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPHTTPClient;
+import org.apache.commons.net.ftp.FTPClientConfig;
+import org.apache.commons.net.ftp.FTPConnectionClosedException;
+import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.FTPReply;
+import org.apache.commons.net.ftp.FTPSClient;
+import org.apache.commons.net.io.CopyStreamEvent;
+import org.apache.commons.net.io.CopyStreamListener;
+import org.apache.commons.net.util.TrustManagerUtils;
+
+public final class FTPAccess {
+	private String server;
+	private String username;
+	private String password;
+	private String path ;
+
+	public String getPath() {
+		return path;
+	}
+	public void setPath(String path) {
+		this.path = path;
+	}
+	public static void main(String[] args) throws UnknownHostException {
+		FTPAccess ftpAccess = new FTPAccess();
+		ftpAccess.setServer(""X.X.X.X"");
+		ftpAccess.setUsername(""XXXXXX"");
+		ftpAccess.setPassword(XXXXXXX"");
+		ftpAccess.setPath(""/reports"");
+		ftpAccess.getFile();
+	}
+	public void getFile() throws UnknownHostException {
+		
+		FTPClient ftpClient = new FTPClient();
+		
+		try {
+			InetAddress serveIPAddress = InetAddress.getByName(server);
+			ftpClient.setPassiveLocalIPAddress(serveIPAddress);
+			ftpClient.connect(serveIPAddress);
+			System.out.println(""Connected to "" + server + ""."");
+
+			int reply = ftpClient.getReplyCode();
+			if (!FTPReply.isPositiveCompletion(reply)) {
+				System.err.println(""FTP server refused connection."");
+				System.err.println(ftpClient.getReplyString());
+				ftpClient.disconnect();
+			} else {
+			}
+
+			if (!ftpClient.login(username, password)) {
+				System.out.println(ftpClient.getReplyString());
+				ftpClient.logout();
+			} else{
+				diplayContent(ftpClient, path);
+
+			}
+
+		} catch (IOException e) {
+			if (ftpClient.isConnected()) {
+				try {
+					ftpClient.disconnect();
+				} catch (IOException ioException) {
+					// do nothing
+				}
+			}
+			System.err.println(""Could not connect to server."");
+			// e.printStackTrace();
+			System.exit(1);
+		}
+
+		// } catch (FTPConnectionClosedException e) {
+		// error = true;
+		// System.err.println(""Server closed connection."");
+		// e.printStackTrace();
+		// } catch (IOException e) {
+		// error = true;
+		// e.printStackTrace();
+		// } finally {
+		// if (ftp.isConnected()) {
+		// try {
+		// ftp.disconnect();
+		// } catch (IOException f) {
+		// // do nothing
+		// }
+		// }
+		// }
+
+	} // end main
+
+	public String getServer() {
+		return server;
+	}
+
+	public void setServer(String server) {
+		this.server = server;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+	
+	public void diplayContent(FTPClient ftpClient, String path) throws IOException {
+		System.out.println(path);
+		for (FTPFile ftpFile : ftpClient.listFiles(path)) {
+			if(ftpFile.isDirectory() ){
+				diplayContent(ftpClient, path+""/""+ftpFile.getName());
+			} else{
+				System.out.println(path+""/""+ftpFile.getName());
+				System.out.println(ftpFile.getTimestamp());
+			}
+		}
+		
+	}
+
+}
+{code}
+
+The LIST command which is used internally in the FTPClient retrieves the timestamps successfully. However after parsing the FTPFile has a null value for the timestamp field.
+
+The null value is returned just when a user place the file in the AS400 usint the NetServer Servivice. This is used to share foldes between windows network and the AS/400
+
+Please help us fix this problem. It is not critical to us.
+","Commons Net 3.2
+FTP System: AS400 systems
+I5/OS Version 5 Release 4 Modification 0
+",,,,,,,,,NET-498,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-06-18 22:07:04.773,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Wed Feb 08 00:25:14 UTC 2017,,,,,,,"0|i2f0vj:",9223372036854775807,,,,,,,,,,,,,,,,"21/May/15 03:10;dalapple;Am getting the same issue as the original cloned ticket. I have tried using both commons-net-2.2.jar and commons-net-3.3.jar with AS400 ftp.
+
+When I use the command java -jar commons-net-examples-3.3.jar FTPClientExample -l X.X.X.X <username> <password> /reports
+Below is what I get:
+ZFTPDEV          9069 05/20/15 15:36:52 *STMF
+
+I do see the timestamp value when using FTPFile.getRawListing() and FTPFile.toString(). But when I use FTPFile.getTimestamp(), the timestamp returns null. 
+
+Is this an known issue with AS400 server? I have validated the timestamp configured matches the time listed in rawlisting.","21/May/15 03:13;dalapple;Here is snippet of the code:
+{code} 
+        FTPClient ftpClient = new FTPClient();
+        FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_AS400);
+        conf.setDefaultDateFormatStr(""MM/dd/yy HH:mm:ss"");
+        
+        ftpClient.configure(conf);
+        System.out.println(conf.getDefaultDateFormatStr());
+        
+        try {
+            ftpClient.connect(server, port);
+            ftpClient.login(user, pass);
+ 
+            // use local passive mode to pass firewall
+            ftpClient.enterLocalPassiveMode();
+ 
+            // get details of a file or directory
+            String remoteFilePath = ""/DRV/AUDWRKSHET"";
+            System.out.println(""Num of files: "" + ftpClient.listFiles(remoteFilePath).length);
+            FTPFile ftpFile = ftpClient.listFiles(remoteFilePath)[0];
+            if (ftpFile != null) {
+                String name = ftpFile.getName();
+                long size = ftpFile.getSize();
+               // String timestamp = ftpFile.getTimestamp().getTime().toString();
+                String type = ftpFile.isDirectory() ? ""Directory"" : ""File"";
+				System.out.println(ftpFile.getRawListing());
+				System.out.println(ftpFile.toString());
+                System.out.println(""Name: "" + name);
+                System.out.println(""Size: "" + size);
+                System.out.println(""Type: "" + type);
+                //System.out.println(""Timestamp: "" + timestamp);
+                System.out.println(""Time: "" + ftpFile.getTimestamp());
+            } else {
+                System.out.println(""The specified file/directory may not exist!"");
+            }
+ 
+            ftpClient.logout();
+            ftpClient.disconnect();
+ 
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            if (ftpClient.isConnected()) {
+                try {
+                    ftpClient.disconnect();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+{code}
+
+Here is output:
+MM/dd/yy HH:mm:ss
+Num of files: 1
+ZFTPDEV          9069 05/20/15 15:36:52 *STMF      /DRV/AUDWRKSHET/AUDWRK0204232015114625.PDF
+ZFTPDEV          9069 05/20/15 15:36:52 *STMF      /DRV/AUDWRKSHET/AUDWRK0204232015114625.PDF
+Name: AUDWRK0204232015114625.PDF
+Size: 9069
+Type: File
+Time: null
+","18/Jun/15 22:07;sebb;There  are a couple of issues here.
+
+1) FTPClientExample in 3.3 does not allow the server type or the default date format string to be defined. The server type is determined from the response to the SYST command. However the default date format for AS/400 is ""yy/MM/dd HH:mm:ss"", which cannot be used to parse the date as MM cannot be 20. So the example is bound to fail.
+
+2) I have tried to reproduce the problem with the code snippet. However that works fine when tried with a dummy server using the StubFtpServer [1]. So long as the code sets the default date string correctly, the timestamp is parsed correctly. 
+
+3) The code snippet calls ftpClient.listFiles twice; this does not seem to affect the result, but should be avoided.
+
+My plan of action is to update the FTPClientExample so that the default date format can be specified. Hopefully the 3.4-SNAPSHOT code can then be used to help debug the problem.
+
+Is there a publicly accessible server that can be used for testing?
+
+[1] http://mockftpserver.sourceforge.net/stubftpserver-getting-started.html","18/Jun/15 22:53;sebb;URL: http://svn.apache.org/r1686331
+Log:
+Add test for NET-573
+
+Modified:
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ftp/parser/OS400FTPEntryParserTest.java
+","19/Jun/15 00:18;sebb;Note: the current code is available from the ASF SNAPSHOT repo if you want to test against the AS/400 server.
+
+Use the following FTPClientExample options to set up the correct server type and date format:
+{noformat}
+-S ""AS/400"" -y ""MM/dd/yy HH:mm:ss""
+{noformat}
+","22/Jun/15 16:53;dalapple;Thank you, Sebb. I have contacted our data center vendor to see if we can provide a public ftp access to reproduce the issue. Would send through your apache email if I am able to get it. 
+
+
+","08/Feb/17 00:25;sebb;Not possible to proceed further without access to a suitable server.
+
+If the issue is still present with the current code please re-open with a suitable test case.",,,,,,,,
+FTPClient Login suppression inconsistent,NET-557,12749769,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Won't Fix,,philci52,philci52,22/Oct/14 13:17,01/May/16 00:54,28/Mar/20 23:26,01/May/16 00:54,3.3,,,,,FTP,,,,,0,,,,,"The following code prints out the user name in one instance and masks it in the other.  The password is masked in both cases.  I would prefer the user name to be masked in both cases as well.
+{code}
+FTPClient client = new FTPClient();
+client.addProtocolCommandListener(new PrintCommandListener(System.out, true));
+client.connect(host);
+client.login(user, pass);
+{code}
+Output (Notice the user name is printed on the response)
+{code}
+220 Microsoft FTP Service
+USER *******
+331 Password required for ftpTest.
+PASS *******
+230 User ftpTest logged in.
+{code}","Window 7, Java 7",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-11-29 01:55:42.96,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sun May 01 00:54:31 UTC 2016,,,,,,,"0|i21g3j:",9223372036854775807,,,,,,,,,,,,,,,,"29/Nov/14 01:55;sebb;The code currently only masks the user and password in request messages.
+It can do this because the format of the request message is strictly controlled.
+
+However the format of the 331 and 230 response messages may vary between different FTP servers (and may be in a different language).
+Note also that the user name is in different places in the two messages.
+
+I'm not sure it's possible to reliably redact the user name unless one removes the entire text of the message.
+This seems excessive, and may result in losing important information.
+","30/Nov/14 13:44;philci52;The client has the username passed in, can't it just replace all occurrences of that in the response?","30/Nov/14 18:12;sebb;I did consider this, but there is no guarantee that the user name is distinct from the other words in the message.
+For example, there might be a user called ""User"". Or ""for"" or ""in"".
+I agree this is somewhat unlikely, but it is not impossible.
+And in other languages clashes may be more likely.","03/Dec/14 01:05;philci52;I had thought of that, as well, but is the goal here to error on the side of secure or not?  I would have thought that if I tell the software to mask the user name that it should do that because the I am that point being security councious and the software should error on that side.
+
+From a system perspective these messages are typically logged into some log file and then those log files are backed up.  Anyone with access to the logs or back-up logs would have access to an ftp user name.
+
+Of course anyone who really cares about security would not be using FTP at all, but sometimes to connect to 3rd party systems you have no choice.","03/Dec/14 01:26;sebb;The user name on its own is not sufficient to login.
+The fact that FTP servers respond with the user name suggests that it really does not need to be redacted in most cases.
+So how much of a security risk is it?
+I'm not sure that this is worth the effort.
+
+If you don't want the login sequence to be captured, then don't use a command listener, or add it after login.
+Or write your own.","03/Dec/14 03:19;philci52;Obvously it was important enough to include in the original constructor.  The whole point of that argument is to mask the username.  Does it do it?  No","01/May/16 00:54;sebb;The Listener was only ever intended to suppress the login *command*, not the response.",,,,,,,,
+The managing of the KeepAliveReplyTimeout masks the user's setting,NET-589,12946716,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Invalid,,Nonplay,Nonplay,03/Mar/16 23:06,03/Mar/16 23:13,28/Mar/20 23:26,03/Mar/16 23:13,3.3,,,,,FTP,,,,,0,,,,,"The class FTPClient uses a convenience static and private class for managing the KeepAlive: CSL. However, this class sets in its constructor the maximum waiting time for the KeepAliveReply (FTPClient:3671), overriding any users's setting for the FTPClient.setSoTimeout.
+ 
+If I am not wrong, ""setSoTimeout"" should be set right before to call the ""__noop"" operation in FTPClient:3685, saving the original (user-defined) value for the SoTimeout, and resetting it after the invocation.",,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Mar 03 23:13:02 UTC 2016,,,,,,,"0|i2u4lr:",9223372036854775807,,,,,,,,,,,,,,,,"03/Mar/16 23:13;Nonplay;Sorry for my ticket, redoing a more accurate code review, I understood that the logic works fine for where the class is used.",,,,,,,,,,,,,,
+Downloading files or members from the AS400 QSYS file system is not supported,NET-512,12656519,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,tools400,tools400,07/Jul/13 14:16,26/Nov/15 16:34,28/Mar/20 23:26,06/Dec/13 22:12,3.3,,,,3.4,FTP,,,,,0,patch,,,,,,,,,,,,,,,,,,"07/Jul/13 14:29;tools400;COMMONS-FTP-OS400-PARSER_20130606.patch;https://issues.apache.org/jira/secure/attachment/12591128/COMMONS-FTP-OS400-PARSER_20130606.patch","07/Jul/13 14:29;tools400;OS400FTPEntryParser.java;https://issues.apache.org/jira/secure/attachment/12591126/OS400FTPEntryParser.java","07/Jul/13 20:41;tools400;OS400FTPEntryParserAdditionalTest.java;https://issues.apache.org/jira/secure/attachment/12591142/OS400FTPEntryParserAdditionalTest.java","07/Jul/13 14:29;tools400;sample_build.xml;https://issues.apache.org/jira/secure/attachment/12591127/sample_build.xml",,4.0,,,,,,,,,,,,,,,,,,,,2013-12-06 22:12:51.265,,,false,,,,,,,,,,,,,,,,,,336742,,,Fri Dec 06 22:12:51 UTC 2013,,,,,,,"0|i1m31r:",337065,,,,,,,,,,,,,,,,"07/Jul/13 14:27;tools400;Today only the object types *STMF and *DIR of the AS/400 root file system are supported. There is no way to download files and members from the QSYS file system, which actually is the main file system of an AS/400.
+
+The patch I provided enables the FTP client to download objects of type *FILE and *MEM from the QSYS file system. Due to the nature of the AS/400 FTP server, date and time information as well as the size of a member is not available.
+
+The original test case (OS400FTPEntryParserTest) has been left unchanged and an additional test case (OS400FTPEntryParserAdditionalTest) has been added.","06/Dec/13 22:12;sebb;Thanks very much. applied:
+
+URL: http://svn.apache.org/r1548730
+Log:
+NET-512 Downloading files or members from the AS400 QSYS file system is not supported
+
+Added:
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ftp/parser/OS400FTPEntryParserAdditionalTest.java   (with props)
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/OS400FTPEntryParser.java
+",,,,,,,,,,,,,
+getModificationTime(<filename>) returns complete received line including response code and EOL,NET-558,12754530,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,rabec,rabec,11/Nov/14 18:31,26/Nov/15 16:34,28/Mar/20 23:26,29/Nov/14 01:29,3.3,,,,3.4,FTP,,,,,0,commons-net,ftp,,,"When retrieving the last modification time of a file on the server via the 
+method getModificationTime(String filename) it returns something like 
+""213 20141111112706"" where only the part after the space is the relevant data.
+
+I digged deeper and i found that the first part before the space is the positive 
+response code which is not removed before getModificationTime returns.
+
+I consider this a minor bug as i think there is a simple work around 
+(split by space, use second part only) but i do not believe that 
+the result of the method is what a user expects regarding the documentation 
+of that method. 
+",The ftp server supports MDTM.,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-11-29 01:29:19.361,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sat Jul 11 21:31:05 UTC 2015,,,,,,,"0|i228sv:",9223372036854775807,,,,,,,,,,,,,,,,"29/Nov/14 01:29;sebb;Thanks for the report. Yes, the status code should have been trimmed.
+
+URL: http://svn.apache.org/r1642389
+Log:
+NET-558 - getModificationTime(<filename>) returns complete received line including response code
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClient.java","30/Jun/15 10:39;jkemnade;If I use the {{substring(4)}} approach in 3.3 with a WINDOWS ftp server, there's still a trailing newline in the response. Not sure if that'll be an issue in 3.4.","03/Jul/15 16:32;sebb;You can try the current code by using a build from the ASF SNAPSHOT repository.
+Such builds have not been reviewed so are used at your risk.","08/Jul/15 08:58;jkemnade;I also get a trailing newline in 3.4-SNAPSHOT.","11/Jul/15 21:31;sebb;Further investigation shows that getModificationTime uses getReplyString() which adds NETASCII_EOL to each line (i.e. what the server would have sent).
+
+That does not seem right; it should use getReplyStrings()[0] as is done by mdtmFile.
+Fixed:
+
+URL: http://svn.apache.org/r1690410
+Log:
+NET-558 - getModificationTime(<filename>) returns complete received line including response code and EOL
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClient.java
+",,,,,,,,,,
+net: telnet: spy read EOL is reversed,NET-543,12718603,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,mailings@hupie.com,mailings@hupie.com,05/Jun/14 11:52,26/Nov/15 16:34,28/Mar/20 23:26,07/Jun/14 16:20,3.3,,,,3.4,Telnet,,,,,0,,,,,"the code in Telnet::_spyRead has a bug that results in a 'reversed' EOL.
+I'm expecting SocketClient.NETASCII_EOL (\r\n) but I'm getting '\n\r'.
+
+the code
+{noformat}
+    void _spyRead(int ch)
+    {
+        OutputStream spy = spyStream;
+        if (spy != null)
+        {
+            try
+            {
+                if (ch != '\r')
+                {
+                    spy.write(ch);
+                    if (ch == '\n')
+                    {
+                        spy.write('\r');
+                    }
+                    spy.flush();
+                }
+            }
+            catch (IOException e)
+            {
+                spyStream = null;
+            }
+        }
+    }
+{noformat}
+
+should be replaced by
+{noformat}
+    void _spyRead(int ch)
+    {
+        OutputStream spy = spyStream;
+        if (spy != null)
+        {
+            try
+            {
+                if (ch != '\r')
+                {
+                    if (ch == '\n')
+                    {
+                        spy.write('\r');
+                    }
+                    spy.write(ch);
+                    spy.flush();
+                }
+            }
+            catch (IOException e)
+            {
+                spyStream = null;
+            }
+        }
+    }
+{noformat}",Linux x64,,,,,,,,,,,,,"05/Jun/14 12:34;mailings@hupie.com;0001-Fix-NET-543-net-telnet-spy-read-EOL-is-reversed.patch;https://issues.apache.org/jira/secure/attachment/12648475/0001-Fix-NET-543-net-telnet-spy-read-EOL-is-reversed.patch",,,,,1.0,,,,,,,,,,,,,,,,,,,,2014-06-07 16:14:13.844,,,false,,,,,,,,,,,,,,,,,,396802,,,Sat Jun 07 16:20:28 UTC 2014,,,,,,,"0|i1wbc7:",396921,,,,,,,,,,,,,,,,"05/Jun/14 12:23;mailings@hupie.com;Originates from commit:
+
+Moving to TLP
+git-svn-id: http://svn.apache.org/repos/asf/commons/proper/net/trunk@560660 13f79535-47bb-0310-9956-ffa450edef68","05/Jun/14 12:34;mailings@hupie.com;Git patch (on git-svn-id: http://svn.apache.org/repos/asf/commons/proper/net/trunk@1595704)","07/Jun/14 16:14;sebb;Actually, the problem has been there since the _spyRead method was first added in r139367:
+
+http://svn.apache.org/viewvc/jakarta/commons/proper/net/trunk/src/java/org/apache/commons/net/telnet/Telnet.java?r1=139367&r2=139366&pathrev=139367
+
+This was over 11 years ago. I'm surprised that no-one has noticed this before, so thanks very much for the report.","07/Jun/14 16:20;sebb;URL: http://svn.apache.org/r1601150
+Log:
+NET-543 telnet: spy read EOL is reversed
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/telnet/Telnet.java
+",,,,,,,,,,,
+FTPHTTPClient should use socket factory to create sockets,NET-538,12708314,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,Dzmitry_by,Dzmitry_by,14/Apr/14 17:10,26/Nov/15 16:34,28/Mar/20 23:26,04/Jun/15 12:05,3.3,,,,3.4,FTP,,,,,0,,,,,"FTPHTTPClient can't set socket timeout when connecting to remote http proxy. This may cause hangouts for calls to remote http ftp proxies.
+
+Expected: FTPHTTPClient  supports creation sockets with Factory methods. We had same approach for regular FTPClient calling .setSocketFactory(...) method and have control over socket creation.
+Actual: FTPHTTPClient  creates Socket inside public void connect(...) directly, and it is impossible to set timouts since this object will be used immediately. It is even impossible to inherit from FTPHTTPClient   to override connect - since proxyHost, proxyPort and tunnelHandshake is private.
+
+so we may change 
+      _socket_ = new Socket(proxyHost, proxyPort);
+to 
+     _socket_ = _socketFactory_.createSocket();
+
+and add support for FTPHTTPClient  to handle socket factories for http proxies calls.
+
+Is it possiible?
+
+","win7 + java 64, apache-commons-net3.3.jar",,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-06-04 12:03:25.755,,,false,,,,,,,,,,,,,,,,,,386637,,,Thu Jun 04 12:05:18 UTC 2015,,,,,,,"0|i1ult3:",386901,,,,,,,,,,,,,,,,"04/Jun/15 12:03;sebb;I've just checked, and none of the other classes (apart from DefaultSocketFactory of course!) instantiate Sockets directly - they all use the socket factory.
+
+So it makes sense to do the same here, thus allowing the user to use their own socket factory if required.","04/Jun/15 12:05;sebb;URL: http://svn.apache.org/r1683528
+Log:
+NET-538 - FTPHTTPClient should use socket factory to create sockets
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPHTTPClient.java
+",,,,,,,,,,,,,
+initiateListParsing does not correctly check if parserKey was cached,NET-544,12720576,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,queyruto,queyruto,11/Jun/14 13:06,26/Nov/15 16:34,28/Mar/20 23:26,01/Dec/14 00:34,3.3,,,,3.4,FTP,,,,,0,,,,,"At line 3232 of FTPClient, it is mentionned that the parserKey and entryParser are cached ""to avoid creation of a new object every time a file listing is generated"".
+
+However the test seems to be incorrect as a new entryParser is created every time the method ""listFiles"" is called. Indeed, in method named listFiles, the initiateListParsing is called with a null argument for the parserKey.
+So the test : ""if(__entryParser == null ||  ! __entryParserKey.equals(parserKey))"" is always true (even if __entryParserKey has been cached) and thus a new entryParser is created.",,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-12-01 00:28:50.986,,,false,,,,,,,,,,,,,,,,,,398775,,,Mon Dec 01 00:34:38 UTC 2014,,,,,,,"0|i1wniv:",398897,,,,,,,,,,,,,,,,"01/Dec/14 00:28;sebb;Agreed, if the parserKey is null then the entry is recreated.
+
+This currently has the side effect that if the System property or the SYST response changes, the parser will be created from the new value.
+Now the SYST response is cached, so it cannot change, and the System property is intended for use on the command-line.
+It therefore seems extremely unlikely that any code relies on this behaviour.
+The code therefore just needs to check the parserKey if it is non-null.","01/Dec/14 00:34;sebb;URL: http://svn.apache.org/r1642615
+Log:
+NET-544 FTPClient.initiateListParsing does not correctly check if parserKey was cached
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClient.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ftp/FTPClientTest.java
+",,,,,,,,,,,,,
+FTPFile.toFormattedString prints user and group in wrong order,NET-561,12759741,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,sebb,sebb,05/Dec/14 18:09,26/Nov/15 16:34,28/Mar/20 23:26,05/Dec/14 18:14,3.3,,,,3.4,,,,,,0,,,,,toFormattedString outputs the user and group names in the wrong order,,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Dec 05 18:14:23 UTC 2014,,,,,,,"0|i233yf:",9223372036854775807,,,,,,,,,,,,,,,,"05/Dec/14 18:14;sebb;URL: http://svn.apache.org/r1643374
+Log:
+NET-561 FTPFile.toFormattedString prints user and group in wrong order
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPFile.java
+",,,,,,,,,,,,,,
+input parameter of org.apache.commons.net.ftp.FTP.__getReply(boolean) is not used,NET-530,12706213,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,fiship,fiship,02/Apr/14 16:04,26/Nov/15 16:34,28/Mar/20 23:26,02/Apr/14 22:14,3.3,,,,3.4,FTP,,,,,0,test,,,,"i noticed the the input parameter 'boolean reportReply' in method org.apache.commons.net.ftp.FTP.__getReply(boolean) is never be used. so it seemde there is no difference between org.apache.commons.net.ftp.FTP.__getReplyNoReport() and org.apache.commons.net.ftp.FTP.__getReply().
+who could tell me why?",windows or linux,3600,3600,,0%,3600,3600,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-04-02 22:10:43.405,,,false,,,,,,,,,,,,,,,,,,384536,,,Wed Apr 02 22:14:11 UTC 2014,,,,,,,"0|i1u8w7:",384804,,,,,,,,,,,,,,,,"02/Apr/14 22:10;sebb;It's a bug; the parameter is suppose to be used to control whether the reply is sent to the listeners.","02/Apr/14 22:14;sebb;Thanks for the report. Fixed:
+
+URL: http://svn.apache.org/r1584204
+Log:
+NET-530 input parameter of org.apache.commons.net.ftp.FTP.__getReply(boolean) is not used
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTP.java",,,,,,,,,,,,,
+"Exception for new SubnetUtils(""0.0.0.0/0"")",NET-511,12654194,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Fixed,,kyrielia,kyrielia,21/Jun/13 16:12,26/Nov/15 16:34,28/Mar/20 23:26,06/Dec/13 15:45,3.3,,,,3.4,,,,,,2,,,,,"The following example in SubnetUtils throws an exception:
+
+{code:java}
+SubnetUtils utils = new SubnetUtils(""0.0.0.0/0"");
+{code}
+
+As '0.0.0.0/0' is within the IPv4 specification, it should be supported.",,,,,,,,,,,,,,"27/Nov/13 14:04;danieljamesscott;permit_all_ips_cidr.patch;https://issues.apache.org/jira/secure/attachment/12616051/permit_all_ips_cidr.patch",,,,,1.0,,,,,,,,,,,,,,,,,,,,2013-11-27 13:26:33.208,,,false,,,,,,,,,,,,,,,,,,334471,,,Sat Mar 22 02:10:25 UTC 2014,,,,,,,"0|i1lp3r:",334797,,,,,,,,,,,,,,,,"27/Nov/13 13:26;danieljamesscott;I believe that the problem is with this line:
+
+http://grepcode.com/file/repo1.maven.org/maven2/commons-net/commons-net/3.3/org/apache/commons/net/util/SubnetUtils.java#229
+
+The '0' (second argument to rangecheck) should be '-1'.
+
+Can I submit a patch for this myself?","27/Nov/13 13:29;ggregory;Yes, feel free to submit a patch, preferably with a unit test.
+
+Thank you!","27/Nov/13 14:04;danieljamesscott;Patch to permit '0.0.0.0/0' cidr. It's not particularly elegant, because I had to add a special check for non-zero addresses with the /0 cidr. Still passes all existing unit tests and new test added.","05/Dec/13 16:47;danieljamesscott;Hi,
+
+Any idea on when this will be merged/released? Or does it need more work?
+
+Thanks,
+
+Dan","05/Dec/13 18:10;ggregory;Your description shows ""utils.getInfo().isInRange(anyValidIpAddress);"" but there is no such validation in your unit test.","05/Dec/13 21:49;danieljamesscott;That's not my description... :)
+
+My problem was that I couldn't even create an object 'new SubnetUtils(""0.0.0.0/0"")' - it threw an exception. My patch and test fixes that problem.
+
+I can have a go at seeing if the IP addresses validate against it, and write some more tests, but I don't need that functionality right now.","05/Dec/13 22:15;ggregory;Doh! I am sorry about making an erroneous assumption! :)
+
+Yes, if you could provide more tests, that would be much appreciated.","06/Dec/13 11:29;danieljamesscott;Hi,
+
+I added a few tests, but IPs which are correctly in the range fail the 'isInRange' test when the subnet is '0.0.0.0/0'. I took a look at the code, but fixing it goes far beyond what I need right now.
+
+Looks like it needs fixing in getAddressCount and getAllAddresses as well as isInRange.
+
+Thanks,
+
+Dan","06/Dec/13 14:42;ggregory;Hello,
+
+I have a couple of questions:
+
+Can you attach your additional tests?
+
+How can you tell if the fix is right if you calling some of the method return the wrong answer?
+
+How do you use the class in your app for the current fix to be sufficient?
+
+Thank you,
+Gary","06/Dec/13 14:53;danieljamesscott;Hi,
+
+An additional test (Which fails):
+
+SubnetUtils utils = new SubnetUtils(""0.0.0.0/0"");
+SubnetInfo info = utils.getInfo();
+assertTrue(info.isInRange(""1.0.0.0""));
+
+My fix isn't 'right' in the context of the reported bug, but does allow me to create the object above. The actual fix needs my change, plus further modifications to the code so that the other methods work correctly.
+
+I'm using the class to validate cidr strings passed in from user input. If the object creation doesn't throw an exception, then the cidr is valid.
+
+Thanks,
+
+Dan
+","06/Dec/13 15:45;ggregory;A fix is in to allow the {{SubnetUtils}} class to be instantiated with {{""0.0.0.0/0""}} which is useful for validation, as noted in a comment, but the rest of the class does not work as expected for {{""0.0.0.0/0""}}, which should be addressed in a separate ticket.","19/Mar/14 20:54;Lapkritinis;Patch is not correct. CIDR /0 is valid with any IP address.
+
+{code}
++            if (cidrPart == 0 && address != 0) {
++                throw new IllegalArgumentException(""Cannot have /0 cidr with non-zero address"");
++            }
+{code}","22/Mar/14 01:41;sebb;I'm inclined to agree. 
+There's no validation for other CIDR /bit lengths","22/Mar/14 02:10;sebb;URL: http://svn.apache.org/r1580123
+Log:
+NET-529 SubnetUtils throws exception on valid input
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/util/SubnetUtils.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/SubnetUtilsTest.java
+",
+"when transferring data the using the org.apache.commons.net.ftp.FTP.noop() method, it always throw SoketSocketTimeoutException",NET-537,12708287,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Not A Problem,,fiship,fiship,14/Apr/14 15:36,23/Jan/15 13:57,28/Mar/20 23:26,14/Apr/14 20:19,3.3,,,,,FTP,,,,,0,,,,,"I think the command and data using different socket, so when transferring data the client could receive command-reply form server, but in fact it always throw soketSocketTimeoutException. who can tell me why? thanks very much.",windows,43200,43200,,0%,43200,43200,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-04-14 20:19:14.044,,,false,,,,,,,,,,,,,,,,,,386610,,,Mon Apr 14 20:19:14 UTC 2014,,,,,,,"0|i1uln3:",386874,,,,,,,,,,,,,,,,"14/Apr/14 20:19;sebb;JIRA is not a support forum.
+
+Please subscribe to the Commons user list and post there.
+
+Remember to start the Subject line with [NET] as the list is used for all Commons components, not just NET",,,,,,,,,,,,,,
+deleteFile always returns true,NET-545,12723813,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Not A Problem,,koszta5,koszta5,26/Jun/14 06:37,30/Nov/14 19:37,28/Mar/20 23:26,30/Nov/14 19:37,3.3,,,,,FTP,,,,,0,,,,,"[UPDATE]
+Ok, it seems that completePendingCommand(); fixes things. Still I think by default it would be good to wait for this to finish. Plus the javadoc is EXTREMLY misleading (for deleteFile it says ""Returns:
+True if successfully completed, false if not."")
+
+
+The deleteFile always returns true, even if the file is not deleted.
+
+
+result = ftpClient.deleteFile(targetDir+""/""+fileName);
+--> the variable ""result"" is always true...
+
+My test code is following:
+
+boolean result = ftpClient.deleteFile(targetDir+""/""+fileName);
+System.out.println(result); //THIS IS ALWAYS true, even if the file is not deleted
+System.out.println(ftpClient.getReplyString()); // reply string for PREVIOUS operation is shown
+int res = ftpClient.getReply(); // I have to call this to get the actual reply for delete command
+System.out.println(res+ ""aadfasd""); //550
+System.out.println(ftpClient.getReplyCode()); //550
+System.out.println(ftpClient.getReplyString());//550 Delete operation failed.
+","VsFTPd 2.0.5 @Oracle Enterise Linux 2.6.18-194.3.1.0.1.el5xen #1 SMP Thu May 6 20:22:34 EDT 2010 x86_64 x86_64 x86_64 GNU/Linux
+",604800,604800,,0%,604800,604800,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2014-11-29 02:41:18.386,,,false,,,,,,,,,,,,,,,,,,401998,,,Sat Nov 29 02:41:18 UTC 2014,,,,,,,"0|i1x6z3:",402064,,,,,,,,,,,,,,,,"29/Nov/14 02:41;sebb;The method completePendingCommand() should only be needed after a command that returns intermediate results.
+
+It fetches the final reply.
+
+deleteFile() already fetches the reply.
+
+So either the server is returning additional data after the delete, or the app sent a previous command whose reply had not been fetched.
+
+If you wish to debug this further, add a PrintCommandListener (see examples for details).",,,,,,,,,,,,,,
+IMAPClient.getReplyCode() : Matcher.matches() returns false for lines with EOL chars,NET-531,12706350,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Invalid,,gWdfL59U,gWdfL59U,03/Apr/14 02:14,03/Apr/14 02:21,28/Mar/20 23:26,03/Apr/14 02:21,3.3,,,,,,,,,,0,,,,,IMAPClient.getReplyCode(client.getReplyString()) always fails with invalid reply message.,,,,,,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,384673,,,2014-04-03 02:14:52.0,,,,,,,"0|i1u9q7:",384940,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

@@ -1,0 +1,3485 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="../style.css">
+</head>
+<body>
+
+
+<h1>AbstractBloomFilter.java</h1>
+
+<table class="src">
+
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_1'/>
+1
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_1'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>/*</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_2'/>
+2
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_2'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * Licensed to the Apache Software Foundation (ASF) under one or more</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_3'/>
+3
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_3'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * contributor license agreements.  See the NOTICE file distributed with</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_4'/>
+4
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_4'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * this work for additional information regarding copyright ownership.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_5'/>
+5
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_5'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * The ASF licenses this file to You under the Apache License, Version 2.0</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_6'/>
+6
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_6'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * (the &#34;License&#34;); you may not use this file except in compliance with</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_7'/>
+7
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_7'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * the License.  You may obtain a copy of the License at</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_8'/>
+8
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_8'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_9'/>
+9
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_9'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *      http://www.apache.org/licenses/LICENSE-2.0</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_10'/>
+10
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_10'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_11'/>
+11
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_11'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * Unless required by applicable law or agreed to in writing, software</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_12'/>
+12
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_12'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * distributed under the License is distributed on an &#34;AS IS&#34; BASIS,</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_13'/>
+13
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_13'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_14'/>
+14
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_14'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * See the License for the specific language governing permissions and</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_15'/>
+15
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_15'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * limitations under the License.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_16'/>
+16
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_16'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_17'/>
+17
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_17'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>package org.apache.commons.collections4.bloomfilter;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_18'/>
+18
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_18'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_19'/>
+19
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_19'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>import java.util.PrimitiveIterator.OfInt;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_20'/>
+20
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_20'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>import java.util.function.LongBinaryOperator;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_21'/>
+21
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_21'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_22'/>
+22
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_22'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>import org.apache.commons.collections4.bloomfilter.hasher.HashFunctionIdentity;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_23'/>
+23
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_23'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>import org.apache.commons.collections4.bloomfilter.hasher.Hasher;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_24'/>
+24
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_24'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>import org.apache.commons.collections4.bloomfilter.hasher.Shape;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_25'/>
+25
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_25'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_26'/>
+26
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_26'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>/**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_27'/>
+27
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_27'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * An abstract Bloom filter providing default implementations for most Bloom filter</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_28'/>
+28
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_28'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * functions. Specific implementations are encouraged to override the methods that can be</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_29'/>
+29
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_29'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * more efficiently implemented.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_30'/>
+30
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_30'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_31'/>
+31
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_31'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * This abstract class provides additional functionality not declared in the interface.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_32'/>
+32
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_32'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * Specifically:</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_33'/>
+33
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_33'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;ul&#62;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_34'/>
+34
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_34'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;li&#62;{@link #isFull()}&#60;/li&#62;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_35'/>
+35
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_35'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;/ul&#62;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_36'/>
+36
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_36'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_37'/>
+37
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_37'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * @since 4.5</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_38'/>
+38
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_38'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_39'/>
+39
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_39'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>public abstract class AbstractBloomFilter implements BloomFilter {</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_40'/>
+40
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_40'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_41'/>
+41
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_41'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_42'/>
+42
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_42'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * The shape used by this BloomFilter</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_43'/>
+43
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_43'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_44'/>
+44
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_44'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    private final Shape shape;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_45'/>
+45
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_45'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_46'/>
+46
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_46'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_47'/>
+47
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_47'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Construct a Bloom filter with the specified shape.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_48'/>
+48
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_48'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_49'/>
+49
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_49'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param shape The shape.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_50'/>
+50
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_50'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_51'/>
+51
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_51'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    protected AbstractBloomFilter(final Shape shape) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_52'/>
+52
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_52'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        this.shape = shape;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_53'/>
+53
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_53'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_54'/>
+54
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_54'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_55'/>
+55
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_55'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    @Override</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_56'/>
+56
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_56'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    public int andCardinality(final BloomFilter other) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_57'/>
+57
+</td>
+<td class='survived'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_57'>1</a>
+<span>
+
+1. andCardinality : removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyShape &rarr; SURVIVED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='survived'>        verifyShape(other);</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_58'/>
+58
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_58'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        final long[] mine = getBits();</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_59'/>
+59
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_59'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        final long[] theirs = other.getBits();</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_60'/>
+60
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_60'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        final int limit = Integer.min(mine.length, theirs.length);</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_61'/>
+61
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_61'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        int count = 0;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_62'/>
+62
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_62'>3</a>
+<span>
+
+1. andCardinality : changed conditional boundary &rarr; KILLED<br/>
+
+2. andCardinality : Changed increment from 1 to -1 &rarr; KILLED<br/>
+
+3. andCardinality : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        for (int i = 0; i &#60; limit; i++) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_63'/>
+63
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_63'>2</a>
+<span>
+
+1. andCardinality : Replaced bitwise AND with OR &rarr; KILLED<br/>
+
+2. andCardinality : Replaced integer addition with subtraction &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>            count += Long.bitCount(mine[i] &#38; theirs[i]);</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_64'/>
+64
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_64'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_65'/>
+65
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_65'>1</a>
+<span>
+
+1. andCardinality : replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::andCardinality &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return count;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_66'/>
+66
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_66'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_67'/>
+67
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_67'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_68'/>
+68
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_68'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    @Override</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_69'/>
+69
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_69'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    public int cardinality() {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_70'/>
+70
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_70'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        int count = 0;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_71'/>
+71
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_71'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        for (final long bits : getBits()) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_72'/>
+72
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_72'>1</a>
+<span>
+
+1. cardinality : Replaced integer addition with subtraction &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>            count += Long.bitCount(bits);</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_73'/>
+73
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_73'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_74'/>
+74
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_74'>1</a>
+<span>
+
+1. cardinality : replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::cardinality &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return count;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_75'/>
+75
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_75'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_76'/>
+76
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_76'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_77'/>
+77
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_77'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    @Override</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_78'/>
+78
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_78'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    public boolean contains(final BloomFilter other) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_79'/>
+79
+</td>
+<td class='survived'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_79'>1</a>
+<span>
+
+1. contains : removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyShape &rarr; SURVIVED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='survived'>        verifyShape(other);</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_80'/>
+80
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_80'>3</a>
+<span>
+
+1. contains : replaced boolean return with false for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::contains &rarr; KILLED<br/>
+
+2. contains : replaced boolean return with true for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::contains &rarr; KILLED<br/>
+
+3. contains : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return other.cardinality() == andCardinality(other);</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_81'/>
+81
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_81'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_82'/>
+82
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_82'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_83'/>
+83
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_83'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    @Override</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_84'/>
+84
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_84'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    public boolean contains(final Hasher hasher) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_85'/>
+85
+</td>
+<td class='survived'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_85'>1</a>
+<span>
+
+1. contains : removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyHasher &rarr; SURVIVED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='survived'>        verifyHasher(hasher);</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_86'/>
+86
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_86'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        final long[] buff = getBits();</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_87'/>
+87
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_87'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_88'/>
+88
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_88'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        final OfInt iter = hasher.iterator(shape);</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_89'/>
+89
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_89'>1</a>
+<span>
+
+1. contains : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        while (iter.hasNext()) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_90'/>
+90
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_90'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            final int idx = iter.nextInt();</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_91'/>
+91
+</td>
+<td class='survived'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_91'>1</a>
+<span>
+
+1. contains : removed call to org/apache/commons/collections4/bloomfilter/BloomFilterIndexer::checkPositive &rarr; SURVIVED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='survived'>            BloomFilterIndexer.checkPositive(idx);</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_92'/>
+92
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_92'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            final int buffIdx = BloomFilterIndexer.getLongIndex(idx);</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_93'/>
+93
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_93'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            final long buffOffset = BloomFilterIndexer.getLongBit(idx);</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_94'/>
+94
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_94'>2</a>
+<span>
+
+1. contains : Replaced bitwise AND with OR &rarr; KILLED<br/>
+
+2. contains : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>            if ((buff[buffIdx] &#38; buffOffset) == 0) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_95'/>
+95
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_95'>1</a>
+<span>
+
+1. contains : replaced boolean return with true for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::contains &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>                return false;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_96'/>
+96
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_96'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>            }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_97'/>
+97
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_97'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_98'/>
+98
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_98'>1</a>
+<span>
+
+1. contains : replaced boolean return with false for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::contains &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return true;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_99'/>
+99
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_99'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_100'/>
+100
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_100'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_101'/>
+101
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_101'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    @Override</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_102'/>
+102
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_102'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    public final Shape getShape() {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_103'/>
+103
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_103'>1</a>
+<span>
+
+1. getShape : replaced return value with null for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::getShape &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return shape;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_104'/>
+104
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_104'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_105'/>
+105
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_105'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_106'/>
+106
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_106'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_107'/>
+107
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_107'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Determines if the bloom filter is &#34;full&#34;. Full is defined as having no unset</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_108'/>
+108
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_108'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * bits.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_109'/>
+109
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_109'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_110'/>
+110
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_110'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @return true if the filter is full.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_111'/>
+111
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_111'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_112'/>
+112
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_112'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    public final boolean isFull() {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_113'/>
+113
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_113'>3</a>
+<span>
+
+1. isFull : replaced boolean return with false for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::isFull &rarr; KILLED<br/>
+
+2. isFull : replaced boolean return with true for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::isFull &rarr; KILLED<br/>
+
+3. isFull : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return cardinality() == getShape().getNumberOfBits();</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_114'/>
+114
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_114'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_115'/>
+115
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_115'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_116'/>
+116
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_116'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    @Override</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_117'/>
+117
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_117'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    public int orCardinality(final BloomFilter other) {</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_118'/>
+118
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_118'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        // Logical OR</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_119'/>
+119
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_119'>3</a>
+<span>
+
+1. lambda$0 : Replaced bitwise OR with AND &rarr; KILLED<br/>
+
+2. lambda$0 : replaced long return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::lambda$0 &rarr; KILLED<br/>
+
+3. orCardinality : replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::orCardinality &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return opCardinality(other, (a, b) -&#62; a | b);</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_120'/>
+120
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_120'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_121'/>
+121
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_121'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_122'/>
+122
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_122'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_123'/>
+123
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_123'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Verifies that the hasher has the same name as the shape.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_124'/>
+124
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_124'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_125'/>
+125
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_125'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param hasher the Hasher to check</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_126'/>
+126
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_126'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_127'/>
+127
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_127'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    protected void verifyHasher(final Hasher hasher) {</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_128'/>
+128
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_128'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        // It is assumed that the filter and hasher have been constructed using the</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_129'/>
+129
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_129'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        // same hash function. Use the signature for a fast check the hash function is equal.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_130'/>
+130
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_130'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        // Collisions will occur at a rate of 1 in 2^64.</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_131'/>
+131
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_131'>1</a>
+<span>
+
+1. verifyHasher : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        if (shape.getHashFunctionIdentity().getSignature() != hasher.getHashFunctionIdentity().getSignature()) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_132'/>
+132
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_132'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            throw new IllegalArgumentException(</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_133'/>
+133
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_133'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>                String.format(&#34;Hasher (%s) is not the hasher for shape (%s)&#34;,</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_134'/>
+134
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_134'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>                    HashFunctionIdentity.asCommonString(hasher.getHashFunctionIdentity()),</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_135'/>
+135
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_135'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>                    shape.toString()));</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_136'/>
+136
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_136'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_137'/>
+137
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_137'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_138'/>
+138
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_138'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_139'/>
+139
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_139'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_140'/>
+140
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_140'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Verify the other Bloom filter has the same shape as this Bloom filter.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_141'/>
+141
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_141'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_142'/>
+142
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_142'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param other the other filter to check.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_143'/>
+143
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_143'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @throws IllegalArgumentException if the shapes are not the same.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_144'/>
+144
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_144'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_145'/>
+145
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_145'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    protected void verifyShape(final BloomFilter other) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_146'/>
+146
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_146'>1</a>
+<span>
+
+1. verifyShape : removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyShape &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        verifyShape(other.getShape());</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_147'/>
+147
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_147'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_148'/>
+148
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_148'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_149'/>
+149
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_149'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_150'/>
+150
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_150'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Verify the specified shape has the same shape as this Bloom filter.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_151'/>
+151
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_151'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_152'/>
+152
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_152'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param shape the other shape to check.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_153'/>
+153
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_153'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @throws IllegalArgumentException if the shapes are not the same.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_154'/>
+154
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_154'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_155'/>
+155
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_155'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    protected void verifyShape(final Shape shape) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_156'/>
+156
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_156'>1</a>
+<span>
+
+1. verifyShape : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        if (!this.shape.equals(shape)) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_157'/>
+157
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_157'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            throw new IllegalArgumentException(String.format(&#34;Shape %s is not the same as %s&#34;, shape, this.shape));</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_158'/>
+158
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_158'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_159'/>
+159
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_159'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_160'/>
+160
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_160'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_161'/>
+161
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_161'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    @Override</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_162'/>
+162
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_162'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    public int xorCardinality(final BloomFilter other) {</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_163'/>
+163
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_163'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        // Logical XOR</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_164'/>
+164
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_164'>3</a>
+<span>
+
+1. lambda$1 : Replaced XOR with AND &rarr; KILLED<br/>
+
+2. lambda$1 : replaced long return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::lambda$1 &rarr; KILLED<br/>
+
+3. xorCardinality : replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::xorCardinality &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return opCardinality(other, (a, b) -&#62; a ^ b);</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_165'/>
+165
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_165'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_166'/>
+166
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_166'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_167'/>
+167
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_167'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_168'/>
+168
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_168'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Perform the operation on the matched longs from this filter and the other filter</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_169'/>
+169
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_169'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * and count the cardinality.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_170'/>
+170
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_170'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_171'/>
+171
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_171'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * &#60;p&#62;The remaining unmatched longs from the larger filter are always counted. This</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_172'/>
+172
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_172'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * method is suitable for OR and XOR cardinality.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_173'/>
+173
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_173'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_174'/>
+174
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_174'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param other the other Bloom filter.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_175'/>
+175
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_175'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param operation the operation (e.g. OR, XOR)</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_176'/>
+176
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_176'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @return the cardinality</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_177'/>
+177
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_177'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_178'/>
+178
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_178'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    private int opCardinality(final BloomFilter other, LongBinaryOperator operation) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_179'/>
+179
+</td>
+<td class='survived'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_179'>1</a>
+<span>
+
+1. opCardinality : removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyShape &rarr; SURVIVED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='survived'>        verifyShape(other);</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_180'/>
+180
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_180'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        final long[] mine = getBits();</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_181'/>
+181
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_181'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        final long[] theirs = other.getBits();</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_182'/>
+182
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_182'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        long[] small;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_183'/>
+183
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_183'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        long[] big;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_184'/>
+184
+</td>
+<td class='survived'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_184'>2</a>
+<span>
+
+1. opCardinality : changed conditional boundary &rarr; SURVIVED<br/>
+
+2. opCardinality : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='survived'>        if (mine.length &#62; theirs.length) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_185'/>
+185
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_185'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            big = mine;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_186'/>
+186
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_186'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            small = theirs;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_187'/>
+187
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_187'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        } else {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_188'/>
+188
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_188'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            small = mine;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_189'/>
+189
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_189'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            big = theirs;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_190'/>
+190
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_190'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_191'/>
+191
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_191'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        int count = 0;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_192'/>
+192
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_192'>3</a>
+<span>
+
+1. opCardinality : changed conditional boundary &rarr; KILLED<br/>
+
+2. opCardinality : Changed increment from 1 to -1 &rarr; KILLED<br/>
+
+3. opCardinality : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        for (int i = 0; i &#60; small.length; i++) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_193'/>
+193
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_193'>1</a>
+<span>
+
+1. opCardinality : Replaced integer addition with subtraction &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>            count += Long.bitCount(operation.applyAsLong(small[i], big[i]));</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_194'/>
+194
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_194'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_195'/>
+195
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_195'>3</a>
+<span>
+
+1. opCardinality : changed conditional boundary &rarr; KILLED<br/>
+
+2. opCardinality : Changed increment from 1 to -1 &rarr; KILLED<br/>
+
+3. opCardinality : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        for (int i = small.length; i &#60; big.length; i++) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_196'/>
+196
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_196'>1</a>
+<span>
+
+1. opCardinality : Replaced integer addition with subtraction &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>            count += Long.bitCount(big[i]);</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_197'/>
+197
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_197'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_198'/>
+198
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_198'>1</a>
+<span>
+
+1. opCardinality : replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::opCardinality &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return count;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_199'/>
+199
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_199'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_200'/>
+200
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_200'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>}</span></pre></td></tr>
+
+
+
+<tr><td></td><td></td><td><h2>Mutations</h2></td></tr>
+
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_57'>57</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_57'/> 
+
+<p class='SURVIVED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>andCardinality<br/><b>Killed by : </b>none</span></span> removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyShape &rarr; SURVIVED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_62'>62</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_62'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>andCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> changed conditional boundary &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>andCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> Changed increment from 1 to -1 &rarr; KILLED</p> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>andCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_63'>63</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_63'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>andCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> Replaced bitwise AND with OR &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>andCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> Replaced integer addition with subtraction &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_65'>65</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_65'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>andCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::andCardinality &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_72'>72</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_72'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>cardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> Replaced integer addition with subtraction &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_74'>74</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_74'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>cardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::cardinality &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_79'>79</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_79'/> 
+
+<p class='SURVIVED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>none</span></span> removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyShape &rarr; SURVIVED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_80'>80</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_80'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest)</span></span> replaced boolean return with false for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::contains &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest)</span></span> replaced boolean return with true for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::contains &rarr; KILLED</p> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_85'>85</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_85'/> 
+
+<p class='SURVIVED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>none</span></span> removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyHasher &rarr; SURVIVED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_89'>89</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_89'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_91'>91</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_91'/> 
+
+<p class='SURVIVED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>none</span></span> removed call to org/apache/commons/collections4/bloomfilter/BloomFilterIndexer::checkPositive &rarr; SURVIVED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_94'>94</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_94'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> Replaced bitwise AND with OR &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_95'>95</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_95'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> replaced boolean return with true for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::contains &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_98'>98</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_98'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>contains<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> replaced boolean return with false for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::contains &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_103'>103</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_103'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>getShape<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.getHasherTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> replaced return value with null for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::getShape &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_113'>113</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_113'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>isFull<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.isFullTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> replaced boolean return with false for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::isFull &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>isFull<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.isFullTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> replaced boolean return with true for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::isFull &rarr; KILLED</p> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>isFull<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.isFullTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_119'>119</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_119'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>lambda$0<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> Replaced bitwise OR with AND &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>lambda$0<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> replaced long return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::lambda$0 &rarr; KILLED</p> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>orCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::orCardinality &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_131'>131</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_131'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>verifyHasher<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.constructorTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_146'>146</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_146'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>verifyShape<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyShape &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_156'>156</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_156'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>verifyShape<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.addTest_Empty(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_164'>164</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_164'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>lambda$1<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> Replaced XOR with AND &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>lambda$1<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> replaced long return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::lambda$1 &rarr; KILLED</p> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>xorCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::xorCardinality &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_179'>179</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_179'/> 
+
+<p class='SURVIVED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>none</span></span> removed call to org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::verifyShape &rarr; SURVIVED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_184'>184</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_184'/> 
+
+<p class='SURVIVED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>none</span></span> changed conditional boundary &rarr; SURVIVED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_192'>192</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_192'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> changed conditional boundary &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> Changed increment from 1 to -1 &rarr; KILLED</p> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_193'>193</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_193'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> Replaced integer addition with subtraction &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_195'>195</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_195'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> changed conditional boundary &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> Changed increment from 1 to -1 &rarr; KILLED</p> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_196'>196</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_196'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> Replaced integer addition with subtraction &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@3fd5ef72_198'>198</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@3fd5ef72_198'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>opCardinality<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest)</span></span> replaced int return with 0 for org/apache/commons/collections4/bloomfilter/AbstractBloomFilter::opCardinality &rarr; KILLED</p> 
+</td>
+</tr>
+
+</table>
+
+
+<h2>Active mutators</h2>
+<ul>
+
+<li class='mutator'>BOOLEAN_FALSE_RETURN</li>
+
+<li class='mutator'>BOOLEAN_TRUE_RETURN</li>
+
+<li class='mutator'>CONDITIONALS_BOUNDARY_MUTATOR</li>
+
+<li class='mutator'>EMPTY_RETURN_VALUES</li>
+
+<li class='mutator'>INCREMENTS_MUTATOR</li>
+
+<li class='mutator'>INVERT_NEGS_MUTATOR</li>
+
+<li class='mutator'>MATH_MUTATOR</li>
+
+<li class='mutator'>NEGATE_CONDITIONALS_MUTATOR</li>
+
+<li class='mutator'>NULL_RETURN_VALUES</li>
+
+<li class='mutator'>PRIMITIVE_RETURN_VALS_MUTATOR</li>
+
+<li class='mutator'>VOID_METHOD_CALL_MUTATOR</li>
+
+</ul>
+
+<h2>Tests examined</h2>
+<ul>
+<li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_Hasher(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.subtractTest_Negative(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.xorCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (4 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.andCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.addTest_Counts(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (6 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.constructorTest_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.andCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.andCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_BloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.andCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.getBitsTest_SpanLong(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.constructorTest_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (4 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.cardinalityTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.xorCardinalityTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.orCardinalityTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.orCardinalityTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (52 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.jaccardDistanceTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.constructorTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.xorCardinalityTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Negative(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.constructorTest_Hasher(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.estimateSizeTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.cosineSimilarityTest_NoValues(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.xorCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.estimateIntersectionSizeTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.isFullTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.constructorTest_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Counts_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.cardinalityTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_BloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.cosineDistanceTest_NoValues(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (5 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.xorCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.getBitsTest_SpanLong(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Counts_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (6 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.getBitsTest_LowestBitOnly(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.constructorTest_Hasher_Duplicates(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.cardinalityTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.constructorTest_Hasher(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (13 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Counts_Hasher_Duplicates(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.hammingDistanceTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.xorCardinalityTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.jaccardSimilarityTest_NoValues(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Counts_Hasher_Duplicates(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Counts_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (12 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Counts_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Overflow(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.estimateUnionSizeTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_Hasher(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.andCardinalityTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (7 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.isFullTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.subtractTest_Counts(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_BloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.andCardinalityTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.getHasherTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.getHasherTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.jaccardSimilarityTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.andCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.cosineDistanceTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.jaccardDistanceTest_NoValues(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.xorCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.getHasherTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.orCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.addTest_Overflow(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (4 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.addTest_Empty(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.containsTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.testDifferentShapesThrows(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (5 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.cardinalityTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.constructorTest_NonStatic(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (6 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.andCardinalityTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.containsTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.getBitsTest_SpanLong(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.contains_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (6 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Counts_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.orCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (7 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.containsTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (26 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.containsTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.isFullTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.constructorTest_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.cosineSimilarityTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.addTest_NewInstance(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.isFullTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.orCardinalityTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.getBitsTest_SpanLong(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.getHasherTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.orCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.subtractTest_Empty(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Counts_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (4 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.andCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.constructorTest_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li>
+</ul>
+
+<br/>
+
+Report generated by <a href='http://pitest.org'>PIT</a> 1.4.11
+
+</body>
+</html>

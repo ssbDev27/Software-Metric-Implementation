@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="../style.css">
+</head>
+<body>
+
+
+<h1>HashFunctionValidator.java</h1>
+
+<table class="src">
+
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_1'/>
+1
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_1'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>/*</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_2'/>
+2
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_2'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * Licensed to the Apache Software Foundation (ASF) under one or more</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_3'/>
+3
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_3'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * contributor license agreements.  See the NOTICE file distributed with</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_4'/>
+4
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_4'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * this work for additional information regarding copyright ownership.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_5'/>
+5
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_5'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * The ASF licenses this file to You under the Apache License, Version 2.0</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_6'/>
+6
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_6'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * (the &#34;License&#34;); you may not use this file except in compliance with</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_7'/>
+7
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_7'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * the License.  You may obtain a copy of the License at</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_8'/>
+8
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_8'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_9'/>
+9
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_9'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *      http://www.apache.org/licenses/LICENSE-2.0</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_10'/>
+10
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_10'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_11'/>
+11
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_11'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * Unless required by applicable law or agreed to in writing, software</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_12'/>
+12
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_12'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * distributed under the License is distributed on an &#34;AS IS&#34; BASIS,</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_13'/>
+13
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_13'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_14'/>
+14
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_14'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * See the License for the specific language governing permissions and</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_15'/>
+15
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_15'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * limitations under the License.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_16'/>
+16
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_16'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_17'/>
+17
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_17'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>package org.apache.commons.collections4.bloomfilter.hasher;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_18'/>
+18
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_18'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_19'/>
+19
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_19'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>import java.util.Locale;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_20'/>
+20
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_20'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>import java.util.Objects;</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_21'/>
+21
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_21'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_22'/>
+22
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_22'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>/**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_23'/>
+23
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_23'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * Contains validation for hash functions.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_24'/>
+24
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_24'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_25'/>
+25
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_25'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>final class HashFunctionValidator {</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_26'/>
+26
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_26'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /** Do not instantiate. */</span></pre></td></tr>
+
+
+<tr>
+<td class='uncovered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_27'/>
+27
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_27'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='uncovered'><pre><span  class=''>    private HashFunctionValidator() {}</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_28'/>
+28
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_28'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_29'/>
+29
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_29'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_30'/>
+30
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_30'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Generates a hash code for the identity of the hash function. The hash code is</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_31'/>
+31
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_31'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * generated using the same properties as those tested in</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_32'/>
+32
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_32'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * {@link #areEqual(HashFunctionIdentity, HashFunctionIdentity)}, that is the</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_33'/>
+33
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_33'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * signedness, process type and name. The name is not case specific and is converted</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_34'/>
+34
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_34'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * to lower-case using the {@link Locale#ROOT root locale}.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_35'/>
+35
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_35'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_36'/>
+36
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_36'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * &#60;p&#62;The generated value is suitable for use in generation of a hash code that satisfies</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_37'/>
+37
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_37'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * the contract of {@link Object#hashCode()} if the {@link Object#equals(Object)} method</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_38'/>
+38
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_38'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * is implemented using {@link #areEqual(HashFunctionIdentity, HashFunctionIdentity)}. That</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_39'/>
+39
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_39'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * is two objects considered equal will have the same hash code.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_40'/>
+40
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_40'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_41'/>
+41
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_41'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * &#60;p&#62;If the hash function identity is a field within a larger object the generated hash code</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_42'/>
+42
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_42'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * should be incorporated into the entire hash, for example using</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_43'/>
+43
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_43'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * {@link Objects#hash(Object...)}.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_44'/>
+44
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_44'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_45'/>
+45
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_45'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param a hash function.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_46'/>
+46
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_46'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @return hash code</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_47'/>
+47
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_47'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @see String#toLowerCase(Locale)</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_48'/>
+48
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_48'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @see Locale#ROOT</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_49'/>
+49
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_49'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_50'/>
+50
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_50'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    static int hash(HashFunctionIdentity a) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_51'/>
+51
+</td>
+<td class='survived'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_51'>1</a>
+<span>
+
+1. hash : replaced int return with 0 for org/apache/commons/collections4/bloomfilter/hasher/HashFunctionValidator::hash &rarr; SURVIVED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='survived'>        return Objects.hash(a.getSignedness(),</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_52'/>
+52
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_52'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>                            a.getProcessType(),</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_53'/>
+53
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_53'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>                            a.getName().toLowerCase(Locale.ROOT));</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_54'/>
+54
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_54'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_55'/>
+55
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_55'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_56'/>
+56
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_56'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_57'/>
+57
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_57'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Compares the identity of the two hash functions. The functions are considered</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_58'/>
+58
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_58'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * equal if the signedness, process type and name are equal. The name is not</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_59'/>
+59
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_59'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * case specific.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_60'/>
+60
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_60'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_61'/>
+61
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_61'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * &#60;p&#62;A pair of functions that are equal would be expected to produce the same</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_62'/>
+62
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_62'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * hash output from the same input.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_63'/>
+63
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_63'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_64'/>
+64
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_64'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param a First hash function.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_65'/>
+65
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_65'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param b Second hash function.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_66'/>
+66
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_66'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @return true, if successful</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_67'/>
+67
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_67'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @see String#equalsIgnoreCase(String)</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_68'/>
+68
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_68'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_69'/>
+69
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_69'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    static boolean areEqual(HashFunctionIdentity a, HashFunctionIdentity b) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_70'/>
+70
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_70'>3</a>
+<span>
+
+1. areEqual : replaced boolean return with false for org/apache/commons/collections4/bloomfilter/hasher/HashFunctionValidator::areEqual &rarr; KILLED<br/>
+
+2. areEqual : replaced boolean return with true for org/apache/commons/collections4/bloomfilter/hasher/HashFunctionValidator::areEqual &rarr; KILLED<br/>
+
+3. areEqual : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return (a.getSignedness() == b.getSignedness() &#38;&#38;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_71'/>
+71
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_71'>1</a>
+<span>
+
+1. areEqual : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>                a.getProcessType() == b.getProcessType() &#38;&#38;</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_72'/>
+72
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_72'>1</a>
+<span>
+
+1. areEqual : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>                a.getName().equalsIgnoreCase(b.getName()));</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_73'/>
+73
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_73'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_74'/>
+74
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_74'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_75'/>
+75
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_75'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_76'/>
+76
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_76'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Compares the identity of the two hash functions and throws an exception if they</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_77'/>
+77
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_77'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * are not equal.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_78'/>
+78
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_78'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     *</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_79'/>
+79
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_79'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param a First hash function.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_80'/>
+80
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_80'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @param b Second hash function.</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_81'/>
+81
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_81'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @see #areEqual(HashFunctionIdentity, HashFunctionIdentity)</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_82'/>
+82
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_82'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * @throws IllegalArgumentException if the hash functions are not equal</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_83'/>
+83
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_83'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_84'/>
+84
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_84'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    static void checkAreEqual(HashFunctionIdentity a, HashFunctionIdentity b) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_85'/>
+85
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_85'>1</a>
+<span>
+
+1. checkAreEqual : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        if (!areEqual(a, b)) {</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_86'/>
+86
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_86'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            throw new IllegalArgumentException(String.format(&#34;Hash functions are not equal: (%s) != (%s)&#34;,</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_87'/>
+87
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_87'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>                HashFunctionIdentity.asCommonString(a), HashFunctionIdentity.asCommonString(b)));</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_88'/>
+88
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_88'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_89'/>
+89
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_89'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    }</span></pre></td></tr>
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@6074844_90'/>
+90
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@6074844_90'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>}</span></pre></td></tr>
+
+
+
+<tr><td></td><td></td><td><h2>Mutations</h2></td></tr>
+
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@6074844_51'>51</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@6074844_51'/> 
+
+<p class='SURVIVED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>hash<br/><b>Killed by : </b>none</span></span> replaced int return with 0 for org/apache/commons/collections4/bloomfilter/hasher/HashFunctionValidator::hash &rarr; SURVIVED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@6074844_70'>70</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@6074844_70'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>areEqual<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testNameIsCaseInsensitive(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest)</span></span> replaced boolean return with false for org/apache/commons/collections4/bloomfilter/hasher/HashFunctionValidator::areEqual &rarr; KILLED</p> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>areEqual<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testSignedness(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest)</span></span> replaced boolean return with true for org/apache/commons/collections4/bloomfilter/hasher/HashFunctionValidator::areEqual &rarr; KILLED</p> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>areEqual<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testNameIsCaseInsensitive(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@6074844_71'>71</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@6074844_71'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>areEqual<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testNameIsCaseInsensitive(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@6074844_72'>72</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@6074844_72'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>areEqual<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testNameIsCaseInsensitive(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@6074844_85'>85</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@6074844_85'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>checkAreEqual<br/><b>Killed by : </b>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testCheckThrows(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest)</span></span> negated conditional &rarr; KILLED</p> 
+</td>
+</tr>
+
+</table>
+
+
+<h2>Active mutators</h2>
+<ul>
+
+<li class='mutator'>BOOLEAN_FALSE_RETURN</li>
+
+<li class='mutator'>BOOLEAN_TRUE_RETURN</li>
+
+<li class='mutator'>CONDITIONALS_BOUNDARY_MUTATOR</li>
+
+<li class='mutator'>EMPTY_RETURN_VALUES</li>
+
+<li class='mutator'>INCREMENTS_MUTATOR</li>
+
+<li class='mutator'>INVERT_NEGS_MUTATOR</li>
+
+<li class='mutator'>MATH_MUTATOR</li>
+
+<li class='mutator'>NEGATE_CONDITIONALS_MUTATOR</li>
+
+<li class='mutator'>NULL_RETURN_VALUES</li>
+
+<li class='mutator'>PRIMITIVE_RETURN_VALS_MUTATOR</li>
+
+<li class='mutator'>VOID_METHOD_CALL_MUTATOR</li>
+
+</ul>
+
+<h2>Tests examined</h2>
+<ul>
+<li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_probability_bits_hashTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_Hasher(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.subtractTest_Negative(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.xorCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (4 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.andCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.addTest_Counts(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (6 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.constructorTest_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.andCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.andCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_BloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.andCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.getBitsTest_SpanLong(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.constructorTest_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (4 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.cardinalityTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.xorCardinalityTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.orCardinalityTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testConstructor_Iterator_ValueTooBig(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.orCardinalityTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (52 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.IndexFilterTest.testApply(org.apache.commons.collections4.bloomfilter.IndexFilterTest) (13 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.jaccardDistanceTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.constructorTest_Hasher(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_bits_hash_BadNumberOfBitsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.hashCodeTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.xorCardinalityTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Negative(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.constructorTest_Hasher(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.estimateSizeTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.cosineSimilarityTest_NoValues(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.xorCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_bits_BadNumberOfBitsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.estimateIntersectionSizeTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.isFullTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.constructorTest_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.cardinalityTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Counts_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_BloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest.buildTest_Empty(org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.cosineDistanceTest_NoValues(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (5 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.getBitsTest_SpanLong(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.xorCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Counts_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (6 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherTest.testGetBits(org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testProviderIsNotUsedInEqualityCheck(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.constructorTest_Hasher_Duplicates(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.getBitsTest_LowestBitOnly(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest.buildTest_byteArray(org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest.buildTest_String(org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_bits_hash_BadNumberOfItemsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.cardinalityTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.constructorTest_Hasher(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.equalsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Counts_Hasher_Duplicates(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (13 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.hammingDistanceTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.xorCardinalityTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_probability_NumberOfBitsOverflowTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.jaccardSimilarityTest_NoValues(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Counts_Hasher_Duplicates(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Counts_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (12 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_probability_BadNumberOfItemsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.removeTest_Counts_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_bits_BadNumberOfHashFunctionsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Overflow(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_bits_hashTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.estimateUnionSizeTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testConstructor_Iterator(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_nm_noName(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_Hasher(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testGetBits_WrongShape(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_probability_bits_hash_BadProbabilityTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_probability_bits_hash_BadNumberOfHashFunctionsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.getBitsTest_Empty(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.andCardinalityTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (7 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testConstructor_Hasher(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.isFullTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.subtractTest_Counts(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.constructorTest_Empty(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_BloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.andCardinalityTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.containsTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.getHasherTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.getHasherTest(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.jaccardSimilarityTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.containsTest_Hasher(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.andCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testProcessType(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.IndexFilterTest.testApplyWithDuplicates(org.apache.commons.collections4.bloomfilter.IndexFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.cosineDistanceTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherTest.testGetBits_WrongShape(org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_pmk_noName(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.jaccardDistanceTest_NoValues(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.xorCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testName(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.getHasherTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testGetBits(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.orCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testConstructor_StaticHasher(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.addTest_Overflow(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (4 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.addTest_Empty(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.containsTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.testDifferentShapesThrows(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (5 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest.buildTest_UnencodedString(org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest) (21 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testConstructor_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.cardinalityTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.constructorTest_NonStatic(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (6 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_np_noName(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.andCardinalityTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherTest.testGetBits_MultipleHashes(org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testConstructor_StaticHasher_WrongShape(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.containsTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.getBitsTest_SpanLong(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_probability_BadProbabilityTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.xorCardinalityTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.orCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_bits_hash_BadNumberOfHashFunctionsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testConstructor_Iterator_ValueTooSmall(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.contains_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (6 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Counts_BloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.orCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_nmk_noName(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (3 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (7 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest.buildResetTest(org.apache.commons.collections4.bloomfilter.hasher.DynamicHasherBuilderTest) (19 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.containsTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (26 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.andCardinalityTest_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.isFullTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.containsTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_probability_Test(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.constructorTest_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.SetOperationsTest.cosineSimilarityTest(org.apache.commons.collections4.bloomfilter.SetOperationsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.mergeTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.xorCardinalityTest(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.constructorTest_Empty(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.addTest_NewInstance(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_bitsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.isFullTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testNameIsCaseInsensitive(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testSignedness(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.orCardinalityTest(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.mergeTest_BloomFilter_WrongShape(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.getBitsTest_SpanLong(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest.testCheckThrows(org.apache.commons.collections4.bloomfilter.hasher.HashFunctionValidatorTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.getHasherTest(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest.mergeTest_Hasher_WrongShape(org.apache.commons.collections4.bloomfilter.BitSetBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.orCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_bits_hash_BadProbabilityTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_GenericBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (2 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.orCardinalityTest_GenenicBloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.subtractTest_Empty(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.mergeTest_Counts_CountingBloomFilter(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (4 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.constructorTest_Empty(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.containsTest_BloomFilter(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_items_bits_BadNumberOfItemsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (0 ms)</li><li>org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest.constructorTest_Empty(org.apache.commons.collections4.bloomfilter.HasherBloomFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest.testGetBits_DuplicateValues(org.apache.commons.collections4.bloomfilter.hasher.StaticHasherTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.IndexFilterTest.testApplyThrowsWithNullArguments(org.apache.commons.collections4.bloomfilter.IndexFilterTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest.andCardinalityTest_ExtraLongs(org.apache.commons.collections4.bloomfilter.DefaultBloomFilterMethodsTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.hasher.ShapeTest.constructor_probability_bits_hash_BadNumberOfBitsTest(org.apache.commons.collections4.bloomfilter.hasher.ShapeTest) (1 ms)</li><li>org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest.constructorTest_Hasher(org.apache.commons.collections4.bloomfilter.ArrayCountingBloomFilterTest) (1 ms)</li>
+</ul>
+
+<br/>
+
+Report generated by <a href='http://pitest.org'>PIT</a> 1.4.11
+
+</body>
+</html>

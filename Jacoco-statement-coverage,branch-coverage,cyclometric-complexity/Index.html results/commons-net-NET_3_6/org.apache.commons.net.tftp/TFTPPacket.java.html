@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TFTPPacket.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.tftp</a> &gt; <span class="el_source">TFTPPacket.java</span></div><h1>TFTPPacket.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.tftp;
+
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+
+/***
+ * TFTPPacket is an abstract class encapsulating the functionality common
+ * to the 5 types of TFTP packets.  It also provides a static factory
+ * method that will create the correct TFTP packet instance from a
+ * datagram.  This relieves the programmer from having to figure out what
+ * kind of TFTP packet is contained in a datagram and create it himself.
+ * &lt;p&gt;
+ * Details regarding the TFTP protocol and the format of TFTP packets can
+ * be found in RFC 783.  But the point of these classes is to keep you
+ * from having to worry about the internals.  Additionally, only very
+ * few people should have to care about any of the TFTPPacket classes
+ * or derived classes.  Almost all users should only be concerned with the
+ * {@link org.apache.commons.net.tftp.TFTPClient} class
+ * {@link org.apache.commons.net.tftp.TFTPClient#receiveFile receiveFile()}
+ * and
+ * {@link org.apache.commons.net.tftp.TFTPClient#sendFile sendFile()}
+ * methods.
+ *
+ *
+ * @see TFTPPacketException
+ * @see TFTP
+ ***/
+
+public abstract class TFTPPacket
+{
+    /***
+     * The minimum size of a packet.  This is 4 bytes.  It is enough
+     * to store the opcode and blocknumber or other required data
+     * depending on the packet type.
+     ***/
+    static final int MIN_PACKET_SIZE = 4;
+
+    /***
+     * This is the actual TFTP spec
+     * identifier and is equal to 1.
+     * Identifier returned by {@link #getType getType()}
+     * indicating a read request packet.
+     ***/
+    public static final int READ_REQUEST = 1;
+
+    /***
+     * This is the actual TFTP spec
+     * identifier and is equal to 2.
+     * Identifier returned by {@link #getType getType()}
+     * indicating a write request packet.
+     ***/
+    public static final int WRITE_REQUEST = 2;
+
+    /***
+     * This is the actual TFTP spec
+     * identifier and is equal to 3.
+     * Identifier returned by {@link #getType getType()}
+     * indicating a data packet.
+     ***/
+    public static final int DATA = 3;
+
+    /***
+     * This is the actual TFTP spec
+     * identifier and is equal to 4.
+     * Identifier returned by {@link #getType getType()}
+     * indicating an acknowledgement packet.
+     ***/
+    public static final int ACKNOWLEDGEMENT = 4;
+
+    /***
+     * This is the actual TFTP spec
+     * identifier and is equal to 5.
+     * Identifier returned by {@link #getType getType()}
+     * indicating an error packet.
+     ***/
+    public static final int ERROR = 5;
+
+    /***
+     * The TFTP data packet maximum segment size in bytes.  This is 512
+     * and is useful for those familiar with the TFTP protocol who want
+     * to use the {@link org.apache.commons.net.tftp.TFTP}
+     * class methods to implement their own TFTP servers or clients.
+     ***/
+    public static final int SEGMENT_SIZE = 512;
+
+    /*** The type of packet. ***/
+    int _type;
+
+    /*** The port the packet came from or is going to. ***/
+    int _port;
+
+    /*** The host the packet is going to be sent or where it came from. ***/
+    InetAddress _address;
+
+    /***
+     * When you receive a datagram that you expect to be a TFTP packet, you use
+     * this factory method to create the proper TFTPPacket object
+     * encapsulating the data contained in that datagram.  This method is the
+     * only way you can instantiate a TFTPPacket derived class from a
+     * datagram.
+     *
+     * @param datagram  The datagram containing a TFTP packet.
+     * @return The TFTPPacket object corresponding to the datagram.
+     * @throws TFTPPacketException  If the datagram does not contain a valid
+     *             TFTP packet.
+     ***/
+    public static final TFTPPacket newTFTPPacket(DatagramPacket datagram)
+    throws TFTPPacketException
+    {
+        byte[] data;
+<span class="fc" id="L128">        TFTPPacket packet = null;</span>
+
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (datagram.getLength() &lt; MIN_PACKET_SIZE) {</span>
+<span class="nc" id="L131">            throw new TFTPPacketException(</span>
+<span class="nc" id="L132">                &quot;Bad packet. Datagram data length is too short.&quot;);</span>
+        }
+
+<span class="fc" id="L135">        data = datagram.getData();</span>
+
+<span class="pc bpc" id="L137" title="1 of 6 branches missed.">        switch (data[1])</span>
+        {
+        case READ_REQUEST:
+<span class="fc" id="L140">            packet = new TFTPReadRequestPacket(datagram);</span>
+<span class="fc" id="L141">            break;</span>
+        case WRITE_REQUEST:
+<span class="fc" id="L143">            packet = new TFTPWriteRequestPacket(datagram);</span>
+<span class="fc" id="L144">            break;</span>
+        case DATA:
+<span class="fc" id="L146">            packet = new TFTPDataPacket(datagram);</span>
+<span class="fc" id="L147">            break;</span>
+        case ACKNOWLEDGEMENT:
+<span class="fc" id="L149">            packet = new TFTPAckPacket(datagram);</span>
+<span class="fc" id="L150">            break;</span>
+        case ERROR:
+<span class="fc" id="L152">            packet = new TFTPErrorPacket(datagram);</span>
+<span class="fc" id="L153">            break;</span>
+        default:
+<span class="nc" id="L155">            throw new TFTPPacketException(</span>
+<span class="nc" id="L156">                &quot;Bad packet.  Invalid TFTP operator code.&quot;);</span>
+        }
+
+<span class="fc" id="L159">        return packet;</span>
+    }
+
+    /***
+     * This constructor is not visible outside of the package.  It is used
+     * by subclasses within the package to initialize base data.
+     *
+     * @param type The type of the packet.
+     * @param address The host the packet came from or is going to be sent.
+     * @param port The port the packet came from or is going to be sent.
+     **/
+<span class="fc" id="L170">    TFTPPacket(int type, InetAddress address, int port)</span>
+    {
+<span class="fc" id="L172">        _type = type;</span>
+<span class="fc" id="L173">        _address = address;</span>
+<span class="fc" id="L174">        _port = port;</span>
+<span class="fc" id="L175">    }</span>
+
+    /***
+     * This is an abstract method only available within the package for
+     * implementing efficient datagram transport by elminating buffering.
+     * It takes a datagram as an argument, and a byte buffer in which
+     * to store the raw datagram data.  Inside the method, the data
+     * should be set as the datagram's data and the datagram returned.
+     *
+     * @param datagram  The datagram to create.
+     * @param data The buffer to store the packet and to use in the datagram.
+     * @return The datagram argument.
+     ***/
+    abstract DatagramPacket _newDatagram(DatagramPacket datagram, byte[] data);
+
+    /***
+     * Creates a UDP datagram containing all the TFTP packet
+     * data in the proper format.
+     * This is an abstract method, exposed to the programmer in case he
+     * wants to implement his own TFTP client instead of using
+     * the {@link org.apache.commons.net.tftp.TFTPClient}
+     * class.
+     * Under normal circumstances, you should not have a need to call this
+     * method.
+     *
+     * @return A UDP datagram containing the TFTP packet.
+     ***/
+    public abstract DatagramPacket newDatagram();
+
+    /***
+     * Returns the type of the packet.
+     *
+     * @return The type of the packet.
+     ***/
+    public final int getType()
+    {
+<span class="fc" id="L211">        return _type;</span>
+    }
+
+    /***
+     * Returns the address of the host where the packet is going to be sent
+     * or where it came from.
+     *
+     * @return The type of the packet.
+     ***/
+    public final InetAddress getAddress()
+    {
+<span class="fc" id="L222">        return _address;</span>
+    }
+
+    /***
+     * Returns the port where the packet is going to be sent
+     * or where it came from.
+     *
+     * @return The port where the packet came from or where it is going.
+     ***/
+    public final int getPort()
+    {
+<span class="fc" id="L233">        return _port;</span>
+    }
+
+    /***
+     * Sets the port where the packet is going to be sent.
+     * @param port the port to set
+     ***/
+    public final void setPort(int port)
+    {
+<span class="fc" id="L242">        _port = port;</span>
+<span class="fc" id="L243">    }</span>
+
+    /*** Sets the host address where the packet is going to be sent.
+     * @param address the address to set
+     ***/
+    public final void setAddress(InetAddress address)
+    {
+<span class="nc" id="L250">        _address = address;</span>
+<span class="nc" id="L251">    }</span>
+
+    /**
+     * For debugging
+     * @since 3.6
+     */
+    @Override
+    public String toString() {
+<span class="nc" id="L259">        return _address + &quot; &quot; + _port + &quot; &quot; + _type;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

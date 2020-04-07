@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FTPHTTPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp</a> &gt; <span class="el_source">FTPHTTPClient.java</span></div><h1>FTPHTTPClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
+import java.net.Inet6Address;
+import java.net.Socket;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.net.util.Base64;
+
+/**
+ * Experimental attempt at FTP client that tunnels over an HTTP proxy connection.
+ *
+ * @since 2.2
+ */
+public class FTPHTTPClient extends FTPClient {
+    private final String proxyHost;
+    private final int proxyPort;
+    private final String proxyUsername;
+    private final String proxyPassword;
+
+<span class="nc" id="L46">    private static final byte[] CRLF={'\r', '\n'};</span>
+<span class="nc" id="L47">    private final Base64 base64 = new Base64();</span>
+
+    private String tunnelHost; // Save the host when setting up a tunnel (needed for EPSV)
+
+<span class="nc" id="L51">    public FTPHTTPClient(String proxyHost, int proxyPort, String proxyUser, String proxyPass) {</span>
+<span class="nc" id="L52">        this.proxyHost = proxyHost;</span>
+<span class="nc" id="L53">        this.proxyPort = proxyPort;</span>
+<span class="nc" id="L54">        this.proxyUsername = proxyUser;</span>
+<span class="nc" id="L55">        this.proxyPassword = proxyPass;</span>
+<span class="nc" id="L56">        this.tunnelHost = null;</span>
+<span class="nc" id="L57">    }</span>
+
+    public FTPHTTPClient(String proxyHost, int proxyPort) {
+<span class="nc" id="L60">        this(proxyHost, proxyPort, null, null);</span>
+<span class="nc" id="L61">    }</span>
+
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws IllegalStateException if connection mode is not passive
+     * @deprecated (3.3) Use {@link FTPClient#_openDataConnection_(FTPCmd, String)} instead
+     */
+    // Kept to maintain binary compatibility
+    // Not strictly necessary, but Clirr complains even though there is a super-impl
+    @Override
+    @Deprecated
+    protected Socket _openDataConnection_(int command, String arg)
+    throws IOException {
+<span class="nc" id="L76">        return super._openDataConnection_(command, arg);</span>
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws IllegalStateException if connection mode is not passive
+     * @since 3.1
+     */
+    @Override
+    protected Socket _openDataConnection_(String command, String arg)
+    throws IOException {
+        //Force local passive mode, active mode not supported by through proxy
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (getDataConnectionMode() != PASSIVE_LOCAL_DATA_CONNECTION_MODE) {</span>
+<span class="nc" id="L90">            throw new IllegalStateException(&quot;Only passive connection mode supported&quot;);</span>
+        }
+
+<span class="nc" id="L93">        final boolean isInet6Address = getRemoteAddress() instanceof Inet6Address;</span>
+<span class="nc" id="L94">        String passiveHost = null;</span>
+
+<span class="nc bnc" id="L96" title="All 4 branches missed.">        boolean attemptEPSV = isUseEPSVwithIPv4() || isInet6Address;</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">        if (attemptEPSV &amp;&amp; epsv() == FTPReply.ENTERING_EPSV_MODE) {</span>
+<span class="nc" id="L98">            _parseExtendedPassiveModeReply(_replyLines.get(0));</span>
+<span class="nc" id="L99">            passiveHost = this.tunnelHost;</span>
+<span class="nc" id="L100">        } else {</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            if (isInet6Address) {</span>
+<span class="nc" id="L102">                return null; // Must use EPSV for IPV6</span>
+            }
+            // If EPSV failed on IPV4, revert to PASV
+<span class="nc bnc" id="L105" title="All 2 branches missed.">            if (pasv() != FTPReply.ENTERING_PASSIVE_MODE) {</span>
+<span class="nc" id="L106">                return null;</span>
+            }
+<span class="nc" id="L108">            _parsePassiveModeReply(_replyLines.get(0));</span>
+<span class="nc" id="L109">            passiveHost = this.getPassiveHost();</span>
+        }
+
+<span class="nc" id="L112">        Socket socket = _socketFactory_.createSocket(proxyHost, proxyPort);</span>
+<span class="nc" id="L113">        InputStream is = socket.getInputStream();</span>
+<span class="nc" id="L114">        OutputStream os = socket.getOutputStream();</span>
+<span class="nc" id="L115">        tunnelHandshake(passiveHost, this.getPassivePort(), is, os);</span>
+<span class="nc bnc" id="L116" title="All 4 branches missed.">        if ((getRestartOffset() &gt; 0) &amp;&amp; !restart(getRestartOffset())) {</span>
+<span class="nc" id="L117">            socket.close();</span>
+<span class="nc" id="L118">            return null;</span>
+        }
+
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (!FTPReply.isPositivePreliminary(sendCommand(command, arg))) {</span>
+<span class="nc" id="L122">            socket.close();</span>
+<span class="nc" id="L123">            return null;</span>
+        }
+
+<span class="nc" id="L126">        return socket;</span>
+    }
+
+    @Override
+    public void connect(String host, int port) throws SocketException, IOException {
+
+<span class="nc" id="L132">        _socket_ = _socketFactory_.createSocket(proxyHost, proxyPort);</span>
+<span class="nc" id="L133">        _input_ = _socket_.getInputStream();</span>
+<span class="nc" id="L134">        _output_ = _socket_.getOutputStream();</span>
+        Reader socketIsReader;
+        try {
+<span class="nc" id="L137">            socketIsReader = tunnelHandshake(host, port, _input_, _output_);</span>
+<span class="nc" id="L138">        }</span>
+<span class="nc" id="L139">        catch (Exception e) {</span>
+<span class="nc" id="L140">            IOException ioe = new IOException(&quot;Could not connect to &quot; + host+ &quot; using port &quot; + port);</span>
+<span class="nc" id="L141">            ioe.initCause(e);</span>
+<span class="nc" id="L142">            throw ioe;</span>
+        }
+<span class="nc" id="L144">        super._connectAction_(socketIsReader);</span>
+<span class="nc" id="L145">    }</span>
+
+    private BufferedReader tunnelHandshake(String host, int port, InputStream input, OutputStream output) throws IOException,
+    UnsupportedEncodingException {
+<span class="nc" id="L149">        final String connectString = &quot;CONNECT &quot;  + host + &quot;:&quot; + port  + &quot; HTTP/1.1&quot;;</span>
+<span class="nc" id="L150">        final String hostString = &quot;Host: &quot; + host + &quot;:&quot; + port;</span>
+
+<span class="nc" id="L152">        this.tunnelHost = host;</span>
+<span class="nc" id="L153">        output.write(connectString.getBytes(&quot;UTF-8&quot;)); // TODO what is the correct encoding?</span>
+<span class="nc" id="L154">        output.write(CRLF);</span>
+<span class="nc" id="L155">        output.write(hostString.getBytes(&quot;UTF-8&quot;));</span>
+<span class="nc" id="L156">        output.write(CRLF);</span>
+
+<span class="nc bnc" id="L158" title="All 4 branches missed.">        if (proxyUsername != null &amp;&amp; proxyPassword != null) {</span>
+<span class="nc" id="L159">            final String auth = proxyUsername + &quot;:&quot; + proxyPassword;</span>
+<span class="nc" id="L160">            final String header = &quot;Proxy-Authorization: Basic &quot;</span>
+<span class="nc" id="L161">                + base64.encodeToString(auth.getBytes(&quot;UTF-8&quot;));</span>
+<span class="nc" id="L162">            output.write(header.getBytes(&quot;UTF-8&quot;));</span>
+        }
+<span class="nc" id="L164">        output.write(CRLF);</span>
+
+<span class="nc" id="L166">        List&lt;String&gt; response = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L167">        BufferedReader reader = new BufferedReader(</span>
+<span class="nc" id="L168">                new InputStreamReader(input, getCharset()));</span>
+
+<span class="nc bnc" id="L170" title="All 4 branches missed.">        for (String line = reader.readLine(); line != null</span>
+<span class="nc" id="L171">        &amp;&amp; line.length() &gt; 0; line = reader.readLine()) {</span>
+<span class="nc" id="L172">            response.add(line);</span>
+        }
+
+<span class="nc" id="L175">        int size = response.size();</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        if (size == 0) {</span>
+<span class="nc" id="L177">            throw new IOException(&quot;No response from proxy&quot;);</span>
+        }
+
+<span class="nc" id="L180">        String code = null;</span>
+<span class="nc" id="L181">        String resp = response.get(0);</span>
+<span class="nc bnc" id="L182" title="All 4 branches missed.">        if (resp.startsWith(&quot;HTTP/&quot;) &amp;&amp; resp.length() &gt;= 12) {</span>
+<span class="nc" id="L183">            code = resp.substring(9, 12);</span>
+<span class="nc" id="L184">        } else {</span>
+<span class="nc" id="L185">            throw new IOException(&quot;Invalid response from proxy: &quot; + resp);</span>
+        }
+
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        if (!&quot;200&quot;.equals(code)) {</span>
+<span class="nc" id="L189">            StringBuilder msg = new StringBuilder();</span>
+<span class="nc" id="L190">            msg.append(&quot;HTTPTunnelConnector: connection failed\r\n&quot;);</span>
+<span class="nc" id="L191">            msg.append(&quot;Response received from the proxy:\r\n&quot;);</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">            for (String line : response) {</span>
+<span class="nc" id="L193">                msg.append(line);</span>
+<span class="nc" id="L194">                msg.append(&quot;\r\n&quot;);</span>
+            }
+<span class="nc" id="L196">            throw new IOException(msg.toString());</span>
+        }
+<span class="nc" id="L198">        return reader;</span>
+    }
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

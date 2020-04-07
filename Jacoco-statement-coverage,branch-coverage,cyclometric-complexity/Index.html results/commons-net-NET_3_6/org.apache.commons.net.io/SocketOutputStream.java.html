@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SocketOutputStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.io</a> &gt; <span class="el_source">SocketOutputStream.java</span></div><h1>SocketOutputStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.io;
+
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
+
+/***
+ * This class wraps an output stream, storing a reference to its originating
+ * socket.  When the stream is closed, it will also close the socket
+ * immediately afterward.  This class is useful for situations where you
+ * are dealing with a stream originating from a socket, but do not have
+ * a reference to the socket, and want to make sure it closes when the
+ * stream closes.
+ *
+ *
+ * @see SocketInputStream
+ ***/
+
+public class SocketOutputStream extends FilterOutputStream
+{
+    private final Socket __socket;
+
+    /***
+     * Creates a SocketOutputStream instance wrapping an output stream and
+     * storing a reference to a socket that should be closed on closing
+     * the stream.
+     *
+     * @param socket  The socket to close on closing the stream.
+     * @param stream  The input stream to wrap.
+     ***/
+    public SocketOutputStream(Socket socket, OutputStream stream)
+    {
+<span class="nc" id="L51">        super(stream);</span>
+<span class="nc" id="L52">        __socket = socket;</span>
+<span class="nc" id="L53">    }</span>
+
+
+    /***
+     * Writes a number of bytes from a byte array to the stream starting from
+     * a given offset.  This method bypasses the equivalent method in
+     * FilterOutputStream because the FilterOutputStream implementation is
+     * very inefficient.
+     *
+     * @param buffer  The byte array to write.
+     * @param offset  The offset into the array at which to start copying data.
+     * @param length  The number of bytes to write.
+     * @throws IOException If an error occurs while writing to the underlying
+     *            stream.
+     ***/
+    @Override
+    public void write(byte buffer[], int offset, int length) throws IOException
+    {
+<span class="nc" id="L71">        out.write(buffer, offset, length);</span>
+<span class="nc" id="L72">    }</span>
+
+
+    /***
+     * Closes the stream and immediately afterward closes the referenced
+     * socket.
+     *
+     * @throws IOException  If there is an error in closing the stream
+     *                         or socket.
+     ***/
+    @Override
+    public void close() throws IOException
+    {
+<span class="nc" id="L85">        super.close();</span>
+<span class="nc" id="L86">        __socket.close();</span>
+<span class="nc" id="L87">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

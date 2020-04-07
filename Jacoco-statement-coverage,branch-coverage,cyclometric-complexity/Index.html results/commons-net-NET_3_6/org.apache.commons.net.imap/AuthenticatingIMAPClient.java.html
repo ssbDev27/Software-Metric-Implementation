@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthenticatingIMAPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.imap</a> &gt; <span class="el_source">AuthenticatingIMAPClient.java</span></div><h1>AuthenticatingIMAPClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.imap;
+
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.net.ssl.SSLContext;
+import org.apache.commons.net.util.Base64;
+
+/**
+ * An IMAP Client class with authentication support.
+ * @see IMAPSClient
+ */
+public class AuthenticatingIMAPClient extends IMAPSClient
+{
+    /**
+     * Constructor for AuthenticatingIMAPClient that delegates to IMAPSClient.
+     * Sets security mode to explicit (isImplicit = false).
+     */
+    public AuthenticatingIMAPClient()
+    {
+<span class="nc" id="L42">        this(DEFAULT_PROTOCOL, false);</span>
+<span class="nc" id="L43">    }</span>
+
+    /**
+     * Constructor for AuthenticatingIMAPClient that delegates to IMAPSClient.
+     * @param implicit The security mode (Implicit/Explicit).
+     */
+    public AuthenticatingIMAPClient(boolean implicit)
+    {
+<span class="nc" id="L51">        this(DEFAULT_PROTOCOL, implicit);</span>
+<span class="nc" id="L52">    }</span>
+
+    /**
+     * Constructor for AuthenticatingIMAPClient that delegates to IMAPSClient.
+     * @param proto the protocol.
+     */
+    public AuthenticatingIMAPClient(String proto)
+    {
+<span class="nc" id="L60">        this(proto, false);</span>
+<span class="nc" id="L61">    }</span>
+
+    /**
+     * Constructor for AuthenticatingIMAPClient that delegates to IMAPSClient.
+     * @param proto the protocol.
+     * @param implicit The security mode(Implicit/Explicit).
+     */
+    public AuthenticatingIMAPClient(String proto, boolean implicit)
+    {
+<span class="nc" id="L70">        this(proto, implicit, null);</span>
+<span class="nc" id="L71">    }</span>
+
+    /**
+     * Constructor for AuthenticatingIMAPClient that delegates to IMAPSClient.
+     * @param proto the protocol.
+     * @param implicit The security mode(Implicit/Explicit).
+     * @param ctx the context
+     */
+    public AuthenticatingIMAPClient(String proto, boolean implicit, SSLContext ctx)
+    {
+<span class="nc" id="L81">        super(proto, implicit, ctx);</span>
+<span class="nc" id="L82">    }</span>
+
+    /**
+     * Constructor for AuthenticatingIMAPClient that delegates to IMAPSClient.
+     * @param implicit The security mode(Implicit/Explicit).
+     * @param ctx A pre-configured SSL Context.
+     */
+    public AuthenticatingIMAPClient(boolean implicit, SSLContext ctx)
+    {
+<span class="nc" id="L91">        this(DEFAULT_PROTOCOL, implicit, ctx);</span>
+<span class="nc" id="L92">    }</span>
+
+    /**
+     * Constructor for AuthenticatingIMAPClient that delegates to IMAPSClient.
+     * @param context A pre-configured SSL Context.
+     */
+    public AuthenticatingIMAPClient(SSLContext context)
+    {
+<span class="nc" id="L100">        this(false, context);</span>
+<span class="nc" id="L101">    }</span>
+
+    /**
+     * Authenticate to the IMAP server by sending the AUTHENTICATE command with the
+     * selected mechanism, using the given username and the given password.
+     *
+     * @param method the method name
+     * @param username user
+     * @param password password
+     * @return True if successfully completed, false if not.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @throws NoSuchAlgorithmException If the CRAM hash algorithm
+     *      cannot be instantiated by the Java runtime system.
+     * @throws InvalidKeyException If the CRAM hash algorithm
+     *      failed to use the given password.
+     * @throws InvalidKeySpecException If the CRAM hash algorithm
+     *      failed to use the given password.
+     */
+    public boolean authenticate(AuthenticatingIMAPClient.AUTH_METHOD method,
+                        String username, String password)
+                        throws IOException, NoSuchAlgorithmException,
+                        InvalidKeyException, InvalidKeySpecException
+    {
+<span class="nc" id="L125">        return auth(method, username, password);</span>
+    }
+
+    /**
+     * Authenticate to the IMAP server by sending the AUTHENTICATE command with the
+     * selected mechanism, using the given username and the given password.
+     *
+     * @param method the method name
+     * @param username user
+     * @param password password
+     * @return True if successfully completed, false if not.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @throws NoSuchAlgorithmException If the CRAM hash algorithm
+     *      cannot be instantiated by the Java runtime system.
+     * @throws InvalidKeyException If the CRAM hash algorithm
+     *      failed to use the given password.
+     * @throws InvalidKeySpecException If the CRAM hash algorithm
+     *      failed to use the given password.
+     */
+    public boolean auth(AuthenticatingIMAPClient.AUTH_METHOD method,
+                        String username, String password)
+                        throws IOException, NoSuchAlgorithmException,
+                        InvalidKeyException, InvalidKeySpecException
+    {
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (!IMAPReply.isContinuation(sendCommand(IMAPCommand.AUTHENTICATE, method.getAuthName())))</span>
+        {
+<span class="nc" id="L152">            return false;</span>
+        }
+
+<span class="nc bnc" id="L155" title="All 5 branches missed.">        switch (method) {</span>
+            case PLAIN:
+            {
+                // the server sends an empty response (&quot;+ &quot;), so we don't have to read it.
+<span class="nc" id="L159">                int result = sendData(</span>
+<span class="nc" id="L160">                    Base64.encodeBase64StringUnChunked((&quot;\000&quot; + username + &quot;\000&quot; + password)</span>
+<span class="nc" id="L161">                            .getBytes(getCharset())));</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                if (result == IMAPReply.OK)</span>
+                {
+<span class="nc" id="L164">                    setState(IMAP.IMAPState.AUTH_STATE);</span>
+                }
+<span class="nc bnc" id="L166" title="All 2 branches missed.">                return result == IMAPReply.OK;</span>
+            }
+            case CRAM_MD5:
+            {
+                // get the CRAM challenge (after &quot;+ &quot;)
+<span class="nc" id="L171">                byte[] serverChallenge = Base64.decodeBase64(getReplyString().substring(2).trim());</span>
+                // get the Mac instance
+<span class="nc" id="L173">                Mac hmac_md5 = Mac.getInstance(&quot;HmacMD5&quot;);</span>
+<span class="nc" id="L174">                hmac_md5.init(new SecretKeySpec(password.getBytes(getCharset()), &quot;HmacMD5&quot;));</span>
+                // compute the result:
+<span class="nc" id="L176">                byte[] hmacResult = _convertToHexString(hmac_md5.doFinal(serverChallenge)).getBytes(getCharset());</span>
+                // join the byte arrays to form the reply
+<span class="nc" id="L178">                byte[] usernameBytes = username.getBytes(getCharset());</span>
+<span class="nc" id="L179">                byte[] toEncode = new byte[usernameBytes.length + 1 /* the space */ + hmacResult.length];</span>
+<span class="nc" id="L180">                System.arraycopy(usernameBytes, 0, toEncode, 0, usernameBytes.length);</span>
+<span class="nc" id="L181">                toEncode[usernameBytes.length] = ' ';</span>
+<span class="nc" id="L182">                System.arraycopy(hmacResult, 0, toEncode, usernameBytes.length + 1, hmacResult.length);</span>
+                // send the reply and read the server code:
+<span class="nc" id="L184">                int result = sendData(Base64.encodeBase64StringUnChunked(toEncode));</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                if (result == IMAPReply.OK)</span>
+                {
+<span class="nc" id="L187">                    setState(IMAP.IMAPState.AUTH_STATE);</span>
+                }
+<span class="nc bnc" id="L189" title="All 2 branches missed.">                return result == IMAPReply.OK;</span>
+            }
+            case LOGIN:
+            {
+                // the server sends fixed responses (base64(&quot;Username&quot;) and
+                // base64(&quot;Password&quot;)), so we don't have to read them.
+<span class="nc bnc" id="L195" title="All 2 branches missed.">                if (sendData(Base64.encodeBase64StringUnChunked(username.getBytes(getCharset()))) != IMAPReply.CONT)</span>
+                {
+<span class="nc" id="L197">                    return false;</span>
+                }
+<span class="nc" id="L199">                int result = sendData(Base64.encodeBase64StringUnChunked(password.getBytes(getCharset())));</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">                if (result == IMAPReply.OK)</span>
+                {
+<span class="nc" id="L202">                    setState(IMAP.IMAPState.AUTH_STATE);</span>
+                }
+<span class="nc bnc" id="L204" title="All 2 branches missed.">                return result == IMAPReply.OK;</span>
+            }
+            case XOAUTH:
+            {
+<span class="nc" id="L208">                int result = sendData(username);</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">                if (result == IMAPReply.OK)</span>
+                {
+<span class="nc" id="L211">                    setState(IMAP.IMAPState.AUTH_STATE);</span>
+                }
+<span class="nc bnc" id="L213" title="All 2 branches missed.">                return result == IMAPReply.OK;</span>
+            }
+        }
+<span class="nc" id="L216">        return false; // safety check</span>
+    }
+
+    /**
+     * Converts the given byte array to a String containing the hex values of the bytes.
+     * For example, the byte 'A' will be converted to '41', because this is the ASCII code
+     * (and the byte value) of the capital letter 'A'.
+     * @param a The byte array to convert.
+     * @return The resulting String of hex codes.
+     */
+    private String _convertToHexString(byte[] a)
+    {
+<span class="nc" id="L228">        StringBuilder result = new StringBuilder(a.length*2);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        for (byte element : a)</span>
+        {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            if ( (element &amp; 0x0FF) &lt;= 15 ) {</span>
+<span class="nc" id="L232">                result.append(&quot;0&quot;);</span>
+            }
+<span class="nc" id="L234">            result.append(Integer.toHexString(element &amp; 0x0FF));</span>
+        }
+<span class="nc" id="L236">        return result.toString();</span>
+    }
+
+    /**
+     * The enumeration of currently-supported authentication methods.
+     */
+<span class="nc" id="L242">    public static enum AUTH_METHOD</span>
+    {
+<span class="nc" id="L244">        /** The standarised (RFC4616) PLAIN method, which sends the password unencrypted (insecure). */</span>
+<span class="nc" id="L245">        PLAIN(&quot;PLAIN&quot;),</span>
+<span class="nc" id="L246">        /** The standarised (RFC2195) CRAM-MD5 method, which doesn't send the password (secure). */</span>
+<span class="nc" id="L247">        CRAM_MD5(&quot;CRAM-MD5&quot;),</span>
+<span class="nc" id="L248">        /** The unstandarised Microsoft LOGIN method, which sends the password unencrypted (insecure). */</span>
+<span class="nc" id="L249">        LOGIN(&quot;LOGIN&quot;),</span>
+<span class="nc" id="L250">        /** XOAUTH */</span>
+<span class="nc" id="L251">        XOAUTH(&quot;XOAUTH&quot;);</span>
+
+        private final String authName;
+
+<span class="nc" id="L255">        private AUTH_METHOD(String name){</span>
+<span class="nc" id="L256">            this.authName=name;</span>
+<span class="nc" id="L257">        }</span>
+        /**
+         * Gets the name of the given authentication method suitable for the server.
+         * @return The name of the given authentication method suitable for the server.
+         */
+        public final String getAuthName()
+        {
+<span class="nc" id="L264">            return authName;</span>
+        }
+    }
+}
+/* kate: indent-width 4; replace-tabs on; */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

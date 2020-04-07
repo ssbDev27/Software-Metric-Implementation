@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Util.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.io</a> &gt; <span class="el_source">Util.java</span></div><h1>Util.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.io;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.Socket;
+
+/***
+ * The Util class cannot be instantiated and stores short static convenience
+ * methods that are often quite useful.
+ *
+ *
+ * @see CopyStreamException
+ * @see CopyStreamListener
+ * @see CopyStreamAdapter
+ ***/
+
+public final class Util
+{
+    /**
+     * The default buffer size ({@value}) used by
+     * {@link #copyStream  copyStream } and {@link #copyReader  copyReader}
+     * and by the copyReader/copyStream methods if a zero or negative buffer size is supplied.
+     */
+    public static final int DEFAULT_COPY_BUFFER_SIZE = 1024;
+
+    // Cannot be instantiated
+    private Util()
+    { }
+
+
+    /***
+     * Copies the contents of an InputStream to an OutputStream using a
+     * copy buffer of a given size and notifies the provided
+     * CopyStreamListener of the progress of the copy operation by calling
+     * its bytesTransferred(long, int) method after each write to the
+     * destination.  If you wish to notify more than one listener you should
+     * use a CopyStreamAdapter as the listener and register the additional
+     * listeners with the CopyStreamAdapter.
+     * &lt;p&gt;
+     * The contents of the InputStream are
+     * read until the end of the stream is reached, but neither the
+     * source nor the destination are closed.  You must do this yourself
+     * outside of the method call.  The number of bytes read/written is
+     * returned.
+     *
+     * @param source  The source InputStream.
+     * @param dest    The destination OutputStream.
+     * @param bufferSize  The number of bytes to buffer during the copy.
+     *            A zero or negative value means to use {@link #DEFAULT_COPY_BUFFER_SIZE}.
+     * @param streamSize  The number of bytes in the stream being copied.
+     *          Should be set to CopyStreamEvent.UNKNOWN_STREAM_SIZE if unknown.
+     * Not currently used (though it is passed to {@link CopyStreamListener#bytesTransferred(long, int, long)}
+     * @param listener  The CopyStreamListener to notify of progress.  If
+     *      this parameter is null, notification is not attempted.
+     * @param flush Whether to flush the output stream after every
+     *        write.  This is necessary for interactive sessions that rely on
+     *        buffered streams.  If you don't flush, the data will stay in
+     *        the stream buffer.
+     * @return number of bytes read/written
+     * @throws CopyStreamException  If an error occurs while reading from the
+     *            source or writing to the destination.  The CopyStreamException
+     *            will contain the number of bytes confirmed to have been
+     *            transferred before an
+     *            IOException occurred, and it will also contain the IOException
+     *            that caused the error.  These values can be retrieved with
+     *            the CopyStreamException getTotalBytesTransferred() and
+     *            getIOException() methods.
+     ***/
+    public static final long copyStream(InputStream source, OutputStream dest,
+                                        int bufferSize, long streamSize,
+                                        CopyStreamListener listener,
+                                        boolean flush)
+    throws CopyStreamException
+    {
+        int numBytes;
+<span class="fc" id="L97">        long total = 0;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        byte[] buffer = new byte[bufferSize &gt; 0 ? bufferSize : DEFAULT_COPY_BUFFER_SIZE];</span>
+
+        try
+        {
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            while ((numBytes = source.read(buffer)) != -1)</span>
+            {
+                // Technically, some read(byte[]) methods may return 0 and we cannot
+                // accept that as an indication of EOF.
+
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                if (numBytes == 0)</span>
+                {
+<span class="nc" id="L109">                    int singleByte = source.read();</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">                    if (singleByte &lt; 0) {</span>
+<span class="nc" id="L111">                        break;</span>
+                    }
+<span class="nc" id="L113">                    dest.write(singleByte);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">                    if(flush) {</span>
+<span class="nc" id="L115">                        dest.flush();</span>
+                    }
+<span class="nc" id="L117">                    ++total;</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                    if (listener != null) {</span>
+<span class="nc" id="L119">                        listener.bytesTransferred(total, 1, streamSize);</span>
+                    }
+<span class="nc" id="L121">                    continue;</span>
+                }
+
+<span class="fc" id="L124">                dest.write(buffer, 0, numBytes);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">                if(flush) {</span>
+<span class="fc" id="L126">                    dest.flush();</span>
+                }
+<span class="fc" id="L128">                total += numBytes;</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">                if (listener != null) {</span>
+<span class="fc" id="L130">                    listener.bytesTransferred(total, numBytes, streamSize);</span>
+                }
+            }
+<span class="fc" id="L133">        }</span>
+<span class="nc" id="L134">        catch (IOException e)</span>
+        {
+<span class="nc" id="L136">            throw new CopyStreamException(&quot;IOException caught while copying.&quot;,</span>
+<span class="nc" id="L137">                                          total, e);</span>
+        }
+
+<span class="fc" id="L140">        return total;</span>
+    }
+
+
+    /***
+     * Copies the contents of an InputStream to an OutputStream using a
+     * copy buffer of a given size and notifies the provided
+     * CopyStreamListener of the progress of the copy operation by calling
+     * its bytesTransferred(long, int) method after each write to the
+     * destination.  If you wish to notify more than one listener you should
+     * use a CopyStreamAdapter as the listener and register the additional
+     * listeners with the CopyStreamAdapter.
+     * &lt;p&gt;
+     * The contents of the InputStream are
+     * read until the end of the stream is reached, but neither the
+     * source nor the destination are closed.  You must do this yourself
+     * outside of the method call.  The number of bytes read/written is
+     * returned.
+     *
+     * @param source  The source InputStream.
+     * @param dest    The destination OutputStream.
+     * @param bufferSize  The number of bytes to buffer during the copy.
+     *            A zero or negative value means to use {@link #DEFAULT_COPY_BUFFER_SIZE}.
+     * @param streamSize  The number of bytes in the stream being copied.
+     *          Should be set to CopyStreamEvent.UNKNOWN_STREAM_SIZE if unknown.
+     * Not currently used (though it is passed to {@link CopyStreamListener#bytesTransferred(long, int, long)}
+     * @param listener  The CopyStreamListener to notify of progress.  If
+     *      this parameter is null, notification is not attempted.
+     * @return number of bytes read/written
+     * @throws CopyStreamException  If an error occurs while reading from the
+     *            source or writing to the destination.  The CopyStreamException
+     *            will contain the number of bytes confirmed to have been
+     *            transferred before an
+     *            IOException occurred, and it will also contain the IOException
+     *            that caused the error.  These values can be retrieved with
+     *            the CopyStreamException getTotalBytesTransferred() and
+     *            getIOException() methods.
+     ***/
+    public static final long copyStream(InputStream source, OutputStream dest,
+                                        int bufferSize, long streamSize,
+                                        CopyStreamListener listener)
+    throws CopyStreamException
+    {
+<span class="fc" id="L183">      return copyStream(source, dest, bufferSize, streamSize, listener,</span>
+<span class="fc" id="L184">                        true);</span>
+    }
+
+
+    /***
+     * Copies the contents of an InputStream to an OutputStream using a
+     * copy buffer of a given size.  The contents of the InputStream are
+     * read until the end of the stream is reached, but neither the
+     * source nor the destination are closed.  You must do this yourself
+     * outside of the method call.  The number of bytes read/written is
+     * returned.
+     *
+     * @param source  The source InputStream.
+     * @param dest    The destination OutputStream.
+     * @param bufferSize  The number of bytes to buffer during the copy.
+     *            A zero or negative value means to use {@link #DEFAULT_COPY_BUFFER_SIZE}.
+     * @return  The number of bytes read/written in the copy operation.
+     * @throws CopyStreamException  If an error occurs while reading from the
+     *            source or writing to the destination.  The CopyStreamException
+     *            will contain the number of bytes confirmed to have been
+     *            transferred before an
+     *            IOException occurred, and it will also contain the IOException
+     *            that caused the error.  These values can be retrieved with
+     *            the CopyStreamException getTotalBytesTransferred() and
+     *            getIOException() methods.
+     ***/
+    public static final long copyStream(InputStream source, OutputStream dest,
+                                        int bufferSize)
+    throws CopyStreamException
+    {
+<span class="nc" id="L214">        return copyStream(source, dest, bufferSize,</span>
+<span class="nc" id="L215">                          CopyStreamEvent.UNKNOWN_STREAM_SIZE, null);</span>
+    }
+
+
+    /***
+     * Same as &lt;code&gt; copyStream(source, dest, DEFAULT_COPY_BUFFER_SIZE); &lt;/code&gt;
+     * @param source where to copy from
+     * @param dest  where to copy to
+     * @return number of bytes copied
+     * @throws CopyStreamException on error
+     ***/
+    public static final long copyStream(InputStream source, OutputStream dest)
+    throws CopyStreamException
+    {
+<span class="nc" id="L229">        return copyStream(source, dest, DEFAULT_COPY_BUFFER_SIZE);</span>
+    }
+
+
+    /***
+     * Copies the contents of a Reader to a Writer using a
+     * copy buffer of a given size and notifies the provided
+     * CopyStreamListener of the progress of the copy operation by calling
+     * its bytesTransferred(long, int) method after each write to the
+     * destination.  If you wish to notify more than one listener you should
+     * use a CopyStreamAdapter as the listener and register the additional
+     * listeners with the CopyStreamAdapter.
+     * &lt;p&gt;
+     * The contents of the Reader are
+     * read until its end is reached, but neither the source nor the
+     * destination are closed.  You must do this yourself outside of the
+     * method call.  The number of characters read/written is returned.
+     *
+     * @param source  The source Reader.
+     * @param dest    The destination writer.
+     * @param bufferSize  The number of characters to buffer during the copy.
+     *            A zero or negative value means to use {@link #DEFAULT_COPY_BUFFER_SIZE}.
+     * @param streamSize  The number of characters in the stream being copied.
+     *          Should be set to CopyStreamEvent.UNKNOWN_STREAM_SIZE if unknown.
+     * Not currently used (though it is passed to {@link CopyStreamListener#bytesTransferred(long, int, long)}
+     * @param listener  The CopyStreamListener to notify of progress.  If
+     *      this parameter is null, notification is not attempted.
+     * @return  The number of characters read/written in the copy operation.
+     * @throws CopyStreamException  If an error occurs while reading from the
+     *            source or writing to the destination.  The CopyStreamException
+     *            will contain the number of bytes confirmed to have been
+     *            transferred before an
+     *            IOException occurred, and it will also contain the IOException
+     *            that caused the error.  These values can be retrieved with
+     *            the CopyStreamException getTotalBytesTransferred() and
+     *            getIOException() methods.
+     ***/
+    public static final long copyReader(Reader source, Writer dest,
+                                        int bufferSize, long streamSize,
+                                        CopyStreamListener listener)
+    throws CopyStreamException
+    {
+        int numChars;
+<span class="fc" id="L272">        long total = 0;</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        char[] buffer = new char[bufferSize &gt; 0 ? bufferSize : DEFAULT_COPY_BUFFER_SIZE];</span>
+
+        try
+        {
+<span class="fc bfc" id="L277" title="All 2 branches covered.">            while ((numChars = source.read(buffer)) != -1)</span>
+            {
+                // Technically, some read(char[]) methods may return 0 and we cannot
+                // accept that as an indication of EOF.
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">                if (numChars == 0)</span>
+                {
+<span class="nc" id="L283">                    int singleChar = source.read();</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">                    if (singleChar &lt; 0) {</span>
+<span class="nc" id="L285">                        break;</span>
+                    }
+<span class="nc" id="L287">                    dest.write(singleChar);</span>
+<span class="nc" id="L288">                    dest.flush();</span>
+<span class="nc" id="L289">                    ++total;</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">                    if (listener != null) {</span>
+<span class="nc" id="L291">                        listener.bytesTransferred(total, 1, streamSize);</span>
+                    }
+<span class="nc" id="L293">                    continue;</span>
+                }
+
+<span class="fc" id="L296">                dest.write(buffer, 0, numChars);</span>
+<span class="fc" id="L297">                dest.flush();</span>
+<span class="fc" id="L298">                total += numChars;</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">                if (listener != null) {</span>
+<span class="fc" id="L300">                    listener.bytesTransferred(total, numChars, streamSize);</span>
+                }
+            }
+<span class="fc" id="L303">        }</span>
+<span class="nc" id="L304">        catch (IOException e)</span>
+        {
+<span class="nc" id="L306">            throw new CopyStreamException(&quot;IOException caught while copying.&quot;,</span>
+<span class="nc" id="L307">                                          total, e);</span>
+        }
+
+<span class="fc" id="L310">        return total;</span>
+    }
+
+
+    /***
+     * Copies the contents of a Reader to a Writer using a
+     * copy buffer of a given size.  The contents of the Reader are
+     * read until its end is reached, but neither the source nor the
+     * destination are closed.  You must do this yourself outside of the
+     * method call.  The number of characters read/written is returned.
+     *
+     * @param source  The source Reader.
+     * @param dest    The destination writer.
+     * @param bufferSize  The number of characters to buffer during the copy.
+     *            A zero or negative value means to use {@link #DEFAULT_COPY_BUFFER_SIZE}.
+     * @return  The number of characters read/written in the copy operation.
+     * @throws CopyStreamException  If an error occurs while reading from the
+     *            source or writing to the destination.  The CopyStreamException
+     *            will contain the number of bytes confirmed to have been
+     *            transferred before an
+     *            IOException occurred, and it will also contain the IOException
+     *            that caused the error.  These values can be retrieved with
+     *            the CopyStreamException getTotalBytesTransferred() and
+     *            getIOException() methods.
+     ***/
+    public static final long copyReader(Reader source, Writer dest,
+                                        int bufferSize)
+    throws CopyStreamException
+    {
+<span class="nc" id="L339">        return copyReader(source, dest, bufferSize,</span>
+<span class="nc" id="L340">                          CopyStreamEvent.UNKNOWN_STREAM_SIZE, null);</span>
+    }
+
+
+    /***
+     * Same as &lt;code&gt; copyReader(source, dest, DEFAULT_COPY_BUFFER_SIZE); &lt;/code&gt;
+     * @param source where to copy from
+     * @param dest  where to copy to
+     * @return number of bytes copied
+     * @throws CopyStreamException on error
+     ***/
+    public static final long copyReader(Reader source, Writer dest)
+    throws CopyStreamException
+    {
+<span class="nc" id="L354">        return copyReader(source, dest, DEFAULT_COPY_BUFFER_SIZE);</span>
+    }
+
+    /**
+     * Closes the object quietly, catching rather than throwing IOException.
+     * Intended for use from finally blocks.
+     *
+     * @param closeable the object to close, may be {@code null}
+     * @since 3.0
+     */
+    public static void closeQuietly(Closeable closeable) {
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">        if (closeable != null) {</span>
+            try {
+<span class="nc" id="L367">                closeable.close();</span>
+<span class="nc" id="L368">            } catch (IOException e) {</span>
+                // Ignored
+            }
+        }
+<span class="fc" id="L372">    }</span>
+
+    /**
+     * Closes the socket quietly, catching rather than throwing IOException.
+     * Intended for use from finally blocks.
+     *
+     * @param socket the socket to close, may be {@code null}
+     * @since 3.0
+     */
+    public static void closeQuietly(Socket socket) {
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">        if (socket != null) {</span>
+            try {
+<span class="nc" id="L384">                socket.close();</span>
+<span class="nc" id="L385">            } catch (IOException e) {</span>
+                // Ignored
+            }
+        }
+<span class="fc" id="L389">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NewsgroupInfo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.nntp</a> &gt; <span class="el_source">NewsgroupInfo.java</span></div><h1>NewsgroupInfo.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.nntp;
+
+/***
+ * NewsgroupInfo stores information pertaining to a newsgroup returned by
+ * the NNTP GROUP, LIST, and NEWGROUPS commands, implemented by
+ * {@link org.apache.commons.net.nntp.NNTPClient#selectNewsgroup selectNewsgroup }
+ * ,
+ * {@link org.apache.commons.net.nntp.NNTPClient#listNewsgroups listNewsgroups }
+ * , and
+ * {@link org.apache.commons.net.nntp.NNTPClient#listNewNewsgroups listNewNewsgroups }
+ *  respectively.
+ *
+ * @see NNTPClient
+ ***/
+
+<span class="nc" id="L33">public final class NewsgroupInfo</span>
+{
+    /***
+     * A constant indicating that the posting permission of a newsgroup is
+     * unknown.  For example, the NNTP GROUP command does not return posting
+     * information, so NewsgroupInfo instances obtained from that command
+     * willhave an UNKNOWN_POSTING_PERMISSION.
+     ***/
+    public static final int UNKNOWN_POSTING_PERMISSION = 0;
+
+    /*** A constant indicating that a newsgroup is moderated. ***/
+    public static final int MODERATED_POSTING_PERMISSION = 1;
+
+    /*** A constant indicating that a newsgroup is public and unmoderated. ***/
+    public static final int PERMITTED_POSTING_PERMISSION = 2;
+
+    /***
+     * A constant indicating that a newsgroup is closed for general posting.
+     ***/
+    public static final int PROHIBITED_POSTING_PERMISSION = 3;
+
+    private String __newsgroup;
+    private long __estimatedArticleCount;
+    private long __firstArticle;
+    private long __lastArticle;
+    private int __postingPermission;
+
+    void _setNewsgroup(String newsgroup)
+    {
+<span class="nc" id="L62">        __newsgroup = newsgroup;</span>
+<span class="nc" id="L63">    }</span>
+
+    void _setArticleCount(long count)
+    {
+<span class="nc" id="L67">        __estimatedArticleCount = count;</span>
+<span class="nc" id="L68">    }</span>
+
+    void _setFirstArticle(long first)
+    {
+<span class="nc" id="L72">        __firstArticle = first;</span>
+<span class="nc" id="L73">    }</span>
+
+    void _setLastArticle(long last)
+    {
+<span class="nc" id="L77">        __lastArticle = last;</span>
+<span class="nc" id="L78">    }</span>
+
+    void _setPostingPermission(int permission)
+    {
+<span class="nc" id="L82">        __postingPermission = permission;</span>
+<span class="nc" id="L83">    }</span>
+
+    /***
+     * Get the newsgroup name.
+     * &lt;p&gt;
+     * @return The name of the newsgroup.
+     ***/
+    public String getNewsgroup()
+    {
+<span class="nc" id="L92">        return __newsgroup;</span>
+    }
+
+    /***
+     * Get the estimated number of articles in the newsgroup.  The
+     * accuracy of this value will depend on the server implementation.
+     * &lt;p&gt;
+     * @return The estimated number of articles in the newsgroup.
+     ***/
+    public long getArticleCountLong()
+    {
+<span class="nc" id="L103">        return __estimatedArticleCount;</span>
+    }
+
+    /***
+     * Get the number of the first article in the newsgroup.
+     * &lt;p&gt;
+     * @return The number of the first article in the newsgroup.
+     ***/
+    public long getFirstArticleLong()
+    {
+<span class="nc" id="L113">        return __firstArticle;</span>
+    }
+
+    /***
+     * Get the number of the last article in the newsgroup.
+     * &lt;p&gt;
+     * @return The number of the last article in the newsgroup.
+     ***/
+    public long getLastArticleLong()
+    {
+<span class="nc" id="L123">        return __lastArticle;</span>
+    }
+
+    /***
+     * Get the posting permission of the newsgroup.  This will be one of
+     * the &lt;code&gt; POSTING_PERMISSION &lt;/code&gt; constants.
+     * &lt;p&gt;
+     * @return The posting permission status of the newsgroup.
+     ***/
+    public int getPostingPermission()
+    {
+<span class="nc" id="L134">        return __postingPermission;</span>
+    }
+
+    /*
+    public String toString() {
+      StringBuilder buffer = new StringBuilder();
+      buffer.append(__newsgroup);
+      buffer.append(' ');
+      buffer.append(__lastArticle);
+      buffer.append(' ');
+      buffer.append(__firstArticle);
+      buffer.append(' ');
+      switch(__postingPermission) {
+        case 1: buffer.append('m'); break;
+        case 2: buffer.append('y'); break;
+        case 3: buffer.append('n'); break;
+      }
+      return buffer.toString();
+}
+    */
+
+    // DEPRECATED METHODS - for API compatibility only - DO NOT USE
+
+    @Deprecated
+    public int getArticleCount() {
+<span class="nc" id="L159">        return (int) __estimatedArticleCount;</span>
+    }
+
+    @Deprecated
+    public int getFirstArticle() {
+<span class="nc" id="L164">        return (int) __firstArticle;</span>
+    }
+
+    @Deprecated
+    public int getLastArticle() {
+<span class="nc" id="L169">        return (int) __lastArticle;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

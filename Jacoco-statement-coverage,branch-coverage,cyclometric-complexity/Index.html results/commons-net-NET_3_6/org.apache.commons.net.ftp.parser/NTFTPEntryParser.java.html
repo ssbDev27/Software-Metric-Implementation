@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NTFTPEntryParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp.parser</a> &gt; <span class="el_source">NTFTPEntryParser.java</span></div><h1>NTFTPEntryParser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp.parser;
+import java.text.ParseException;
+import java.util.regex.Pattern;
+
+import org.apache.commons.net.ftp.Configurable;
+import org.apache.commons.net.ftp.FTPClientConfig;
+import org.apache.commons.net.ftp.FTPFile;
+
+/**
+ * Implementation of FTPFileEntryParser and FTPFileListParser for NT Systems.
+ *
+ * @version $Id$
+ * @see org.apache.commons.net.ftp.FTPFileEntryParser FTPFileEntryParser (for usage instructions)
+ */
+public class NTFTPEntryParser extends ConfigurableFTPFileEntryParserImpl
+{
+
+    private static final String DEFAULT_DATE_FORMAT
+        = &quot;MM-dd-yy hh:mma&quot;; //11-09-01 12:30PM
+
+    private static final String DEFAULT_DATE_FORMAT2
+        = &quot;MM-dd-yy kk:mm&quot;; //11-09-01 18:30
+
+    private final FTPTimestampParser timestampParser;
+
+    /**
+     * this is the regular expression used by this parser.
+     */
+    private static final String REGEX =
+        &quot;(\\S+)\\s+(\\S+)\\s+&quot;          // MM-dd-yy whitespace hh:mma|kk:mm; swallow trailing spaces
+        + &quot;(?:(&lt;DIR&gt;)|([0-9]+))\\s+&quot;    // &lt;DIR&gt; or ddddd; swallow trailing spaces
+        + &quot;(\\S.*)&quot;;                    // First non-space followed by rest of line (name)
+
+    /**
+     * The sole constructor for an NTFTPEntryParser object.
+     *
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen
+     * under normal conditions.  It it is seen, this is a sign that
+     * &lt;code&gt;REGEX&lt;/code&gt; is  not a valid regular expression.
+     */
+    public NTFTPEntryParser()
+    {
+<span class="fc" id="L61">        this(null);</span>
+<span class="fc" id="L62">    }</span>
+
+    /**
+     * This constructor allows the creation of an NTFTPEntryParser object
+     * with something other than the default configuration.
+     *
+     * @param config The {@link FTPClientConfig configuration} object used to
+     * configure this parser.
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen
+     * under normal conditions.  It it is seen, this is a sign that
+     * &lt;code&gt;REGEX&lt;/code&gt; is  not a valid regular expression.
+     * @since 1.4
+     */
+     public NTFTPEntryParser(FTPClientConfig config)
+    {
+<span class="fc" id="L78">        super(REGEX, Pattern.DOTALL);</span>
+<span class="fc" id="L79">        configure(config);</span>
+<span class="fc" id="L80">        FTPClientConfig config2 = new FTPClientConfig(</span>
+<span class="fc" id="L81">                FTPClientConfig.SYST_NT,</span>
+<span class="fc" id="L82">                DEFAULT_DATE_FORMAT2,</span>
+<span class="fc" id="L83">                null);</span>
+<span class="fc" id="L84">        config2.setDefaultDateFormatStr(DEFAULT_DATE_FORMAT2);</span>
+<span class="fc" id="L85">        this.timestampParser = new FTPTimestampParserImpl();</span>
+<span class="fc" id="L86">        ((Configurable)this.timestampParser).configure(config2);</span>
+<span class="fc" id="L87">    }</span>
+
+    /**
+     * Parses a line of an NT FTP server file listing and converts it into a
+     * usable format in the form of an &lt;code&gt; FTPFile &lt;/code&gt; instance.  If the
+     * file listing line doesn't describe a file, &lt;code&gt; null &lt;/code&gt; is
+     * returned, otherwise a &lt;code&gt; FTPFile &lt;/code&gt; instance representing the
+     * files in the directory is returned.
+     *
+     * @param entry A line of text from the file listing
+     * @return An FTPFile instance corresponding to the supplied entry
+     */
+    @Override
+    public FTPFile parseFTPEntry(String entry)
+    {
+<span class="fc" id="L102">        FTPFile f = new FTPFile();</span>
+<span class="fc" id="L103">        f.setRawListing(entry);</span>
+
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (matches(entry))</span>
+        {
+<span class="fc" id="L107">            String datestr = group(1)+&quot; &quot;+group(2);</span>
+<span class="fc" id="L108">            String dirString = group(3);</span>
+<span class="fc" id="L109">            String size = group(4);</span>
+<span class="fc" id="L110">            String name = group(5);</span>
+            try
+            {
+<span class="fc" id="L113">                f.setTimestamp(super.parseTimestamp(datestr));</span>
+<span class="fc" id="L114">            }</span>
+<span class="fc" id="L115">            catch (ParseException e)</span>
+            {
+                // parsing fails, try the other date format
+                try
+                {
+<span class="fc" id="L120">                    f.setTimestamp(timestampParser.parseTimestamp(datestr));</span>
+<span class="fc" id="L121">                }</span>
+<span class="fc" id="L122">                catch (ParseException e2)</span>
+                {
+                    // intentionally do nothing
+                }
+            }
+
+<span class="pc bpc" id="L128" title="3 of 6 branches missed.">            if (null == name || name.equals(&quot;.&quot;) || name.equals(&quot;..&quot;))</span>
+            {
+<span class="nc" id="L130">                return (null);</span>
+            }
+<span class="fc" id="L132">            f.setName(name);</span>
+
+
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (&quot;&lt;DIR&gt;&quot;.equals(dirString))</span>
+            {
+<span class="fc" id="L137">                f.setType(FTPFile.DIRECTORY_TYPE);</span>
+<span class="fc" id="L138">                f.setSize(0);</span>
+<span class="fc" id="L139">            }</span>
+            else
+            {
+<span class="fc" id="L142">                f.setType(FTPFile.FILE_TYPE);</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">                if (null != size)</span>
+                {
+<span class="fc" id="L145">                  f.setSize(Long.parseLong(size));</span>
+                }
+            }
+<span class="fc" id="L148">            return (f);</span>
+        }
+<span class="fc" id="L150">        return null;</span>
+    }
+
+    /**
+     * Defines a default configuration to be used when this class is
+     * instantiated without a {@link  FTPClientConfig  FTPClientConfig}
+     * parameter being specified.
+     * @return the default configuration for this parser.
+     */
+    @Override
+    public FTPClientConfig getDefaultConfiguration() {
+<span class="fc" id="L161">        return new FTPClientConfig(</span>
+<span class="fc" id="L162">                FTPClientConfig.SYST_NT,</span>
+<span class="fc" id="L163">                DEFAULT_DATE_FORMAT,</span>
+<span class="fc" id="L164">                null);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

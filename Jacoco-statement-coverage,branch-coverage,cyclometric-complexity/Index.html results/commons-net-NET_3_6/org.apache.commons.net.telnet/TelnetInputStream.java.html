@@ -1,0 +1,681 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TelnetInputStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.telnet</a> &gt; <span class="el_source">TelnetInputStream.java</span></div><h1>TelnetInputStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.telnet;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+
+final class TelnetInputStream extends BufferedInputStream implements Runnable
+{
+    /** End of file has been reached */
+    private static final int EOF = -1;
+
+    /** Read would block */
+    private static final int WOULD_BLOCK = -2;
+
+    // TODO should these be private enums?
+    static final int _STATE_DATA = 0, _STATE_IAC = 1, _STATE_WILL = 2,
+                     _STATE_WONT = 3, _STATE_DO = 4, _STATE_DONT = 5,
+                     _STATE_SB = 6, _STATE_SE = 7, _STATE_CR = 8, _STATE_IAC_SB = 9;
+
+    private boolean __hasReachedEOF; // @GuardedBy(&quot;__queue&quot;)
+    private volatile boolean __isClosed;
+    private boolean __readIsWaiting;
+    private int __receiveState, __queueHead, __queueTail, __bytesAvailable;
+    private final int[] __queue;
+    private final TelnetClient __client;
+    private final Thread __thread;
+    private IOException __ioException;
+
+    /* TERMINAL-TYPE option (start)*/
+<span class="fc" id="L48">    private final int __suboption[] = new int[512];</span>
+<span class="fc" id="L49">    private int __suboption_count = 0;</span>
+    /* TERMINAL-TYPE option (end)*/
+
+    private volatile boolean __threaded;
+
+    TelnetInputStream(InputStream input, TelnetClient client,
+                      boolean readerThread)
+    {
+<span class="fc" id="L57">        super(input);</span>
+<span class="fc" id="L58">        __client = client;</span>
+<span class="fc" id="L59">        __receiveState = _STATE_DATA;</span>
+<span class="fc" id="L60">        __isClosed = true;</span>
+<span class="fc" id="L61">        __hasReachedEOF = false;</span>
+        // Make it 2049, because when full, one slot will go unused, and we
+        // want a 2048 byte buffer just to have a round number (base 2 that is)
+<span class="fc" id="L64">        __queue = new int[2049];</span>
+<span class="fc" id="L65">        __queueHead = 0;</span>
+<span class="fc" id="L66">        __queueTail = 0;</span>
+<span class="fc" id="L67">        __bytesAvailable = 0;</span>
+<span class="fc" id="L68">        __ioException = null;</span>
+<span class="fc" id="L69">        __readIsWaiting = false;</span>
+<span class="fc" id="L70">        __threaded = false;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if(readerThread) {</span>
+<span class="fc" id="L72">            __thread = new Thread(this);</span>
+<span class="fc" id="L73">        } else {</span>
+<span class="fc" id="L74">            __thread = null;</span>
+        }
+<span class="fc" id="L76">    }</span>
+
+    TelnetInputStream(InputStream input, TelnetClient client) {
+<span class="nc" id="L79">        this(input, client, true);</span>
+<span class="nc" id="L80">    }</span>
+
+    void _start()
+    {
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if(__thread == null) {</span>
+<span class="nc" id="L85">            return;</span>
+        }
+
+        int priority;
+<span class="fc" id="L89">        __isClosed = false;</span>
+        // TODO remove this
+        // Need to set a higher priority in case JVM does not use pre-emptive
+        // threads.  This should prevent scheduler induced deadlock (rather than
+        // deadlock caused by a bug in this code).
+<span class="fc" id="L94">        priority = Thread.currentThread().getPriority() + 1;</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (priority &gt; Thread.MAX_PRIORITY) {</span>
+<span class="nc" id="L96">            priority = Thread.MAX_PRIORITY;</span>
+        }
+<span class="fc" id="L98">        __thread.setPriority(priority);</span>
+<span class="fc" id="L99">        __thread.setDaemon(true);</span>
+<span class="fc" id="L100">        __thread.start();</span>
+<span class="fc" id="L101">        __threaded = true; // tell _processChar that we are running threaded</span>
+<span class="fc" id="L102">    }</span>
+
+
+    // synchronized(__client) critical sections are to protect against
+    // TelnetOutputStream writing through the telnet client at same time
+    // as a processDo/Will/etc. command invoked from TelnetInputStream
+    // tries to write.
+    /**
+     * Get the next byte of data.
+     * IAC commands are processed internally and do not return data.
+     *
+     * @param mayBlock true if method is allowed to block
+     * @return the next byte of data,
+     * or -1 (EOF) if end of stread reached,
+     * or -2 (WOULD_BLOCK) if mayBlock is false and there is no data available
+     */
+    private int __read(boolean mayBlock) throws IOException
+    {
+        int ch;
+
+        while (true)
+        {
+
+            // If there is no more data AND we were told not to block,
+            // just return WOULD_BLOCK (-2). (More efficient than exception.)
+<span class="pc bpc" id="L127" title="3 of 4 branches missed.">            if(!mayBlock &amp;&amp; super.available() == 0) {</span>
+<span class="nc" id="L128">                return WOULD_BLOCK;</span>
+            }
+
+            // Otherwise, exit only when we reach end of stream.
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if ((ch = super.read()) &lt; 0) {</span>
+<span class="fc" id="L133">                return EOF;</span>
+            }
+
+<span class="fc" id="L136">            ch = (ch &amp; 0xff);</span>
+
+            /* Code Section added for supporting AYT (start)*/
+<span class="fc" id="L139">            synchronized (__client)</span>
+            {
+<span class="fc" id="L141">                __client._processAYTResponse();</span>
+            }
+            /* Code Section added for supporting AYT (end)*/
+
+            /* Code Section added for supporting spystreams (start)*/
+<span class="fc" id="L146">            __client._spyRead(ch);</span>
+            /* Code Section added for supporting spystreams (end)*/
+
+<span class="pc bpc" id="L149" title="2 of 10 branches missed.">            switch (__receiveState)</span>
+            {
+
+            case _STATE_CR:
+<span class="nc bnc" id="L153" title="All 2 branches missed.">                if (ch == '\0')</span>
+                {
+                    // Strip null
+<span class="nc" id="L156">                    continue;</span>
+                }
+                // How do we handle newline after cr?
+                //  else if (ch == '\n' &amp;&amp; _requestedDont(TelnetOption.ECHO) &amp;&amp;
+
+                // Handle as normal data by falling through to _STATE_DATA case
+
+                //$FALL-THROUGH$
+            case _STATE_DATA:
+<span class="fc bfc" id="L165" title="All 2 branches covered.">                if (ch == TelnetCommand.IAC)</span>
+                {
+<span class="fc" id="L167">                    __receiveState = _STATE_IAC;</span>
+<span class="fc" id="L168">                    continue;</span>
+                }
+
+
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">                if (ch == '\r')</span>
+                {
+<span class="nc" id="L174">                    synchronized (__client)</span>
+                    {
+<span class="nc bnc" id="L176" title="All 2 branches missed.">                        if (__client._requestedDont(TelnetOption.BINARY)) {</span>
+<span class="nc" id="L177">                            __receiveState = _STATE_CR;</span>
+<span class="nc" id="L178">                        } else {</span>
+<span class="nc" id="L179">                            __receiveState = _STATE_DATA;</span>
+                        }
+                    }
+                } else {
+<span class="fc" id="L183">                    __receiveState = _STATE_DATA;</span>
+                }
+<span class="fc" id="L185">                break;</span>
+
+            case _STATE_IAC:
+<span class="pc bpc" id="L188" title="3 of 8 branches missed.">                switch (ch)</span>
+                {
+                case TelnetCommand.WILL:
+<span class="fc" id="L191">                    __receiveState = _STATE_WILL;</span>
+<span class="fc" id="L192">                    continue;</span>
+                case TelnetCommand.WONT:
+<span class="fc" id="L194">                    __receiveState = _STATE_WONT;</span>
+<span class="fc" id="L195">                    continue;</span>
+                case TelnetCommand.DO:
+<span class="fc" id="L197">                    __receiveState = _STATE_DO;</span>
+<span class="fc" id="L198">                    continue;</span>
+                case TelnetCommand.DONT:
+<span class="fc" id="L200">                    __receiveState = _STATE_DONT;</span>
+<span class="fc" id="L201">                    continue;</span>
+                /* TERMINAL-TYPE option (start)*/
+                case TelnetCommand.SB:
+<span class="fc" id="L204">                    __suboption_count = 0;</span>
+<span class="fc" id="L205">                    __receiveState = _STATE_SB;</span>
+<span class="fc" id="L206">                    continue;</span>
+                /* TERMINAL-TYPE option (end)*/
+                case TelnetCommand.IAC:
+<span class="nc" id="L209">                    __receiveState = _STATE_DATA;</span>
+<span class="nc" id="L210">                    break; // exit to enclosing switch to return IAC from read</span>
+                case TelnetCommand.SE: // unexpected byte! ignore it (don't send it as a command)
+<span class="nc" id="L212">                    __receiveState = _STATE_DATA;</span>
+<span class="nc" id="L213">                    continue;</span>
+                default:
+<span class="nc" id="L215">                    __receiveState = _STATE_DATA;</span>
+<span class="nc" id="L216">                    __client._processCommand(ch); // Notify the user</span>
+<span class="nc" id="L217">                    continue; // move on the next char</span>
+                }
+                break; // exit and return from read
+            case _STATE_WILL:
+<span class="fc" id="L221">                synchronized (__client)</span>
+                {
+<span class="fc" id="L223">                    __client._processWill(ch);</span>
+<span class="fc" id="L224">                    __client._flushOutputStream();</span>
+                }
+<span class="fc" id="L226">                __receiveState = _STATE_DATA;</span>
+<span class="fc" id="L227">                continue;</span>
+            case _STATE_WONT:
+<span class="fc" id="L229">                synchronized (__client)</span>
+                {
+<span class="fc" id="L231">                    __client._processWont(ch);</span>
+<span class="fc" id="L232">                    __client._flushOutputStream();</span>
+                }
+<span class="fc" id="L234">                __receiveState = _STATE_DATA;</span>
+<span class="fc" id="L235">                continue;</span>
+            case _STATE_DO:
+<span class="fc" id="L237">                synchronized (__client)</span>
+                {
+<span class="fc" id="L239">                    __client._processDo(ch);</span>
+<span class="fc" id="L240">                    __client._flushOutputStream();</span>
+                }
+<span class="fc" id="L242">                __receiveState = _STATE_DATA;</span>
+<span class="fc" id="L243">                continue;</span>
+            case _STATE_DONT:
+<span class="fc" id="L245">                synchronized (__client)</span>
+                {
+<span class="fc" id="L247">                    __client._processDont(ch);</span>
+<span class="fc" id="L248">                    __client._flushOutputStream();</span>
+                }
+<span class="fc" id="L250">                __receiveState = _STATE_DATA;</span>
+<span class="fc" id="L251">                continue;</span>
+            /* TERMINAL-TYPE option (start)*/
+            case _STATE_SB:
+<span class="fc bfc" id="L254" title="All 2 branches covered.">                switch (ch)</span>
+                {
+                case TelnetCommand.IAC:
+<span class="fc" id="L257">                    __receiveState = _STATE_IAC_SB;</span>
+<span class="fc" id="L258">                    continue;</span>
+                default:
+                    // store suboption char
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">                    if (__suboption_count &lt; __suboption.length) {</span>
+<span class="fc" id="L262">                        __suboption[__suboption_count++] = ch;</span>
+                    }
+                    break;
+                }
+<span class="fc" id="L266">                __receiveState = _STATE_SB;</span>
+<span class="fc" id="L267">                continue;</span>
+            case _STATE_IAC_SB: // IAC received during SB phase
+<span class="pc bpc" id="L269" title="2 of 3 branches missed.">                switch (ch)</span>
+                {
+                case TelnetCommand.SE:
+<span class="fc" id="L272">                    synchronized (__client)</span>
+                    {
+<span class="fc" id="L274">                        __client._processSuboption(__suboption, __suboption_count);</span>
+<span class="fc" id="L275">                        __client._flushOutputStream();</span>
+                    }
+<span class="fc" id="L277">                    __receiveState = _STATE_DATA;</span>
+<span class="fc" id="L278">                    continue;</span>
+                case TelnetCommand.IAC: // De-dup the duplicated IAC
+<span class="nc bnc" id="L280" title="All 2 branches missed.">                    if (__suboption_count &lt; __suboption.length) {</span>
+<span class="nc" id="L281">                        __suboption[__suboption_count++] = ch;</span>
+                    }
+<span class="nc" id="L283">                    break;</span>
+                default:            // unexpected byte! ignore it
+                    break;
+                }
+<span class="nc" id="L287">                __receiveState = _STATE_SB;</span>
+<span class="nc" id="L288">                continue;</span>
+            /* TERMINAL-TYPE option (end)*/
+            }
+
+            break;
+        }
+
+<span class="fc" id="L295">        return ch;</span>
+    }
+
+    // synchronized(__client) critical sections are to protect against
+    // TelnetOutputStream writing through the telnet client at same time
+    // as a processDo/Will/etc. command invoked from TelnetInputStream
+    // tries to write. Returns true if buffer was previously empty.
+    private boolean __processChar(int ch) throws InterruptedException
+    {
+        // Critical section because we're altering __bytesAvailable,
+        // __queueTail, and the contents of _queue.
+        boolean bufferWasEmpty;
+<span class="fc" id="L307">        synchronized (__queue)</span>
+        {
+<span class="fc bfc" id="L309" title="All 2 branches covered.">            bufferWasEmpty = (__bytesAvailable == 0);</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">            while (__bytesAvailable &gt;= __queue.length - 1)</span>
+            {
+                // The queue is full. We need to wait before adding any more data to it. Hopefully the stream owner
+                // will consume some data soon!
+<span class="nc bnc" id="L314" title="All 2 branches missed.">                if(__threaded)</span>
+                {
+<span class="nc" id="L316">                    __queue.notify();</span>
+                    try
+                    {
+<span class="nc" id="L319">                        __queue.wait();</span>
+<span class="nc" id="L320">                    }</span>
+<span class="nc" id="L321">                    catch (InterruptedException e)</span>
+                    {
+<span class="nc" id="L323">                        throw e;</span>
+                    }
+                }
+                else
+                {
+                    // We've been asked to add another character to the queue, but it is already full and there's
+                    // no other thread to drain it. This should not have happened!
+<span class="nc" id="L330">                    throw new IllegalStateException(&quot;Queue is full! Cannot process another character.&quot;);</span>
+                }
+            }
+
+            // Need to do this in case we're not full, but block on a read
+<span class="pc bpc" id="L335" title="1 of 4 branches missed.">            if (__readIsWaiting &amp;&amp; __threaded)</span>
+            {
+<span class="nc" id="L337">                __queue.notify();</span>
+            }
+
+<span class="fc" id="L340">            __queue[__queueTail] = ch;</span>
+<span class="fc" id="L341">            ++__bytesAvailable;</span>
+
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">            if (++__queueTail &gt;= __queue.length) {</span>
+<span class="nc" id="L344">                __queueTail = 0;</span>
+            }
+        }
+<span class="fc" id="L347">        return bufferWasEmpty;</span>
+    }
+
+    @Override
+    public int read() throws IOException
+    {
+        // Critical section because we're altering __bytesAvailable,
+        // __queueHead, and the contents of _queue in addition to
+        // testing value of __hasReachedEOF.
+<span class="fc" id="L356">        synchronized (__queue)</span>
+        {
+
+            while (true)
+            {
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">                if (__ioException != null)</span>
+                {
+                    IOException e;
+<span class="nc" id="L364">                    e = __ioException;</span>
+<span class="nc" id="L365">                    __ioException = null;</span>
+<span class="nc" id="L366">                    throw e;</span>
+                }
+
+<span class="fc bfc" id="L369" title="All 2 branches covered.">                if (__bytesAvailable == 0)</span>
+                {
+                    // Return EOF if at end of file
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">                    if (__hasReachedEOF) {</span>
+<span class="nc" id="L373">                        return EOF;</span>
+                    }
+
+                    // Otherwise, we have to wait for queue to get something
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">                    if(__threaded)</span>
+                    {
+<span class="nc" id="L379">                        __queue.notify();</span>
+                        try
+                        {
+<span class="nc" id="L382">                            __readIsWaiting = true;</span>
+<span class="nc" id="L383">                            __queue.wait();</span>
+<span class="nc" id="L384">                            __readIsWaiting = false;</span>
+<span class="nc" id="L385">                        }</span>
+<span class="nc" id="L386">                        catch (InterruptedException e)</span>
+                        {
+<span class="nc" id="L388">                            throw new InterruptedIOException(&quot;Fatal thread interruption during read.&quot;);</span>
+                        }
+                    }
+                    else
+                    {
+                        //__alreadyread = false;
+<span class="fc" id="L394">                        __readIsWaiting = true;</span>
+                        int ch;
+<span class="fc" id="L396">                        boolean mayBlock = true;    // block on the first read only</span>
+
+<span class="nc bnc" id="L398" title="All 2 branches missed.">                        do</span>
+                        {
+                            try
+                            {
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">                                if ((ch = __read(mayBlock)) &lt; 0) { // must be EOF</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">                                    if(ch != WOULD_BLOCK) {</span>
+<span class="nc" id="L404">                                        return (ch);</span>
+                                    }
+                                }
+                            }
+<span class="nc" id="L408">                            catch (InterruptedIOException e)</span>
+                            {
+<span class="nc" id="L410">                                synchronized (__queue)</span>
+                                {
+<span class="nc" id="L412">                                    __ioException = e;</span>
+<span class="nc" id="L413">                                    __queue.notifyAll();</span>
+                                    try
+                                    {
+<span class="nc" id="L416">                                        __queue.wait(100);</span>
+<span class="nc" id="L417">                                    }</span>
+<span class="nc" id="L418">                                    catch (InterruptedException interrupted)</span>
+                                    {
+                                        // Ignored
+                                    }
+                                }
+<span class="nc" id="L423">                                return EOF;</span>
+                            }
+
+
+                            try
+                            {
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">                                if(ch != WOULD_BLOCK)</span>
+                                {
+<span class="fc" id="L431">                                    __processChar(ch);</span>
+                                }
+<span class="fc" id="L433">                            }</span>
+<span class="nc" id="L434">                            catch (InterruptedException e)</span>
+                            {
+<span class="nc bnc" id="L436" title="All 2 branches missed.">                                if (__isClosed) {</span>
+<span class="nc" id="L437">                                    return EOF;</span>
+                                }
+                            }
+
+                            // Reads should not block on subsequent iterations. Potentially, this could happen if the
+                            // remaining buffered socket data consists entirely of Telnet command sequence and no &quot;user&quot; data.
+<span class="fc" id="L443">                            mayBlock = false;</span>
+
+                        }
+                        // Continue reading as long as there is data available and the queue is not full.
+<span class="pc bpc" id="L447" title="1 of 2 branches missed.">                        while (super.available() &gt; 0 &amp;&amp; __bytesAvailable &lt; __queue.length - 1);</span>
+
+<span class="fc" id="L449">                        __readIsWaiting = false;</span>
+                    }
+<span class="fc" id="L451">                    continue;</span>
+                }
+                else
+                {
+                    int ch;
+
+<span class="fc" id="L457">                    ch = __queue[__queueHead];</span>
+
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">                    if (++__queueHead &gt;= __queue.length) {</span>
+<span class="nc" id="L460">                        __queueHead = 0;</span>
+                    }
+
+<span class="fc" id="L463">                    --__bytesAvailable;</span>
+
+            // Need to explicitly notify() so available() works properly
+<span class="pc bpc" id="L466" title="2 of 4 branches missed.">            if(__bytesAvailable == 0 &amp;&amp; __threaded) {</span>
+<span class="nc" id="L467">                __queue.notify();</span>
+            }
+
+<span class="fc" id="L470">                    return ch;</span>
+                }
+            }
+        }
+    }
+
+
+    /***
+     * Reads the next number of bytes from the stream into an array and
+     * returns the number of bytes read.  Returns -1 if the end of the
+     * stream has been reached.
+     * &lt;p&gt;
+     * @param buffer  The byte array in which to store the data.
+     * @return The number of bytes read. Returns -1 if the
+     *          end of the message has been reached.
+     * @throws IOException If an error occurs in reading the underlying
+     *            stream.
+     ***/
+    @Override
+    public int read(byte buffer[]) throws IOException
+    {
+<span class="nc" id="L491">        return read(buffer, 0, buffer.length);</span>
+    }
+
+
+    /***
+     * Reads the next number of bytes from the stream into an array and returns
+     * the number of bytes read.  Returns -1 if the end of the
+     * message has been reached.  The characters are stored in the array
+     * starting from the given offset and up to the length specified.
+     * &lt;p&gt;
+     * @param buffer The byte array in which to store the data.
+     * @param offset  The offset into the array at which to start storing data.
+     * @param length   The number of bytes to read.
+     * @return The number of bytes read. Returns -1 if the
+     *          end of the stream has been reached.
+     * @throws IOException If an error occurs while reading the underlying
+     *            stream.
+     ***/
+    @Override
+    public int read(byte buffer[], int offset, int length) throws IOException
+    {
+        int ch, off;
+
+<span class="pc bpc" id="L514" title="1 of 2 branches missed.">        if (length &lt; 1) {</span>
+<span class="nc" id="L515">            return 0;</span>
+        }
+
+        // Critical section because run() may change __bytesAvailable
+<span class="fc" id="L519">        synchronized (__queue)</span>
+        {
+<span class="pc bpc" id="L521" title="1 of 2 branches missed.">            if (length &gt; __bytesAvailable) {</span>
+<span class="fc" id="L522">                length = __bytesAvailable;</span>
+            }
+        }
+
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">        if ((ch = read()) == EOF) {</span>
+<span class="nc" id="L527">            return EOF;</span>
+        }
+
+<span class="fc" id="L530">        off = offset;</span>
+
+        do
+        {
+<span class="fc" id="L534">            buffer[offset++] = (byte)ch;</span>
+        }
+<span class="pc bpc" id="L536" title="3 of 4 branches missed.">        while (--length &gt; 0 &amp;&amp; (ch = read()) != EOF);</span>
+
+        //__client._spyRead(buffer, off, offset - off);
+<span class="fc" id="L539">        return (offset - off);</span>
+    }
+
+
+    /*** Returns false.  Mark is not supported. ***/
+    @Override
+    public boolean markSupported()
+    {
+<span class="nc" id="L547">        return false;</span>
+    }
+
+    @Override
+    public int available() throws IOException
+    {
+        // Critical section because run() may change __bytesAvailable
+<span class="fc" id="L554">        synchronized (__queue)</span>
+        {
+<span class="pc bpc" id="L556" title="1 of 2 branches missed.">            if (__threaded) { // Must not call super.available when running threaded: NET-466</span>
+<span class="nc" id="L557">                return __bytesAvailable;</span>
+            } else {
+<span class="fc" id="L559">                return __bytesAvailable + super.available();</span>
+            }
+        }
+    }
+
+
+    // Cannot be synchronized.  Will cause deadlock if run() is blocked
+    // in read because BufferedInputStream read() is synchronized.
+    @Override
+    public void close() throws IOException
+    {
+        // Completely disregard the fact thread may still be running.
+        // We can't afford to block on this close by waiting for
+        // thread to terminate because few if any JVM's will actually
+        // interrupt a system read() from the interrupt() method.
+<span class="fc" id="L574">        super.close();</span>
+
+<span class="fc" id="L576">        synchronized (__queue)</span>
+        {
+<span class="fc" id="L578">            __hasReachedEOF = true;</span>
+<span class="fc" id="L579">            __isClosed      = true;</span>
+
+<span class="fc bfc" id="L581" title="All 4 branches covered.">            if (__thread != null &amp;&amp; __thread.isAlive())</span>
+            {
+<span class="fc" id="L583">                __thread.interrupt();</span>
+            }
+
+<span class="fc" id="L586">            __queue.notifyAll();</span>
+        }
+
+<span class="fc" id="L589">    }</span>
+
+    @Override
+    public void run()
+    {
+        int ch;
+
+        try
+        {
+_outerLoop:
+<span class="pc bpc" id="L599" title="1 of 2 branches missed.">            while (!__isClosed)</span>
+            {
+                try
+                {
+<span class="fc bfc" id="L603" title="All 2 branches covered.">                    if ((ch = __read(true)) &lt; 0) {</span>
+<span class="fc" id="L604">                        break;</span>
+                    }
+                }
+<span class="nc" id="L607">                catch (InterruptedIOException e)</span>
+                {
+<span class="nc" id="L609">                    synchronized (__queue)</span>
+                    {
+<span class="nc" id="L611">                        __ioException = e;</span>
+<span class="nc" id="L612">                        __queue.notifyAll();</span>
+                        try
+                        {
+<span class="nc" id="L615">                            __queue.wait(100);</span>
+<span class="nc" id="L616">                        }</span>
+<span class="nc" id="L617">                        catch (InterruptedException interrupted)</span>
+                        {
+<span class="nc bnc" id="L619" title="All 2 branches missed.">                            if (__isClosed) {</span>
+<span class="nc" id="L620">                                break _outerLoop;</span>
+                            }
+                        }
+<span class="nc" id="L623">                        continue;</span>
+                    }
+<span class="nc" id="L625">                } catch(RuntimeException re) {</span>
+                    // We treat any runtime exceptions as though the
+                    // stream has been closed.  We close the
+                    // underlying stream just to be sure.
+<span class="nc" id="L629">                    super.close();</span>
+                    // Breaking the loop has the effect of setting
+                    // the state to closed at the end of the method.
+<span class="nc" id="L632">                    break _outerLoop;</span>
+                }
+
+                // Process new character
+<span class="fc" id="L636">                boolean notify = false;</span>
+                try
+                {
+<span class="fc" id="L639">                    notify = __processChar(ch);</span>
+<span class="fc" id="L640">                }</span>
+<span class="nc" id="L641">                catch (InterruptedException e)</span>
+                {
+<span class="nc bnc" id="L643" title="All 2 branches missed.">                    if (__isClosed) {</span>
+<span class="nc" id="L644">                        break _outerLoop;</span>
+                    }
+                }
+
+                // Notify input listener if buffer was previously empty
+<span class="fc bfc" id="L649" title="All 2 branches covered.">                if (notify) {</span>
+<span class="fc" id="L650">                    __client.notifyInputListener();</span>
+                }
+            }
+<span class="nc" id="L653">        }</span>
+<span class="fc" id="L654">        catch (IOException ioe)</span>
+        {
+<span class="fc" id="L656">            synchronized (__queue)</span>
+            {
+<span class="fc" id="L658">                __ioException = ioe;</span>
+            }
+<span class="fc" id="L660">            __client.notifyInputListener();</span>
+        }
+
+<span class="fc" id="L663">        synchronized (__queue)</span>
+        {
+<span class="fc" id="L665">            __isClosed      = true; // Possibly redundant</span>
+<span class="fc" id="L666">            __hasReachedEOF = true;</span>
+<span class="fc" id="L667">            __queue.notify();</span>
+        }
+
+<span class="fc" id="L670">        __threaded = false;</span>
+<span class="fc" id="L671">    }</span>
+}
+
+/* Emacs configuration
+ * Local variables:        **
+ * mode:             java  **
+ * c-basic-offset:   4     **
+ * indent-tabs-mode: nil   **
+ * End:                    **
+ */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

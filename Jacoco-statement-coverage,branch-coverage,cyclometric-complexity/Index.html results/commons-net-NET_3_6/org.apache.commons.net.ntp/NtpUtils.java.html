@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NtpUtils.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ntp</a> &gt; <span class="el_source">NtpUtils.java</span></div><h1>NtpUtils.java</h1><pre class="source lang-java linenums">package org.apache.commons.net.ntp;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+/***
+ * Common NtpUtils Helper class.
+ *
+ * @version $Revision$
+ */
+<span class="nc" id="L25">public final class NtpUtils {</span>
+
+    /***
+      * Returns 32-bit integer address to IPv4 address string &quot;%d.%d.%d.%d&quot; format.
+      *
+      * @param address  the 32-bit address
+      * @return  the raw IP address in a string format.
+      */
+     public static String getHostAddress(int address)
+     {
+<span class="nc" id="L35">          return ((address &gt;&gt;&gt; 24) &amp; 0xFF) + &quot;.&quot; +</span>
+<span class="nc" id="L36">                 ((address &gt;&gt;&gt; 16) &amp; 0xFF) + &quot;.&quot; +</span>
+<span class="nc" id="L37">                 ((address &gt;&gt;&gt;  8) &amp; 0xFF) + &quot;.&quot; +</span>
+<span class="nc" id="L38">                 ((address &gt;&gt;&gt;  0) &amp; 0xFF);</span>
+     }
+
+    /***
+     * Returns NTP packet reference identifier as IP address.
+     *
+     * @param packet  NTP packet
+     * @return  the packet reference id (as IP address) in &quot;%d.%d.%d.%d&quot; format.
+     */
+     public static String getRefAddress(NtpV3Packet packet)
+     {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">         int address = (packet == null) ? 0 : packet.getReferenceId();</span>
+<span class="nc" id="L50">         return getHostAddress(address);</span>
+     }
+
+    /***
+     * Get refId as reference clock string (e.g. GPS, WWV, LCL). If string is
+     * invalid (non-ASCII character) then returns empty string &quot;&quot;.
+     * For details refer to the &lt;A HREF=&quot;http://www.eecis.udel.edu/~mills/ntp/html/refclock.html#list&quot;&gt;Comprehensive
+     * List of Clock Drivers&lt;/A&gt;.
+     *
+     * @param message the message to check
+     * @return reference clock string if primary NTP server
+     */
+    public static String getReferenceClock(NtpV3Packet message) {
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (message == null) {</span>
+<span class="nc" id="L64">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L66">        int refId = message.getReferenceId();</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (refId == 0) {</span>
+<span class="nc" id="L68">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L70">        StringBuilder buf = new StringBuilder(4);</span>
+        // start at highest-order byte (0x4c434c00 -&gt; LCL)
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        for (int shiftBits = 24; shiftBits &gt;= 0; shiftBits -= 8)</span>
+        {
+<span class="fc" id="L74">            char c = (char) ((refId &gt;&gt;&gt; shiftBits) &amp; 0xff);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            if (c == 0) { // 0-terminated ASCII string</span>
+<span class="fc" id="L76">                break;</span>
+            }
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">            if (!Character.isLetterOrDigit(c)) {</span>
+<span class="nc" id="L79">                return &quot;&quot;;</span>
+            }
+<span class="fc" id="L81">            buf.append(c);</span>
+        }
+<span class="fc" id="L83">        return buf.toString();</span>
+    }
+
+    /***
+     * Return human-readable name of message mode type (RFC 1305).
+     *
+     * @param mode the mode type
+     * @return mode name
+     */
+    public static String getModeName(int mode)
+    {
+<span class="pc bpc" id="L94" title="7 of 9 branches missed.">        switch (mode) {</span>
+            case NtpV3Packet.MODE_RESERVED:
+<span class="nc" id="L96">                return &quot;Reserved&quot;;</span>
+            case NtpV3Packet.MODE_SYMMETRIC_ACTIVE:
+<span class="nc" id="L98">                return &quot;Symmetric Active&quot;;</span>
+            case NtpV3Packet.MODE_SYMMETRIC_PASSIVE:
+<span class="nc" id="L100">                return &quot;Symmetric Passive&quot;;</span>
+            case NtpV3Packet.MODE_CLIENT:
+<span class="fc" id="L102">                return &quot;Client&quot;;</span>
+            case NtpV3Packet.MODE_SERVER:
+<span class="fc" id="L104">                return &quot;Server&quot;;</span>
+            case NtpV3Packet.MODE_BROADCAST:
+<span class="nc" id="L106">                return &quot;Broadcast&quot;;</span>
+            case NtpV3Packet.MODE_CONTROL_MESSAGE:
+<span class="nc" id="L108">                return &quot;Control&quot;;</span>
+            case NtpV3Packet.MODE_PRIVATE:
+<span class="nc" id="L110">                return &quot;Private&quot;;</span>
+            default:
+<span class="nc" id="L112">                return &quot;Unknown&quot;;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

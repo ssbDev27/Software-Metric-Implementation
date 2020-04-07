@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TelnetOptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.telnet</a> &gt; <span class="el_source">TelnetOptionHandler.java</span></div><h1>TelnetOptionHandler.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.telnet;
+
+/***
+ * The TelnetOptionHandler class is the base class to be used
+ * for implementing handlers for telnet options.
+ * &lt;p&gt;
+ * TelnetOptionHandler implements basic option handling
+ * functionality and defines abstract methods that must be
+ * implemented to define subnegotiation behaviour.
+ ***/
+public abstract class TelnetOptionHandler
+{
+    /***
+     * Option code
+     ***/
+<span class="fc" id="L33">    private int optionCode = -1;</span>
+
+    /***
+     * true if the option should be activated on the local side
+     ***/
+<span class="fc" id="L38">    private boolean initialLocal = false;</span>
+
+    /***
+     * true if the option should be activated on the remote side
+     ***/
+<span class="fc" id="L43">    private boolean initialRemote = false;</span>
+
+    /***
+     * true if the option should be accepted on the local side
+     ***/
+<span class="fc" id="L48">    private boolean acceptLocal = false;</span>
+
+    /***
+     * true if the option should be accepted on the remote side
+     ***/
+<span class="fc" id="L53">    private boolean acceptRemote = false;</span>
+
+    /***
+     * true if the option is active on the local side
+     ***/
+<span class="fc" id="L58">    private boolean doFlag = false;</span>
+
+    /***
+     * true if the option is active on the remote side
+     ***/
+<span class="fc" id="L63">    private boolean willFlag = false;</span>
+
+    /***
+     * Constructor for the TelnetOptionHandler. Allows defining desired
+     * initial setting for local/remote activation of this option and
+     * behaviour in case a local/remote activation request for this
+     * option is received.
+     * &lt;p&gt;
+     * @param optcode - Option code.
+     * @param initlocal - if set to true, a WILL is sent upon connection.
+     * @param initremote - if set to true, a DO is sent upon connection.
+     * @param acceptlocal - if set to true, any DO request is accepted.
+     * @param acceptremote - if set to true, any WILL request is accepted.
+     ***/
+<span class="fc" id="L77">    public TelnetOptionHandler(int optcode,</span>
+                                boolean initlocal,
+                                boolean initremote,
+                                boolean acceptlocal,
+                                boolean acceptremote)
+    {
+<span class="fc" id="L83">        optionCode = optcode;</span>
+<span class="fc" id="L84">        initialLocal = initlocal;</span>
+<span class="fc" id="L85">        initialRemote = initremote;</span>
+<span class="fc" id="L86">        acceptLocal = acceptlocal;</span>
+<span class="fc" id="L87">        acceptRemote = acceptremote;</span>
+<span class="fc" id="L88">    }</span>
+
+
+    /***
+     * Returns the option code for this option.
+     * &lt;p&gt;
+     * @return Option code.
+     ***/
+    public int getOptionCode()
+    {
+<span class="fc" id="L98">        return (optionCode);</span>
+    }
+
+    /***
+     * Returns a boolean indicating whether to accept a DO
+     * request coming from the other end.
+     * &lt;p&gt;
+     * @return true if a DO request shall be accepted.
+     ***/
+    public boolean getAcceptLocal()
+    {
+<span class="fc" id="L109">        return (acceptLocal);</span>
+    }
+
+    /***
+     * Returns a boolean indicating whether to accept a WILL
+     * request coming from the other end.
+     * &lt;p&gt;
+     * @return true if a WILL request shall be accepted.
+     ***/
+    public boolean getAcceptRemote()
+    {
+<span class="fc" id="L120">        return (acceptRemote);</span>
+    }
+
+    /***
+     * Set behaviour of the option for DO requests coming from
+     * the other end.
+     * &lt;p&gt;
+     * @param accept - if true, subsequent DO requests will be accepted.
+     ***/
+    public void setAcceptLocal(boolean accept)
+    {
+<span class="nc" id="L131">        acceptLocal = accept;</span>
+<span class="nc" id="L132">    }</span>
+
+    /***
+     * Set behaviour of the option for WILL requests coming from
+     * the other end.
+     * &lt;p&gt;
+     * @param accept - if true, subsequent WILL requests will be accepted.
+     ***/
+    public void setAcceptRemote(boolean accept)
+    {
+<span class="nc" id="L142">        acceptRemote = accept;</span>
+<span class="nc" id="L143">    }</span>
+
+    /***
+     * Returns a boolean indicating whether to send a WILL request
+     * to the other end upon connection.
+     * &lt;p&gt;
+     * @return true if a WILL request shall be sent upon connection.
+     ***/
+    public boolean getInitLocal()
+    {
+<span class="fc" id="L153">        return (initialLocal);</span>
+    }
+
+    /***
+     * Returns a boolean indicating whether to send a DO request
+     * to the other end upon connection.
+     * &lt;p&gt;
+     * @return true if a DO request shall be sent upon connection.
+     ***/
+    public boolean getInitRemote()
+    {
+<span class="fc" id="L164">        return (initialRemote);</span>
+    }
+
+    /***
+     * Tells this option whether to send a WILL request upon connection.
+     * &lt;p&gt;
+     * @param init - if true, a WILL request will be sent upon subsequent
+     * connections.
+     ***/
+    public void setInitLocal(boolean init)
+    {
+<span class="nc" id="L175">        initialLocal = init;</span>
+<span class="nc" id="L176">    }</span>
+
+    /***
+     * Tells this option whether to send a DO request upon connection.
+     * &lt;p&gt;
+     * @param init - if true, a DO request will be sent upon subsequent
+     * connections.
+     ***/
+    public void setInitRemote(boolean init)
+    {
+<span class="nc" id="L186">        initialRemote = init;</span>
+<span class="nc" id="L187">    }</span>
+
+    /***
+     * Method called upon reception of a subnegotiation for this option
+     * coming from the other end.
+     * &lt;p&gt;
+     * This implementation returns null, and
+     * must be overridden by the actual TelnetOptionHandler to specify
+     * which response must be sent for the subnegotiation request.
+     * &lt;p&gt;
+     * @param suboptionData - the sequence received, without IAC SB &amp;amp; IAC SE
+     * @param suboptionLength - the length of data in suboption_data
+     * &lt;p&gt;
+     * @return response to be sent to the subnegotiation sequence. TelnetClient
+     * will add IAC SB &amp;amp; IAC SE. null means no response
+     ***/
+    public int[] answerSubnegotiation(int suboptionData[], int suboptionLength) {
+<span class="fc" id="L204">        return null;</span>
+    }
+
+    /***
+     * This method is invoked whenever this option is acknowledged active on
+     * the local end (TelnetClient sent a WILL, remote side sent a DO).
+     * The method is used to specify a subnegotiation sequence that will be
+     * sent by TelnetClient when the option is activated.
+     * &lt;p&gt;
+     * This implementation returns null, and must be overriden by
+     * the actual TelnetOptionHandler to specify
+     * which response must be sent for the subnegotiation request.
+     * @return subnegotiation sequence to be sent by TelnetClient. TelnetClient
+     * will add IAC SB &amp;amp; IAC SE. null means no subnegotiation.
+     ***/
+    public int[] startSubnegotiationLocal() {
+<span class="fc" id="L220">        return null;</span>
+    }
+
+    /***
+     * This method is invoked whenever this option is acknowledged active on
+     * the remote end (TelnetClient sent a DO, remote side sent a WILL).
+     * The method is used to specify a subnegotiation sequence that will be
+     * sent by TelnetClient when the option is activated.
+     * &lt;p&gt;
+     * This implementation returns null, and must be overriden by
+     * the actual TelnetOptionHandler to specify
+     * which response must be sent for the subnegotiation request.
+     * @return subnegotiation sequence to be sent by TelnetClient. TelnetClient
+     * will add IAC SB &amp;amp; IAC SE. null means no subnegotiation.
+     ***/
+    public int[] startSubnegotiationRemote() {
+<span class="fc" id="L236">        return null;</span>
+    }
+
+    /***
+     * Returns a boolean indicating whether a WILL request sent to the other
+     * side has been acknowledged.
+     * &lt;p&gt;
+     * @return true if a WILL sent to the other side has been acknowledged.
+     ***/
+    boolean getWill()
+    {
+<span class="fc" id="L247">        return willFlag;</span>
+    }
+
+    /***
+     * Tells this option whether a WILL request sent to the other
+     * side has been acknowledged (invoked by TelnetClient).
+     * &lt;p&gt;
+     * @param state - if true, a WILL request has been acknowledged.
+     ***/
+    void setWill(boolean state)
+    {
+<span class="fc" id="L258">        willFlag = state;</span>
+<span class="fc" id="L259">    }</span>
+
+    /***
+     * Returns a boolean indicating whether a DO request sent to the other
+     * side has been acknowledged.
+     * &lt;p&gt;
+     * @return true if a DO sent to the other side has been acknowledged.
+     ***/
+    boolean getDo()
+    {
+<span class="fc" id="L269">        return doFlag;</span>
+    }
+
+
+    /***
+     * Tells this option whether a DO request sent to the other
+     * side has been acknowledged (invoked by TelnetClient).
+     * &lt;p&gt;
+     * @param state - if true, a DO request has been acknowledged.
+     ***/
+    void setDo(boolean state)
+    {
+<span class="fc" id="L281">        doFlag = state;</span>
+<span class="fc" id="L282">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

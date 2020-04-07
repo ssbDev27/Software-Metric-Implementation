@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TFTPExample.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.ftp</a> &gt; <span class="el_source">TFTPExample.java</span></div><h1>TFTPExample.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.ftp;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import org.apache.commons.net.tftp.TFTP;
+import org.apache.commons.net.tftp.TFTPClient;
+import org.apache.commons.net.tftp.TFTPPacket;
+
+/***
+ * This is an example of a simple Java tftp client.
+ * Notice how all of the code is really just argument processing and
+ * error handling.
+ * &lt;p&gt;
+ * Usage: tftp [options] hostname localfile remotefile
+ * hostname   - The name of the remote host, with optional :port
+ * localfile  - The name of the local file to send or the name to use for
+ *              the received file
+ * remotefile - The name of the remote file to receive or the name for
+ *              the remote server to use to name the local file being sent.
+ * options: (The default is to assume -r -b)
+ *        -s Send a local file
+ *        -r Receive a remote file
+ *        -a Use ASCII transfer mode
+ *        -b Use binary transfer mode
+ ***/
+<span class="nc" id="L48">public final class TFTPExample</span>
+{
+    static final String USAGE =
+        &quot;Usage: tftp [options] hostname localfile remotefile\n\n&quot; +
+        &quot;hostname   - The name of the remote host [:port]\n&quot; +
+        &quot;localfile  - The name of the local file to send or the name to use for\n&quot; +
+        &quot;\tthe received file\n&quot; +
+        &quot;remotefile - The name of the remote file to receive or the name for\n&quot; +
+        &quot;\tthe remote server to use to name the local file being sent.\n\n&quot; +
+        &quot;options: (The default is to assume -r -b)\n&quot; +
+        &quot;\t-t timeout in seconds (default 60s)\n&quot; +
+        &quot;\t-s Send a local file\n&quot; +
+        &quot;\t-r Receive a remote file\n&quot; +
+        &quot;\t-a Use ASCII transfer mode\n&quot; +
+        &quot;\t-b Use binary transfer mode\n&quot; +
+        &quot;\t-v Verbose (trace packets)\n&quot;
+        ;
+
+    public static void main(String[] args)
+    {
+<span class="nc" id="L68">        boolean receiveFile = true, closed;</span>
+<span class="nc" id="L69">        int transferMode = TFTP.BINARY_MODE, argc;</span>
+        String arg, hostname, localFilename, remoteFilename;
+        final TFTPClient tftp;
+<span class="nc" id="L72">        int timeout = 60000;</span>
+<span class="nc" id="L73">        boolean verbose = false;</span>
+
+        // Parse options
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        for (argc = 0; argc &lt; args.length; argc++)</span>
+        {
+<span class="nc" id="L78">            arg = args[argc];</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">            if (arg.startsWith(&quot;-&quot;))</span>
+            {
+<span class="nc bnc" id="L81" title="All 2 branches missed.">                if (arg.equals(&quot;-r&quot;)) {</span>
+<span class="nc" id="L82">                    receiveFile = true;</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">                } else if (arg.equals(&quot;-s&quot;)) {</span>
+<span class="nc" id="L84">                    receiveFile = false;</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                } else if (arg.equals(&quot;-a&quot;)) {</span>
+<span class="nc" id="L86">                    transferMode = TFTP.ASCII_MODE;</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                } else if (arg.equals(&quot;-b&quot;)) {</span>
+<span class="nc" id="L88">                    transferMode = TFTP.BINARY_MODE;</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                } else if (arg.equals(&quot;-t&quot;)) {</span>
+<span class="nc" id="L90">                    timeout = 1000*Integer.parseInt(args[++argc]);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                } else if (arg.equals(&quot;-v&quot;)) {</span>
+<span class="nc" id="L92">                    verbose = true;</span>
+<span class="nc" id="L93">                } else {</span>
+<span class="nc" id="L94">                    System.err.println(&quot;Error: unrecognized option.&quot;);</span>
+<span class="nc" id="L95">                    System.err.print(USAGE);</span>
+<span class="nc" id="L96">                    System.exit(1);</span>
+                }
+            } else {
+                break;
+            }
+        }
+
+        // Make sure there are enough arguments
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (args.length - argc != 3)</span>
+        {
+<span class="nc" id="L106">            System.err.println(&quot;Error: invalid number of arguments.&quot;);</span>
+<span class="nc" id="L107">            System.err.print(USAGE);</span>
+<span class="nc" id="L108">            System.exit(1);</span>
+        }
+
+        // Get host and file arguments
+<span class="nc" id="L112">        hostname = args[argc];</span>
+<span class="nc" id="L113">        localFilename = args[argc + 1];</span>
+<span class="nc" id="L114">        remoteFilename = args[argc + 2];</span>
+
+        // Create our TFTP instance to handle the file transfer.
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (verbose) {</span>
+<span class="nc" id="L118">            tftp = new TFTPClient() {</span>
+                @Override
+                protected void trace(String direction, TFTPPacket packet) {
+<span class="nc" id="L121">                    System.out.println(direction + &quot; &quot; + packet);</span>
+<span class="nc" id="L122">                }</span>
+            };
+<span class="nc" id="L124">        } else {</span>
+<span class="nc" id="L125">            tftp = new TFTPClient();</span>
+        }
+
+        // We want to timeout if a response takes longer than 60 seconds
+<span class="nc" id="L129">        tftp.setDefaultTimeout(timeout);</span>
+
+        // We haven't closed the local file yet.
+<span class="nc" id="L132">        closed = false;</span>
+
+        // If we're receiving a file, receive, otherwise send.
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        if (receiveFile)</span>
+        {
+<span class="nc" id="L137">            closed = receive(transferMode, hostname, localFilename, remoteFilename, tftp);</span>
+<span class="nc" id="L138">        } else {</span>
+            // We're sending a file
+<span class="nc" id="L140">            closed = send(transferMode, hostname, localFilename, remoteFilename, tftp);</span>
+        }
+
+<span class="nc" id="L143">        System.out.println(&quot;Recd: &quot;+tftp.getTotalBytesReceived()+&quot; Sent: &quot;+tftp.getTotalBytesSent());</span>
+
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (!closed) {</span>
+<span class="nc" id="L146">            System.out.println(&quot;Failed&quot;);</span>
+<span class="nc" id="L147">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L150">        System.out.println(&quot;OK&quot;);</span>
+<span class="nc" id="L151">    }</span>
+
+    private static boolean send(int transferMode, String hostname, String localFilename, String remoteFilename,
+            TFTPClient tftp) {
+        boolean closed;
+<span class="nc" id="L156">        FileInputStream input = null;</span>
+
+        // Try to open local file for reading
+        try
+        {
+<span class="nc" id="L161">            input = new FileInputStream(localFilename);</span>
+<span class="nc" id="L162">        }</span>
+<span class="nc" id="L163">        catch (IOException e)</span>
+        {
+<span class="nc" id="L165">            tftp.close();</span>
+<span class="nc" id="L166">            System.err.println(&quot;Error: could not open local file for reading.&quot;);</span>
+<span class="nc" id="L167">            System.err.println(e.getMessage());</span>
+<span class="nc" id="L168">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L171">        open(tftp);</span>
+
+        // Try to send local file via TFTP
+        try
+        {
+<span class="nc" id="L176">            String [] parts = hostname.split(&quot;:&quot;);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            if (parts.length == 2) {</span>
+<span class="nc" id="L178">                tftp.sendFile(remoteFilename, transferMode, input, parts[0], Integer.parseInt(parts[1]));</span>
+<span class="nc" id="L179">            } else {</span>
+<span class="nc" id="L180">                tftp.sendFile(remoteFilename, transferMode, input, hostname);</span>
+            }
+<span class="nc" id="L182">        }</span>
+<span class="nc" id="L183">        catch (UnknownHostException e)</span>
+        {
+<span class="nc" id="L185">            System.err.println(&quot;Error: could not resolve hostname.&quot;);</span>
+<span class="nc" id="L186">            System.err.println(e.getMessage());</span>
+<span class="nc" id="L187">            System.exit(1);</span>
+        }
+<span class="nc" id="L189">        catch (IOException e)</span>
+        {
+<span class="nc" id="L191">            System.err.println(&quot;Error: I/O exception occurred while sending file.&quot;);</span>
+<span class="nc" id="L192">            System.err.println(e.getMessage());</span>
+<span class="nc" id="L193">            System.exit(1);</span>
+        }
+        finally
+        {
+            // Close local socket and input file
+<span class="nc" id="L198">            closed = close(tftp, input);</span>
+        }
+
+<span class="nc" id="L201">        return closed;</span>
+    }
+
+    private static boolean receive(int transferMode, String hostname, String localFilename, String remoteFilename,
+            TFTPClient tftp) {
+        boolean closed;
+<span class="nc" id="L207">        FileOutputStream output = null;</span>
+        File file;
+
+<span class="nc" id="L210">        file = new File(localFilename);</span>
+
+        // If file exists, don't overwrite it.
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (file.exists())</span>
+        {
+<span class="nc" id="L215">            System.err.println(&quot;Error: &quot; + localFilename + &quot; already exists.&quot;);</span>
+<span class="nc" id="L216">            System.exit(1);</span>
+        }
+
+        // Try to open local file for writing
+        try
+        {
+<span class="nc" id="L222">            output = new FileOutputStream(file);</span>
+<span class="nc" id="L223">        }</span>
+<span class="nc" id="L224">        catch (IOException e)</span>
+        {
+<span class="nc" id="L226">            tftp.close();</span>
+<span class="nc" id="L227">            System.err.println(&quot;Error: could not open local file for writing.&quot;);</span>
+<span class="nc" id="L228">            System.err.println(e.getMessage());</span>
+<span class="nc" id="L229">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L232">        open(tftp);</span>
+
+        // Try to receive remote file via TFTP
+        try
+        {
+<span class="nc" id="L237">            String [] parts = hostname.split(&quot;:&quot;);</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">            if (parts.length == 2) {</span>
+<span class="nc" id="L239">                tftp.receiveFile(remoteFilename, transferMode, output, parts[0], Integer.parseInt(parts[1]));</span>
+<span class="nc" id="L240">            } else {</span>
+<span class="nc" id="L241">                tftp.receiveFile(remoteFilename, transferMode, output, hostname);</span>
+            }
+<span class="nc" id="L243">        }</span>
+<span class="nc" id="L244">        catch (UnknownHostException e)</span>
+        {
+<span class="nc" id="L246">            System.err.println(&quot;Error: could not resolve hostname.&quot;);</span>
+<span class="nc" id="L247">            System.err.println(e.getMessage());</span>
+<span class="nc" id="L248">            System.exit(1);</span>
+        }
+<span class="nc" id="L250">        catch (IOException e)</span>
+        {
+<span class="nc" id="L252">            System.err.println(</span>
+<span class="nc" id="L253">                &quot;Error: I/O exception occurred while receiving file.&quot;);</span>
+<span class="nc" id="L254">            System.err.println(e.getMessage());</span>
+<span class="nc" id="L255">            System.exit(1);</span>
+        }
+        finally
+        {
+            // Close local socket and output file
+<span class="nc" id="L260">            closed = close(tftp, output);</span>
+        }
+
+<span class="nc" id="L263">        return closed;</span>
+    }
+
+    private static boolean close(TFTPClient tftp, Closeable output) {
+        boolean closed;
+<span class="nc" id="L268">        tftp.close();</span>
+        try
+        {
+<span class="nc bnc" id="L271" title="All 2 branches missed.">            if (output != null) {</span>
+<span class="nc" id="L272">                output.close();</span>
+            }
+<span class="nc" id="L274">            closed = true;</span>
+<span class="nc" id="L275">        }</span>
+<span class="nc" id="L276">        catch (IOException e)</span>
+        {
+<span class="nc" id="L278">            closed = false;</span>
+<span class="nc" id="L279">            System.err.println(&quot;Error: error closing file.&quot;);</span>
+<span class="nc" id="L280">            System.err.println(e.getMessage());</span>
+        }
+<span class="nc" id="L282">        return closed;</span>
+    }
+
+    private static void open(TFTPClient tftp) {
+        try
+        {
+<span class="nc" id="L288">            tftp.open();</span>
+<span class="nc" id="L289">        }</span>
+<span class="nc" id="L290">        catch (SocketException e)</span>
+        {
+<span class="nc" id="L292">            System.err.println(&quot;Error: could not open local UDP socket.&quot;);</span>
+<span class="nc" id="L293">            System.err.println(e.getMessage());</span>
+<span class="nc" id="L294">            System.exit(1);</span>
+        }
+<span class="nc" id="L296">    }</span>
+
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IMAPMail.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.mail</a> &gt; <span class="el_source">IMAPMail.java</span></div><h1>IMAPMail.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.mail;
+
+import java.io.IOException;
+import java.net.URI;
+
+import org.apache.commons.net.PrintCommandListener;
+import org.apache.commons.net.imap.IMAPClient;
+
+/**
+ * This is an example program demonstrating how to use the IMAP[S]Client class.
+ * This program connects to a IMAP[S] server, lists its capabilities and shows
+ * the status of the Inbox.
+ * &lt;p&gt;
+ * Usage: IMAPMail imap[s]://username:password@server/
+ * &lt;p&gt;
+ * For example&lt;br&gt;
+ * IMAPMail imaps://username:password@imap.mail.yahoo.com/&lt;br&gt;
+ * or&lt;br&gt;
+ * IMAPMail imaps://username:password@imap.googlemail.com/
+ */
+<span class="nc" id="L38">public final class IMAPMail</span>
+{
+
+    public static void main(String[] args) throws IOException {
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        if (args.length != 1)</span>
+        {
+<span class="nc" id="L44">            System.err.println(</span>
+<span class="nc" id="L45">                &quot;Usage: IMAPMail imap[s]://username:password@server/&quot;);</span>
+<span class="nc" id="L46">            System.err.println(&quot;Connects to server; lists capabilities and shows Inbox status&quot;);</span>
+<span class="nc" id="L47">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L50">        URI uri = URI.create(args[0]);</span>
+
+        // Connect and login
+<span class="nc" id="L53">        final IMAPClient imap = IMAPUtils.imapLogin(uri, 10000, null);</span>
+
+        // suppress login details
+<span class="nc" id="L56">        imap.addProtocolCommandListener(new PrintCommandListener(System.out, true));</span>
+
+        try {
+<span class="nc" id="L59">            imap.setSoTimeout(6000);</span>
+
+<span class="nc" id="L61">            imap.capability();</span>
+
+<span class="nc" id="L63">            imap.select(&quot;inbox&quot;);</span>
+
+<span class="nc" id="L65">            imap.examine(&quot;inbox&quot;);</span>
+
+<span class="nc" id="L67">            imap.status(&quot;inbox&quot;, new String[]{&quot;MESSAGES&quot;});</span>
+
+<span class="nc" id="L69">        } catch (IOException e) {</span>
+<span class="nc" id="L70">            System.out.println(imap.getReplyString());</span>
+<span class="nc" id="L71">            e.printStackTrace();</span>
+<span class="nc" id="L72">            System.exit(10);</span>
+<span class="nc" id="L73">            return;</span>
+        } finally {
+<span class="nc" id="L75">            imap.logout();</span>
+<span class="nc" id="L76">            imap.disconnect();</span>
+        }
+<span class="nc" id="L78">    }</span>
+}
+
+/* kate: indent-width 4; replace-tabs on; */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

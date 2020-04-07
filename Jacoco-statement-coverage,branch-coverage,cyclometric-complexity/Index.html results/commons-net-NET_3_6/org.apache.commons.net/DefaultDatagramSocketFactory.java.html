@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultDatagramSocketFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net</a> &gt; <span class="el_source">DefaultDatagramSocketFactory.java</span></div><h1>DefaultDatagramSocketFactory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net;
+
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+
+/***
+ * DefaultDatagramSocketFactory implements the DatagramSocketFactory
+ * interface by simply wrapping the java.net.DatagramSocket
+ * constructors.  It is the default DatagramSocketFactory used by
+ * {@link org.apache.commons.net.DatagramSocketClient}
+ *  implementations.
+ *
+ *
+ * @see DatagramSocketFactory
+ * @see DatagramSocketClient
+ * @see DatagramSocketClient#setDatagramSocketFactory
+ ***/
+
+<span class="fc" id="L37">public class DefaultDatagramSocketFactory implements DatagramSocketFactory</span>
+{
+
+    /***
+     * Creates a DatagramSocket on the local host at the first available port.
+     * @return a new DatagramSocket
+     * @throws SocketException If the socket could not be created.
+     ***/
+    @Override
+    public DatagramSocket createDatagramSocket() throws SocketException
+    {
+<span class="fc" id="L48">        return new DatagramSocket();</span>
+    }
+
+    /***
+     * Creates a DatagramSocket on the local host at a specified port.
+     *
+     * @param port The port to use for the socket.
+     * @return a new DatagramSocket
+     * @throws SocketException If the socket could not be created.
+     ***/
+    @Override
+    public DatagramSocket createDatagramSocket(int port) throws SocketException
+    {
+<span class="fc" id="L61">        return new DatagramSocket(port);</span>
+    }
+
+    /***
+     * Creates a DatagramSocket at the specified address on the local host
+     * at a specified port.
+     *
+     * @param port The port to use for the socket.
+     * @param laddr  The local address to use.
+     * @return a new DatagramSocket
+     * @throws SocketException If the socket could not be created.
+     ***/
+    @Override
+    public DatagramSocket createDatagramSocket(int port, InetAddress laddr)
+    throws SocketException
+    {
+<span class="nc" id="L77">        return new DatagramSocket(port, laddr);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

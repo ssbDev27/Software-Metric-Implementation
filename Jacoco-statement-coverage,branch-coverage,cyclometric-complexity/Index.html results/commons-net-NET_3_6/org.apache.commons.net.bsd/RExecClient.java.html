@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RExecClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.bsd</a> &gt; <span class="el_source">RExecClient.java</span></div><h1>RExecClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.bsd;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+import org.apache.commons.net.SocketClient;
+import org.apache.commons.net.io.SocketInputStream;
+
+/***
+ * RExecClient implements the rexec() facility that first appeared in
+ * 4.2BSD Unix.  This class will probably only be of use for connecting
+ * to Unix systems and only when the rexecd daemon is configured to run,
+ * which is a rarity these days because of the security risks involved.
+ * However, rexec() can be very useful for performing administrative tasks
+ * on a network behind a firewall.
+ * &lt;p&gt;
+ * As with virtually all of the client classes in org.apache.commons.net, this
+ * class derives from SocketClient, inheriting its connection methods.
+ * The way to use RExecClient is to first connect
+ * to the server, call the {@link #rexec  rexec()} method, and then
+ * fetch the connection's input, output, and optionally error streams.
+ * Interaction with the remote command is controlled entirely through the
+ * I/O streams.  Once you have finished processing the streams, you should
+ * invoke {@link #disconnect  disconnect()} to clean up properly.
+ * &lt;p&gt;
+ * By default the standard output and standard error streams of the
+ * remote process are transmitted over the same connection, readable
+ * from the input stream returned by
+ * {@link #getInputStream  getInputStream()}.  However, it is
+ * possible to tell the rexecd daemon to return the standard error
+ * stream over a separate connection, readable from the input stream
+ * returned by {@link #getErrorStream  getErrorStream()}.  You
+ * can specify that a separate connection should be created for standard
+ * error by setting the boolean &lt;code&gt; separateErrorStream &lt;/code&gt;
+ * parameter of {@link #rexec  rexec()} to &lt;code&gt; true &lt;/code&gt;.
+ * The standard input of the remote process can be written to through
+ * the output stream returned by
+ * {@link #getOutputStream  getOutputSream()}.
+ *
+ * @see SocketClient
+ * @see RCommandClient
+ * @see RLoginClient
+ ***/
+
+public class RExecClient extends SocketClient
+{
+    /**
+     * @since 3.3
+     */
+    protected static final char NULL_CHAR = '\0';
+
+    /***
+     * The default rexec port.  Set to 512 in BSD Unix.
+     ***/
+    public static final int DEFAULT_PORT = 512;
+
+    private boolean __remoteVerificationEnabled;
+
+    /***
+     * If a separate error stream is requested, &lt;code&gt;_errorStream_&lt;/code&gt;
+     * will point to an InputStream from which the standard error of the
+     * remote process can be read (after a call to rexec()).  Otherwise,
+     * &lt;code&gt; _errorStream_ &lt;/code&gt; will be null.
+     ***/
+    protected InputStream _errorStream_;
+
+    // This can be overridden in local package to implement port range
+    // limitations of rcmd and rlogin
+    InputStream _createErrorStream() throws IOException
+    {
+        ServerSocket server;
+        Socket socket;
+
+<span class="nc" id="L94">        server = _serverSocketFactory_.createServerSocket(0, 1, getLocalAddress());</span>
+
+<span class="nc" id="L96">        _output_.write(Integer.toString(server.getLocalPort()).getBytes(&quot;UTF-8&quot;)); // $NON-NLS-1$</span>
+<span class="nc" id="L97">        _output_.write(NULL_CHAR);</span>
+<span class="nc" id="L98">        _output_.flush();</span>
+
+<span class="nc" id="L100">        socket = server.accept();</span>
+<span class="nc" id="L101">        server.close();</span>
+
+<span class="nc bnc" id="L103" title="All 4 branches missed.">        if (__remoteVerificationEnabled &amp;&amp; !verifyRemote(socket))</span>
+        {
+<span class="nc" id="L105">            socket.close();</span>
+<span class="nc" id="L106">            throw new IOException(</span>
+<span class="nc" id="L107">                &quot;Security violation: unexpected connection attempt by &quot; +</span>
+<span class="nc" id="L108">                socket.getInetAddress().getHostAddress());</span>
+        }
+
+<span class="nc" id="L111">        return (new SocketInputStream(socket, socket.getInputStream()));</span>
+    }
+
+
+    /***
+     * The default RExecClient constructor.  Initializes the
+     * default port to &lt;code&gt; DEFAULT_PORT &lt;/code&gt;.
+     ***/
+<span class="nc" id="L119">    public RExecClient()</span>
+    {
+<span class="nc" id="L121">        _errorStream_ = null;</span>
+<span class="nc" id="L122">        setDefaultPort(DEFAULT_PORT);</span>
+<span class="nc" id="L123">    }</span>
+
+
+    /***
+     * Returns the InputStream from which the standard output of the remote
+     * process can be read.  The input stream will only be set after a
+     * successful rexec() invocation.
+     *
+     * @return The InputStream from which the standard output of the remote
+     * process can be read.
+     ***/
+    public InputStream getInputStream()
+    {
+<span class="nc" id="L136">        return _input_;</span>
+    }
+
+
+    /***
+     * Returns the OutputStream through which the standard input of the remote
+     * process can be written.  The output stream will only be set after a
+     * successful rexec() invocation.
+     *
+     * @return The OutputStream through which the standard input of the remote
+     * process can be written.
+     ***/
+    public OutputStream getOutputStream()
+    {
+<span class="nc" id="L150">        return _output_;</span>
+    }
+
+
+    /***
+     * Returns the InputStream from which the standard error of the remote
+     * process can be read if a separate error stream is requested from
+     * the server.  Otherwise, null will be returned.  The error stream
+     * will only be set after a successful rexec() invocation.
+     *
+     * @return The InputStream from which the standard error of the remote
+     * process can be read if a separate error stream is requested from
+     * the server.  Otherwise, null will be returned.
+     ***/
+    public InputStream getErrorStream()
+    {
+<span class="nc" id="L166">        return _errorStream_;</span>
+    }
+
+
+    /***
+     * Remotely executes a command through the rexecd daemon on the server
+     * to which the RExecClient is connected.  After calling this method,
+     * you may interact with the remote process through its standard input,
+     * output, and error streams.  You will typically be able to detect
+     * the termination of the remote process after reaching end of file
+     * on its standard output (accessible through
+     * {@link #getInputStream  getInputStream() }.    Disconnecting
+     * from the server or closing the process streams before reaching
+     * end of file will not necessarily terminate the remote process.
+     * &lt;p&gt;
+     * If a separate error stream is requested, the remote server will
+     * connect to a local socket opened by RExecClient, providing an
+     * independent stream through which standard error will be transmitted.
+     * RExecClient will do a simple security check when it accepts a
+     * connection for this error stream.  If the connection does not originate
+     * from the remote server, an IOException will be thrown.  This serves as
+     * a simple protection against possible hijacking of the error stream by
+     * an attacker monitoring the rexec() negotiation.  You may disable this
+     * behavior with {@link #setRemoteVerificationEnabled setRemoteVerificationEnabled()}
+     * .
+     *
+     * @param username  The account name on the server through which to execute
+     *                  the command.
+     * @param password  The plain text password of the user account.
+     * @param command   The command, including any arguments, to execute.
+     * @param separateErrorStream True if you would like the standard error
+     *        to be transmitted through a different stream than standard output.
+     *        False if not.
+     * @throws IOException If the rexec() attempt fails.  The exception
+     *            will contain a message indicating the nature of the failure.
+     ***/
+    public void rexec(String username, String password,
+                      String command, boolean separateErrorStream)
+    throws IOException
+    {
+        int ch;
+
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        if (separateErrorStream)</span>
+        {
+<span class="nc" id="L210">            _errorStream_ = _createErrorStream();</span>
+<span class="nc" id="L211">        }</span>
+        else
+        {
+<span class="nc" id="L214">            _output_.write(NULL_CHAR);</span>
+        }
+
+<span class="nc" id="L217">        _output_.write(username.getBytes(getCharset()));</span>
+<span class="nc" id="L218">        _output_.write(NULL_CHAR);</span>
+<span class="nc" id="L219">        _output_.write(password.getBytes(getCharset()));</span>
+<span class="nc" id="L220">        _output_.write(NULL_CHAR);</span>
+<span class="nc" id="L221">        _output_.write(command.getBytes(getCharset()));</span>
+<span class="nc" id="L222">        _output_.write(NULL_CHAR);</span>
+<span class="nc" id="L223">        _output_.flush();</span>
+
+<span class="nc" id="L225">        ch = _input_.read();</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (ch &gt; 0) {</span>
+<span class="nc" id="L227">            StringBuilder buffer = new StringBuilder();</span>
+
+<span class="nc bnc" id="L229" title="All 4 branches missed.">            while ((ch = _input_.read()) != -1 &amp;&amp; ch != '\n') {</span>
+<span class="nc" id="L230">                buffer.append((char)ch);</span>
+            }
+
+<span class="nc" id="L233">            throw new IOException(buffer.toString());</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        } else if (ch &lt; 0) {</span>
+<span class="nc" id="L235">            throw new IOException(&quot;Server closed connection.&quot;);</span>
+        }
+<span class="nc" id="L237">    }</span>
+
+
+    /***
+     * Same as &lt;code&gt; rexec(username, password, command, false); &lt;/code&gt;
+     * @param username the user name
+     * @param password the password
+     * @param command the command to run
+     * @throws IOException if an error occurs
+     ***/
+    public void rexec(String username, String password,
+                      String command)
+    throws IOException
+    {
+<span class="nc" id="L251">        rexec(username, password, command, false);</span>
+<span class="nc" id="L252">    }</span>
+
+    /***
+     * Disconnects from the server, closing all associated open sockets and
+     * streams.
+     *
+     * @throws IOException If there an error occurs while disconnecting.
+     ***/
+    @Override
+    public void disconnect() throws IOException
+    {
+<span class="nc bnc" id="L263" title="All 2 branches missed.">        if (_errorStream_ != null) {</span>
+<span class="nc" id="L264">            _errorStream_.close();</span>
+        }
+<span class="nc" id="L266">        _errorStream_ = null;</span>
+<span class="nc" id="L267">        super.disconnect();</span>
+<span class="nc" id="L268">    }</span>
+
+
+    /***
+     * Enable or disable verification that the remote host connecting to
+     * create a separate error stream is the same as the host to which
+     * the standard out stream is connected.  The default is for verification
+     * to be enabled.  You may set this value at any time, whether the
+     * client is currently connected or not.
+     *
+     * @param enable True to enable verification, false to disable verification.
+     ***/
+    public final void setRemoteVerificationEnabled(boolean enable)
+    {
+<span class="nc" id="L282">        __remoteVerificationEnabled = enable;</span>
+<span class="nc" id="L283">    }</span>
+
+    /***
+     * Return whether or not verification of the remote host providing a
+     * separate error stream is enabled.  The default behavior is for
+     * verification to be enabled.
+     *
+     * @return True if verification is enabled, false if not.
+     ***/
+    public final boolean isRemoteVerificationEnabled()
+    {
+<span class="nc" id="L294">        return __remoteVerificationEnabled;</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

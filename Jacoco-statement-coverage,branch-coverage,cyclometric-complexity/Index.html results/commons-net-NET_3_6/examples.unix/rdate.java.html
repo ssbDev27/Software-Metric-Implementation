@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>rdate.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.unix</a> &gt; <span class="el_source">rdate.java</span></div><h1>rdate.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.unix;
+
+import java.io.IOException;
+import java.net.InetAddress;
+
+import org.apache.commons.net.time.TimeTCPClient;
+import org.apache.commons.net.time.TimeUDPClient;
+
+/***
+ * This is an example program demonstrating how to use the TimeTCPClient
+ * and TimeUDPClient classes.  It's very similar to the simple Unix rdate
+ * command.  This program connects to the default time service port of a
+ * specified server, retrieves the time, and prints it to standard output.
+ * The default is to use the TCP port.  Use the -udp flag to use the UDP
+ * port.  You can test this program by using the NIST time server at
+ * 132.163.135.130 (warning: the IP address may change).
+ * &lt;p&gt;
+ * Usage: rdate [-udp] &lt;hostname&gt;
+ ***/
+<span class="nc" id="L37">public final class rdate</span>
+{
+
+    public static final void timeTCP(String host) throws IOException
+    {
+<span class="nc" id="L42">        TimeTCPClient client = new TimeTCPClient();</span>
+
+        // We want to timeout if a response takes longer than 60 seconds
+<span class="nc" id="L45">        client.setDefaultTimeout(60000);</span>
+<span class="nc" id="L46">        client.connect(host);</span>
+<span class="nc" id="L47">        System.out.println(client.getDate().toString());</span>
+<span class="nc" id="L48">        client.disconnect();</span>
+<span class="nc" id="L49">    }</span>
+
+    public static final void timeUDP(String host) throws IOException
+    {
+<span class="nc" id="L53">        TimeUDPClient client = new TimeUDPClient();</span>
+
+        // We want to timeout if a response takes longer than 60 seconds
+<span class="nc" id="L56">        client.setDefaultTimeout(60000);</span>
+<span class="nc" id="L57">        client.open();</span>
+<span class="nc" id="L58">        System.out.println(client.getDate(InetAddress.getByName(host)).toString());</span>
+<span class="nc" id="L59">        client.close();</span>
+<span class="nc" id="L60">    }</span>
+
+
+    public static void main(String[] args)
+    {
+
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (args.length == 1)</span>
+        {
+            try
+            {
+<span class="nc" id="L70">                timeTCP(args[0]);</span>
+<span class="nc" id="L71">            }</span>
+<span class="nc" id="L72">            catch (IOException e)</span>
+            {
+<span class="nc" id="L74">                e.printStackTrace();</span>
+<span class="nc" id="L75">                System.exit(1);</span>
+            }
+<span class="nc" id="L77">        }</span>
+<span class="nc bnc" id="L78" title="All 4 branches missed.">        else if (args.length == 2 &amp;&amp; args[0].equals(&quot;-udp&quot;))</span>
+        {
+            try
+            {
+<span class="nc" id="L82">                timeUDP(args[1]);</span>
+<span class="nc" id="L83">            }</span>
+<span class="nc" id="L84">            catch (IOException e)</span>
+            {
+<span class="nc" id="L86">                e.printStackTrace();</span>
+<span class="nc" id="L87">                System.exit(1);</span>
+            }
+<span class="nc" id="L89">        }</span>
+        else
+        {
+<span class="nc" id="L92">            System.err.println(&quot;Usage: rdate [-udp] &lt;hostname&gt;&quot;);</span>
+<span class="nc" id="L93">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L96">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IMAPReply.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.imap</a> &gt; <span class="el_source">IMAPReply.java</span></div><h1>IMAPReply.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.imap;
+
+import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.net.MalformedServerReplyException;
+
+/**
+ * IMAPReply stores IMAP reply code constants.
+ */
+
+public final class IMAPReply
+{
+    /** The reply code indicating success of an operation. */
+    public static final int OK = 0;
+
+    /** The reply code indicating failure of an operation. */
+    public static final int NO = 1;
+
+    /** The reply code indicating command rejection. */
+    public static final int BAD = 2;
+
+    /** The reply code indicating command continuation. */
+    public static final int CONT = 3;
+
+    /**
+     * The reply code indicating a partial response.
+     * This is used when a chunk listener is registered and the listener
+     * requests that the reply lines are cleared on return.
+     * @since 3.4
+     */
+    public static final int PARTIAL = 3;
+
+    /** The IMAP reply String indicating success of an operation. */
+    private static final String IMAP_OK = &quot;OK&quot;;
+
+    /** The IMAP reply String indicating failure of an operation. */
+    private static final String IMAP_NO = &quot;NO&quot;;
+
+    /** The IMAP reply String indicating command rejection. */
+    private static final String IMAP_BAD = &quot;BAD&quot;;
+
+    // Start of line for untagged replies
+    private static final String IMAP_UNTAGGED_PREFIX = &quot;* &quot;;
+
+    // Start of line for continuation replies
+    private static final String IMAP_CONTINUATION_PREFIX = &quot;+&quot;;
+
+    // Cannot be instantiated.
+    private IMAPReply()
+    {}
+
+    /**
+     * Checks if the reply line is untagged - e.g. &quot;* OK ...&quot;
+     * @param line to be checked
+     * @return {@code true} if the line is untagged
+     */
+    public static boolean isUntagged(String line) {
+<span class="nc" id="L77">        return line.startsWith(IMAP_UNTAGGED_PREFIX);</span>
+    }
+
+    /**
+     * Checks if the reply line is a continuation, i.e. starts with &quot;+&quot;
+     * @param line the line to be checked
+     * @return {@code true} if the line is untagged
+     */
+    public static boolean isContinuation(String line) {
+<span class="nc" id="L86">        return line.startsWith(IMAP_CONTINUATION_PREFIX);</span>
+    }
+
+    private static final String TAGGED_RESPONSE = &quot;^\\w+ (\\S+).*&quot;; // TODO perhaps be less strict on tag match?
+    // tag cannot contain: + ( ) { SP CTL % * &quot; \ ]
+<span class="nc" id="L91">    private static final Pattern TAGGED_PATTERN = Pattern.compile(TAGGED_RESPONSE);</span>
+
+    /**
+     * Intepret the String reply code - OK, NO, BAD - in a tagged response as a integer.
+     *
+     * @param line the tagged line to be checked
+     * @return {@link #OK} or {@link #NO} or {@link #BAD} or {@link #CONT}
+     * @throws IOException if the input has an unexpected format
+     */
+    public static int getReplyCode(String line) throws IOException {
+<span class="nc" id="L101">        return getReplyCode(line, TAGGED_PATTERN);</span>
+    }
+
+    private static final String UNTAGGED_RESPONSE = &quot;^\\* (\\S+).*&quot;;
+<span class="nc" id="L105">    private static final Pattern UNTAGGED_PATTERN = Pattern.compile(UNTAGGED_RESPONSE);</span>
+
+<span class="nc" id="L107">    private static final Pattern LITERAL_PATTERN = Pattern.compile(&quot;\\{(\\d+)\\}$&quot;); // {dd}</span>
+
+    /**
+     * Checks if the line introduces a literal, i.e. ends with {dd}
+     * @param line the line to check
+     *
+     * @return the literal count, or -1 if there was no literal.
+     */
+    public static int literalCount(String line) {
+<span class="nc" id="L116">        Matcher m = LITERAL_PATTERN.matcher(line);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (m.find()) {</span>
+<span class="nc" id="L118">            return Integer.parseInt(m.group(1)); // Should always parse because we matched \d+</span>
+        }
+<span class="nc" id="L120">        return -1;</span>
+    }
+
+    /**
+     * Intepret the String reply code - OK, NO, BAD - in an untagged response as a integer.
+     *
+     * @param line the untagged line to be checked
+     * @return {@link #OK} or {@link #NO} or {@link #BAD} or {@link #CONT}
+     * @throws IOException if the input has an unexpected format
+     */
+    public static int getUntaggedReplyCode(String line) throws IOException {
+<span class="nc" id="L131">        return getReplyCode(line, UNTAGGED_PATTERN);</span>
+    }
+
+    // Helper method to process both tagged and untagged replies.
+    private static int getReplyCode(String line, Pattern pattern) throws IOException{
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (isContinuation(line)) {</span>
+<span class="nc" id="L137">            return CONT;</span>
+        }
+<span class="nc" id="L139">        Matcher m = pattern.matcher(line);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (m.matches()) { // TODO would lookingAt() be more efficient? If so, then drop trailing .* from patterns</span>
+<span class="nc" id="L141">            String code = m.group(1);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            if (code.equals(IMAP_OK)) {</span>
+<span class="nc" id="L143">                return OK;</span>
+            }
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            if (code.equals(IMAP_BAD)) {</span>
+<span class="nc" id="L146">                return BAD;</span>
+            }
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (code.equals(IMAP_NO)) {</span>
+<span class="nc" id="L149">                return NO;</span>
+            }
+        }
+<span class="nc" id="L152">        throw new MalformedServerReplyException(</span>
+<span class="nc" id="L153">            &quot;Received unexpected IMAP protocol response from server: '&quot; + line + &quot;'.&quot;);</span>
+    }
+
+    /**
+     * Checks whether the reply code indicates success or not
+     *
+     * @param replyCode the code to check
+     * @return {@code true} if the code equals {@link #OK}
+     */
+    public static boolean isSuccess(int replyCode) {
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        return replyCode == OK;</span>
+    }
+    /**
+     * Checks if the reply line is a continuation, i.e. starts with &quot;+&quot;
+     * @param replyCode the code to be checked
+     * @return {@code true} if the response was a continuation
+     */
+    public static boolean isContinuation(int replyCode) {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        return replyCode == CONT;</span>
+    }
+
+}
+
+/* kate: indent-width 4; replace-tabs on; */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

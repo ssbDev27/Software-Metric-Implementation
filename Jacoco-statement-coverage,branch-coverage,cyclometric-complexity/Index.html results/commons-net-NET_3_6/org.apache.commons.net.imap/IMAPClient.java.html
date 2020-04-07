@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IMAPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.imap</a> &gt; <span class="el_source">IMAPClient.java</span></div><h1>IMAPClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.imap;
+
+import java.io.IOException;
+
+/**
+ * The IMAPClient class provides the basic functionalities found in an
+ * IMAP client.
+ */
+<span class="nc" id="L26">public class IMAPClient extends IMAP</span>
+{
+
+    private static final char DQUOTE = '&quot;';
+    private static final String DQUOTE_S = &quot;\&quot;&quot;;
+
+    // --------- commands available in all states
+
+    /**
+     * Send a CAPABILITY command to the server.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs
+     */
+    public boolean capability() throws IOException
+    {
+<span class="nc" id="L41">        return doCommand (IMAPCommand.CAPABILITY);</span>
+    }
+
+    /**
+     * Send a NOOP command to the server.  This is useful for keeping
+     * a connection alive since most IMAP servers will timeout after 10
+     * minutes of inactivity.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean noop() throws IOException
+    {
+<span class="nc" id="L53">        return doCommand (IMAPCommand.NOOP);</span>
+    }
+
+    /**
+     * Send a LOGOUT command to the server.  To fully disconnect from the server
+     * you must call disconnect().
+     * A logout attempt is valid in any state.  If
+     * the client is in the not authenticated or authenticated state, it enters the
+     * logout on a successful logout.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean logout() throws IOException
+    {
+<span class="nc" id="L67">        return doCommand (IMAPCommand.LOGOUT);</span>
+    }
+
+    // --------- commands available in the not-authenticated state
+    // STARTTLS skipped - see IMAPSClient.
+    // AUTHENTICATE skipped - see AuthenticatingIMAPClient.
+
+    /**
+     * Login to the IMAP server with the given username and password.  You
+     * must first connect to the server with
+     * {@link org.apache.commons.net.SocketClient#connect  connect }
+     * before attempting to login.  A login attempt is only valid if
+     * the client is in the NOT_AUTH_STATE.
+     * After logging in, the client enters the AUTH_STATE.
+     *
+     * @param username  The account name being logged in to.
+     * @param password  The plain text password of the account.
+     * @return True if the login attempt was successful, false if not.
+     * @throws IOException If a network I/O error occurs in the process of
+     *            logging in.
+     */
+    public boolean login(String username, String password) throws IOException
+    {
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (getState() != IMAP.IMAPState.NOT_AUTH_STATE)</span>
+        {
+<span class="nc" id="L92">            return false;</span>
+        }
+
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (!doCommand(IMAPCommand.LOGIN, username + &quot; &quot; + password))</span>
+        {
+<span class="nc" id="L97">            return false;</span>
+        }
+
+<span class="nc" id="L100">        setState(IMAP.IMAPState.AUTH_STATE);</span>
+
+<span class="nc" id="L102">        return true;</span>
+    }
+
+    // --------- commands available in the authenticated state
+
+    /**
+     * Send a SELECT command to the server.
+     * @param mailboxName The mailbox name to select.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean select(String mailboxName) throws IOException
+    {
+<span class="nc" id="L115">        return doCommand (IMAPCommand.SELECT, mailboxName);</span>
+    }
+
+    /**
+     * Send an EXAMINE command to the server.
+     * @param mailboxName The mailbox name to examine.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean examine(String mailboxName) throws IOException
+    {
+<span class="nc" id="L126">        return doCommand (IMAPCommand.EXAMINE, mailboxName);</span>
+    }
+
+    /**
+     * Send a CREATE command to the server.
+     * @param mailboxName The mailbox name to create.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean create(String mailboxName) throws IOException
+    {
+<span class="nc" id="L137">        return doCommand (IMAPCommand.CREATE, mailboxName);</span>
+    }
+
+    /**
+     * Send a DELETE command to the server.
+     * @param mailboxName The mailbox name to delete.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean delete(String mailboxName) throws IOException
+    {
+<span class="nc" id="L148">        return doCommand (IMAPCommand.DELETE, mailboxName);</span>
+    }
+
+    /**
+     * Send a RENAME command to the server.
+     * @param oldMailboxName The existing mailbox name to rename.
+     * @param newMailboxName The new mailbox name.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean rename(String oldMailboxName, String newMailboxName) throws IOException
+    {
+<span class="nc" id="L160">        return doCommand (IMAPCommand.RENAME, oldMailboxName + &quot; &quot; + newMailboxName);</span>
+    }
+
+    /**
+     * Send a SUBSCRIBE command to the server.
+     * @param mailboxName The mailbox name to subscribe to.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean subscribe(String mailboxName) throws IOException
+    {
+<span class="nc" id="L171">        return doCommand (IMAPCommand.SUBSCRIBE, mailboxName);</span>
+    }
+
+    /**
+     * Send a UNSUBSCRIBE command to the server.
+     * @param mailboxName The mailbox name to unsubscribe from.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean unsubscribe(String mailboxName) throws IOException
+    {
+<span class="nc" id="L182">        return doCommand (IMAPCommand.UNSUBSCRIBE, mailboxName);</span>
+    }
+
+    /**
+     * Send a LIST command to the server.
+     * @param refName The reference name.
+     * @param mailboxName The mailbox name.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean list(String refName, String mailboxName) throws IOException
+    {
+<span class="nc" id="L194">        return doCommand (IMAPCommand.LIST, refName + &quot; &quot; + mailboxName);</span>
+    }
+
+    /**
+     * Send an LSUB command to the server.
+     * @param refName The reference name.
+     * @param mailboxName The mailbox name.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean lsub(String refName, String mailboxName) throws IOException
+    {
+<span class="nc" id="L206">        return doCommand (IMAPCommand.LSUB, refName + &quot; &quot; + mailboxName);</span>
+    }
+
+    /**
+     * Send a STATUS command to the server.
+     * @param mailboxName The reference name.
+     * @param itemNames The status data item names.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean status(String mailboxName, String[] itemNames) throws IOException
+    {
+<span class="nc bnc" id="L218" title="All 4 branches missed.">        if (itemNames == null || itemNames.length &lt; 1) {</span>
+<span class="nc" id="L219">            throw new IllegalArgumentException(&quot;STATUS command requires at least one data item name&quot;);</span>
+        }
+
+<span class="nc" id="L222">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L223">        sb.append(mailboxName);</span>
+
+<span class="nc" id="L225">        sb.append(&quot; (&quot;);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        for ( int i = 0; i &lt; itemNames.length; i++ )</span>
+        {
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (i &gt; 0) {</span>
+<span class="nc" id="L229">                sb.append(&quot; &quot;);</span>
+            }
+<span class="nc" id="L231">            sb.append(itemNames[i]);</span>
+        }
+<span class="nc" id="L233">        sb.append(&quot;)&quot;);</span>
+
+<span class="nc" id="L235">        return doCommand (IMAPCommand.STATUS, sb.toString());</span>
+    }
+
+    /**
+     * Send an APPEND command to the server.
+     * @param mailboxName The mailbox name.
+     * @param flags The flag parenthesized list (optional).
+     * @param datetime The date/time string (optional).
+     * @param message The message to append.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     * @since 3.4
+     */
+    public boolean append(String mailboxName, String flags, String datetime, String message) throws IOException
+    {
+<span class="nc" id="L250">        StringBuilder args = new StringBuilder(mailboxName);</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">        if (flags != null) {</span>
+<span class="nc" id="L252">            args.append(&quot; &quot;).append(flags);</span>
+        }
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (datetime != null) {</span>
+<span class="nc" id="L255">            args.append(&quot; &quot;);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            if (datetime.charAt(0) == DQUOTE) {</span>
+<span class="nc" id="L257">                args.append(datetime);</span>
+<span class="nc" id="L258">            } else {</span>
+<span class="nc" id="L259">                args.append(DQUOTE).append(datetime).append(DQUOTE);</span>
+            }
+        }
+<span class="nc" id="L262">        args.append(&quot; &quot;);</span>
+        // String literal (probably not used much - it at all)
+<span class="nc bnc" id="L264" title="All 4 branches missed.">        if (message.startsWith(DQUOTE_S) &amp;&amp; message.endsWith(DQUOTE_S)) {</span>
+<span class="nc" id="L265">            args.append(message);</span>
+<span class="nc" id="L266">            return doCommand (IMAPCommand.APPEND, args.toString());</span>
+        }
+<span class="nc" id="L268">        args.append('{').append(message.length()).append('}'); // length of message</span>
+<span class="nc" id="L269">        final int status = sendCommand(IMAPCommand.APPEND, args.toString());</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">        return IMAPReply.isContinuation(status) // expecting continuation response</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">            &amp;&amp; IMAPReply.isSuccess(sendData(message)); // if so, send the data</span>
+    }
+
+    /**
+     * Send an APPEND command to the server.
+     * @param mailboxName The mailbox name.
+     * @param flags The flag parenthesized list (optional).
+     * @param datetime The date/time string (optional).
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     * @deprecated (3.4) Does not work; the message body is not optional.
+     * Use {@link #append(String, String, String, String)} instead.
+     */
+    @Deprecated
+    public boolean append(String mailboxName, String flags, String datetime) throws IOException
+    {
+<span class="nc" id="L287">        String args = mailboxName;</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">        if (flags != null) {</span>
+<span class="nc" id="L289">            args += &quot; &quot; + flags;</span>
+        }
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        if (datetime != null) {</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">            if (datetime.charAt(0) == '{') {</span>
+<span class="nc" id="L293">                args += &quot; &quot; + datetime;</span>
+<span class="nc" id="L294">            } else {</span>
+<span class="nc" id="L295">                args += &quot; {&quot; + datetime + &quot;}&quot;;</span>
+            }
+        }
+<span class="nc" id="L298">        return doCommand (IMAPCommand.APPEND, args);</span>
+    }
+
+    /**
+     * Send an APPEND command to the server.
+     * @param mailboxName The mailbox name.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     * @deprecated (3.4) Does not work; the message body is not optional.
+     * Use {@link #append(String, String, String, String)} instead.
+     */
+    @Deprecated
+    public boolean append(String mailboxName) throws IOException
+    {
+<span class="nc" id="L312">        return append(mailboxName, null, null);</span>
+    }
+
+    // --------- commands available in the selected state
+
+    /**
+     * Send a CHECK command to the server.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean check() throws IOException
+    {
+<span class="nc" id="L324">        return doCommand (IMAPCommand.CHECK);</span>
+    }
+
+    /**
+     * Send a CLOSE command to the server.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean close() throws IOException
+    {
+<span class="nc" id="L334">        return doCommand (IMAPCommand.CLOSE);</span>
+    }
+
+    /**
+     * Send an EXPUNGE command to the server.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean expunge() throws IOException
+    {
+<span class="nc" id="L344">        return doCommand (IMAPCommand.EXPUNGE);</span>
+    }
+
+    /**
+     * Send a SEARCH command to the server.
+     * @param charset The charset (optional).
+     * @param criteria The search criteria.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean search(String charset, String criteria) throws IOException
+    {
+<span class="nc" id="L356">        String args = &quot;&quot;;</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">        if (charset != null) {</span>
+<span class="nc" id="L358">            args += &quot;CHARSET &quot; + charset;</span>
+        }
+<span class="nc" id="L360">        args += criteria;</span>
+<span class="nc" id="L361">        return doCommand (IMAPCommand.SEARCH, args);</span>
+    }
+
+    /**
+     * Send a SEARCH command to the server.
+     * @param criteria The search criteria.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean search(String criteria) throws IOException
+    {
+<span class="nc" id="L372">        return search(null, criteria);</span>
+    }
+
+    /**
+     * Send a FETCH command to the server.
+     *
+     * @param sequenceSet The sequence set to fetch (e.g. 1:4,6,11,100:*)
+     * @param itemNames The item names for the FETCH command. (e.g. BODY.PEEK[HEADER.FIELDS (SUBJECT)])
+     * If multiple item names are requested, these must be enclosed in parentheses, e.g. &quot;(UID FLAGS BODY.PEEK[])&quot;
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     * @see #getReplyString()
+     * @see #getReplyStrings()
+     */
+    public boolean fetch(String sequenceSet, String itemNames) throws IOException
+    {
+<span class="nc" id="L388">        return doCommand (IMAPCommand.FETCH, sequenceSet + &quot; &quot; + itemNames);</span>
+    }
+
+    /**
+     * Send a STORE command to the server.
+     * @param sequenceSet The sequence set to update (e.g. 2:5)
+     * @param itemNames The item name for the STORE command (i.e. [+|-]FLAGS[.SILENT])
+     * @param itemValues The item values for the STORE command. (e.g. (\Deleted) )
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean store(String sequenceSet, String itemNames, String itemValues)
+        throws IOException
+    {
+<span class="nc" id="L402">        return doCommand (IMAPCommand.STORE, sequenceSet + &quot; &quot; + itemNames + &quot; &quot; + itemValues);</span>
+    }
+
+    /**
+     * Send a COPY command to the server.
+     * @param sequenceSet The sequence set to fetch.
+     * @param mailboxName The mailbox name.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean copy(String sequenceSet, String mailboxName) throws IOException
+    {
+<span class="nc" id="L414">        return doCommand (IMAPCommand.COPY, sequenceSet + &quot; &quot; + mailboxName);</span>
+    }
+
+    /**
+     * Send a UID command to the server.
+     * @param command The command for UID.
+     * @param commandArgs The arguments for the command.
+     * @return {@code true} if the command was successful,{@code false} if not.
+     * @throws IOException If a network I/O error occurs.
+     */
+    public boolean uid(String command, String commandArgs) throws IOException
+    {
+<span class="nc" id="L426">        return doCommand (IMAPCommand.UID, command + &quot; &quot; + commandArgs);</span>
+    }
+
+    /**
+     * The status data items defined in RFC 3501.
+     */
+<span class="nc" id="L432">    public enum STATUS_DATA_ITEMS</span>
+    {
+<span class="nc" id="L434">        /** The number of messages in the mailbox. */</span>
+<span class="nc" id="L435">        MESSAGES,</span>
+<span class="nc" id="L436">        /** The number of messages with the \Recent flag set. */</span>
+<span class="nc" id="L437">        RECENT,</span>
+<span class="nc" id="L438">        /** The next unique identifier value of the mailbox. */</span>
+<span class="nc" id="L439">        UIDNEXT,</span>
+<span class="nc" id="L440">        /** The unique identifier validity value of the mailbox. */</span>
+<span class="nc" id="L441">        UIDVALIDITY,</span>
+<span class="nc" id="L442">        /** The number of messages which do not have the \Seen flag set. */</span>
+<span class="nc" id="L443">        UNSEEN;</span>
+    }
+
+    /**
+     * The search criteria defined in RFC 3501.
+     */
+<span class="nc" id="L449">    public enum SEARCH_CRITERIA</span>
+    {
+<span class="nc" id="L451">        /** All messages in the mailbox. */</span>
+<span class="nc" id="L452">        ALL,</span>
+<span class="nc" id="L453">        /** Messages with the \Answered flag set. */</span>
+<span class="nc" id="L454">        ANSWERED,</span>
+<span class="nc" id="L455">        /**</span>
+         * Messages that contain the specified string in the envelope
+         * structure's BCC field.
+         */
+<span class="nc" id="L459">        BCC,</span>
+<span class="nc" id="L460">        /**</span>
+         * Messages whose internal date (disregarding time and timezone)
+         * is earlier than the specified date.
+         */
+<span class="nc" id="L464">        BEFORE,</span>
+<span class="nc" id="L465">        /**</span>
+         * Messages that contain the specified string in the body of the
+         * message.
+         */
+<span class="nc" id="L469">        BODY,</span>
+<span class="nc" id="L470">        /**</span>
+         * Messages that contain the specified string in the envelope
+         * structure's CC field.
+         */
+<span class="nc" id="L474">        CC,</span>
+<span class="nc" id="L475">        /** Messages with the \Deleted flag set. */</span>
+<span class="nc" id="L476">        DELETED,</span>
+<span class="nc" id="L477">        /** Messages with the \Draft flag set. */</span>
+<span class="nc" id="L478">        DRAFT,</span>
+<span class="nc" id="L479">        /** Messages with the \Flagged flag set. */</span>
+<span class="nc" id="L480">        FLAGGED,</span>
+<span class="nc" id="L481">        /**</span>
+         * Messages that contain the specified string in the envelope
+         * structure's FROM field.
+         */
+<span class="nc" id="L485">        FROM,</span>
+<span class="nc" id="L486">        /**</span>
+         * Messages that have a header with the specified field-name (as
+         * defined in [RFC-2822]) and that contains the specified string
+         * in the text of the header (what comes after the colon).  If the
+         * string to search is zero-length, this matches all messages that
+         * have a header line with the specified field-name regardless of
+         * the contents.
+         */
+<span class="nc" id="L494">        HEADER,</span>
+<span class="nc" id="L495">        /** Messages with the specified keyword flag set. */</span>
+<span class="nc" id="L496">        KEYWORD,</span>
+<span class="nc" id="L497">        /**</span>
+         * Messages with an [RFC-2822] size larger than the specified
+         * number of octets.
+         */
+<span class="nc" id="L501">        LARGER,</span>
+<span class="nc" id="L502">        /**</span>
+         * Messages that have the \Recent flag set but not the \Seen flag.
+         * This is functionally equivalent to &quot;(RECENT UNSEEN)&quot;.
+         */
+<span class="nc" id="L506">        NEW,</span>
+<span class="nc" id="L507">        /** Messages that do not match the specified search key. */</span>
+<span class="nc" id="L508">        NOT,</span>
+<span class="nc" id="L509">        /**</span>
+         * Messages that do not have the \Recent flag set.  This is
+         * functionally equivalent to &quot;NOT RECENT&quot; (as opposed to &quot;NOT
+         * NEW&quot;).
+         */
+<span class="nc" id="L514">        OLD,</span>
+<span class="nc" id="L515">        /**</span>
+         * Messages whose internal date (disregarding time and timezone)
+         * is within the specified date.
+         */
+<span class="nc" id="L519">        ON,</span>
+<span class="nc" id="L520">        /** Messages that match either search key. */</span>
+<span class="nc" id="L521">        OR,</span>
+<span class="nc" id="L522">        /** Messages that have the \Recent flag set. */</span>
+<span class="nc" id="L523">        RECENT,</span>
+<span class="nc" id="L524">        /** Messages that have the \Seen flag set. */</span>
+<span class="nc" id="L525">        SEEN,</span>
+<span class="nc" id="L526">        /**</span>
+         * Messages whose [RFC-2822] Date: header (disregarding time and
+         * timezone) is earlier than the specified date.
+         */
+<span class="nc" id="L530">        SENTBEFORE,</span>
+<span class="nc" id="L531">        /**</span>
+         * Messages whose [RFC-2822] Date: header (disregarding time and
+         * timezone) is within the specified date.
+         */
+<span class="nc" id="L535">        SENTON,</span>
+<span class="nc" id="L536">        /**</span>
+         * Messages whose [RFC-2822] Date: header (disregarding time and
+         * timezone) is within or later than the specified date.
+         */
+<span class="nc" id="L540">        SENTSINCE,</span>
+<span class="nc" id="L541">        /**</span>
+         * Messages whose internal date (disregarding time and timezone)
+         * is within or later than the specified date.
+         */
+<span class="nc" id="L545">        SINCE,</span>
+<span class="nc" id="L546">        /**</span>
+         * Messages with an [RFC-2822] size smaller than the specified
+         * number of octets.
+         */
+<span class="nc" id="L550">        SMALLER,</span>
+<span class="nc" id="L551">        /**</span>
+         * Messages that contain the specified string in the envelope
+         * structure's SUBJECT field.
+         */
+<span class="nc" id="L555">        SUBJECT,</span>
+<span class="nc" id="L556">        /**</span>
+         * Messages that contain the specified string in the header or
+         * body of the message.
+         */
+<span class="nc" id="L560">        TEXT,</span>
+<span class="nc" id="L561">        /**</span>
+         * Messages that contain the specified string in the envelope
+         * structure's TO field.
+         */
+<span class="nc" id="L565">        TO,</span>
+<span class="nc" id="L566">        /**</span>
+         * Messages with unique identifiers corresponding to the specified
+         * unique identifier set.  Sequence set ranges are permitted.
+         */
+<span class="nc" id="L570">        UID,</span>
+<span class="nc" id="L571">        /** Messages that do not have the \Answered flag set. */</span>
+<span class="nc" id="L572">        UNANSWERED,</span>
+<span class="nc" id="L573">        /** Messages that do not have the \Deleted flag set. */</span>
+<span class="nc" id="L574">        UNDELETED,</span>
+<span class="nc" id="L575">        /** Messages that do not have the \Draft flag set. */</span>
+<span class="nc" id="L576">        UNDRAFT,</span>
+<span class="nc" id="L577">        /** Messages that do not have the \Flagged flag set. */</span>
+<span class="nc" id="L578">        UNFLAGGED,</span>
+<span class="nc" id="L579">        /** Messages that do not have the specified keyword flag set. */</span>
+<span class="nc" id="L580">        UNKEYWORD,</span>
+<span class="nc" id="L581">        /** Messages that do not have the \Seen flag set. */</span>
+<span class="nc" id="L582">        UNSEEN;</span>
+    }
+
+    /**
+     * The message data item names for the FETCH command defined in RFC 3501.
+     */
+<span class="nc" id="L588">    public enum FETCH_ITEM_NAMES</span>
+    {
+<span class="nc" id="L590">        /** Macro equivalent to: (FLAGS INTERNALDATE RFC822.SIZE ENVELOPE). */</span>
+<span class="nc" id="L591">        ALL,</span>
+<span class="nc" id="L592">        /** Macro equivalent to: (FLAGS INTERNALDATE RFC822.SIZE). */</span>
+<span class="nc" id="L593">        FAST,</span>
+<span class="nc" id="L594">        /** Macro equivalent to: (FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODY). */</span>
+<span class="nc" id="L595">        FULL,</span>
+<span class="nc" id="L596">        /** Non-extensible form of BODYSTRUCTURE or the text of a particular body section. */</span>
+<span class="nc" id="L597">        BODY,</span>
+<span class="nc" id="L598">        /** The [MIME-IMB] body structure of the message. */</span>
+<span class="nc" id="L599">        BODYSTRUCTURE,</span>
+<span class="nc" id="L600">        /** The envelope structure of the message. */</span>
+<span class="nc" id="L601">        ENVELOPE,</span>
+<span class="nc" id="L602">        /** The flags that are set for this message. */</span>
+<span class="nc" id="L603">        FLAGS,</span>
+<span class="nc" id="L604">        /** The internal date of the message. */</span>
+<span class="nc" id="L605">        INTERNALDATE,</span>
+<span class="nc" id="L606">        /** A prefix for RFC-822 item names. */</span>
+<span class="nc" id="L607">        RFC822,</span>
+<span class="nc" id="L608">        /** The unique identifier for the message. */</span>
+<span class="nc" id="L609">        UID;</span>
+    }
+
+}
+/* kate: indent-width 4; replace-tabs on; */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

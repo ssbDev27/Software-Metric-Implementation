@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TimeInfo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ntp</a> &gt; <span class="el_source">TimeInfo.java</span></div><h1>TimeInfo.java</h1><pre class="source lang-java linenums">package org.apache.commons.net.ntp;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Wrapper class to network time packet messages (NTP, etc) that computes
+ * related timing info and stats.
+ *
+ * @version $Revision$
+ */
+public class TimeInfo {
+
+    private final NtpV3Packet _message;
+    private List&lt;String&gt; _comments;
+    private Long _delay;
+    private Long _offset;
+
+    /**
+     * time at which time message packet was received by local machine
+     */
+    private final long _returnTime;
+
+    /**
+     * flag indicating that the TimeInfo details was processed and delay/offset were computed
+     */
+    private boolean _detailsComputed;
+
+    /**
+     * Create TimeInfo object with raw packet message and destination time received.
+     *
+     * @param message NTP message packet
+     * @param returnTime  destination receive time
+     * @throws IllegalArgumentException if message is null
+     */
+    public TimeInfo(NtpV3Packet message, long returnTime) {
+<span class="fc" id="L56">        this(message, returnTime, null, true);</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Create TimeInfo object with raw packet message and destination time received.
+     *
+     * @param message NTP message packet
+     * @param returnTime  destination receive time
+     * @param comments List of errors/warnings identified during processing
+     * @throws IllegalArgumentException if message is null
+     */
+    public TimeInfo(NtpV3Packet message, long returnTime, List&lt;String&gt; comments)
+    {
+<span class="fc" id="L69">            this(message, returnTime, comments, true);</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * Create TimeInfo object with raw packet message and destination time received.
+     * Auto-computes details if computeDetails flag set otherwise this is delayed
+     * until computeDetails() is called. Delayed computation is for fast
+     * intialization when sub-millisecond timing is needed.
+     *
+     * @param msgPacket NTP message packet
+     * @param returnTime  destination receive time
+     * @param doComputeDetails  flag to pre-compute delay/offset values
+     * @throws IllegalArgumentException if message is null
+     */
+    public TimeInfo(NtpV3Packet msgPacket, long returnTime, boolean doComputeDetails)
+    {
+<span class="fc" id="L85">            this(msgPacket, returnTime, null, doComputeDetails);</span>
+<span class="fc" id="L86">    }</span>
+
+    /**
+     * Create TimeInfo object with raw packet message and destination time received.
+     * Auto-computes details if computeDetails flag set otherwise this is delayed
+     * until computeDetails() is called. Delayed computation is for fast
+     * intialization when sub-millisecond timing is needed.
+     *
+     * @param message NTP message packet
+     * @param returnTime  destination receive time
+     * @param comments  list of comments used to store errors/warnings with message
+     * @param doComputeDetails  flag to pre-compute delay/offset values
+     * @throws IllegalArgumentException if message is null
+     */
+<span class="fc" id="L100">    public TimeInfo(NtpV3Packet message, long returnTime, List&lt;String&gt; comments,</span>
+                   boolean doComputeDetails)
+    {
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (message == null) {</span>
+<span class="fc" id="L104">            throw new IllegalArgumentException(&quot;message cannot be null&quot;);</span>
+        }
+<span class="fc" id="L106">        this._returnTime = returnTime;</span>
+<span class="fc" id="L107">        this._message = message;</span>
+<span class="fc" id="L108">        this._comments = comments;</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (doComputeDetails) {</span>
+<span class="fc" id="L110">            computeDetails();</span>
+        }
+<span class="fc" id="L112">    }</span>
+
+    /**
+     * Add comment (error/warning) to list of comments associated
+     * with processing of NTP parameters. If comment list not create
+     * then one will be created.
+     *
+     * @param comment the comment
+     */
+    public void addComment(String comment)
+    {
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (_comments == null) {</span>
+<span class="nc" id="L124">            _comments = new ArrayList&lt;String&gt;();</span>
+        }
+<span class="fc" id="L126">        _comments.add(comment);</span>
+<span class="fc" id="L127">    }</span>
+
+    /**
+     * Compute and validate details of the NTP message packet. Computed
+     * fields include the offset and delay.
+     */
+    public void computeDetails()
+    {
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (_detailsComputed) {</span>
+<span class="fc" id="L136">            return; // details already computed - do nothing</span>
+        }
+<span class="fc" id="L138">        _detailsComputed = true;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (_comments == null) {</span>
+<span class="fc" id="L140">            _comments = new ArrayList&lt;String&gt;();</span>
+        }
+
+<span class="fc" id="L143">        TimeStamp origNtpTime = _message.getOriginateTimeStamp();</span>
+<span class="fc" id="L144">        long origTime = origNtpTime.getTime();</span>
+
+        // Receive Time is time request received by server (t2)
+<span class="fc" id="L147">        TimeStamp rcvNtpTime = _message.getReceiveTimeStamp();</span>
+<span class="fc" id="L148">        long rcvTime = rcvNtpTime.getTime();</span>
+
+        // Transmit time is time reply sent by server (t3)
+<span class="fc" id="L151">        TimeStamp xmitNtpTime = _message.getTransmitTimeStamp();</span>
+<span class="fc" id="L152">        long xmitTime = xmitNtpTime.getTime();</span>
+
+        /*
+         * Round-trip network delay and local clock offset (or time drift) is calculated
+         * according to this standard NTP equation:
+         *
+         * LocalClockOffset = ((ReceiveTimestamp - OriginateTimestamp) +
+         *                     (TransmitTimestamp - DestinationTimestamp)) / 2
+         *
+         * equations from RFC-1305 (NTPv3)
+         *      roundtrip delay = (t4 - t1) - (t3 - t2)
+         *      local clock offset = ((t2 - t1) + (t3 - t4)) / 2
+         *
+         * It takes into account network delays and assumes that they are symmetrical.
+         *
+         * Note the typo in SNTP RFCs 1769/2030 which state that the delay
+         * is (T4 - T1) - (T2 - T3) with the &quot;T2&quot; and &quot;T3&quot; switched.
+         */
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (origNtpTime.ntpValue() == 0)</span>
+        {
+            // without originate time cannot determine when packet went out
+            // might be via a broadcast NTP packet...
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">            if (xmitNtpTime.ntpValue() != 0)</span>
+            {
+<span class="nc" id="L176">                _offset = Long.valueOf(xmitTime - _returnTime);</span>
+<span class="nc" id="L177">                _comments.add(&quot;Error: zero orig time -- cannot compute delay&quot;);</span>
+<span class="nc" id="L178">            } else {</span>
+<span class="fc" id="L179">                _comments.add(&quot;Error: zero orig time -- cannot compute delay/offset&quot;);</span>
+            }
+<span class="pc bpc" id="L181" title="2 of 4 branches missed.">        } else if (rcvNtpTime.ntpValue() == 0 || xmitNtpTime.ntpValue() == 0) {</span>
+<span class="nc" id="L182">            _comments.add(&quot;Warning: zero rcvNtpTime or xmitNtpTime&quot;);</span>
+            // assert destTime &gt;= origTime since network delay cannot be negative
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            if (origTime &gt; _returnTime) {</span>
+<span class="nc" id="L185">                _comments.add(&quot;Error: OrigTime &gt; DestRcvTime&quot;);</span>
+<span class="nc" id="L186">            } else {</span>
+                // without receive or xmit time cannot figure out processing time
+                // so delay is simply the network travel time
+<span class="nc" id="L189">                _delay = Long.valueOf(_returnTime - origTime);</span>
+            }
+            // TODO: is offset still valid if rcvNtpTime=0 || xmitNtpTime=0 ???
+            // Could always hash origNtpTime (sendTime) but if host doesn't set it
+            // then it's an malformed ntp host anyway and we don't care?
+            // If server is in broadcast mode then we never send out a query in first place...
+<span class="nc bnc" id="L195" title="All 2 branches missed.">            if (rcvNtpTime.ntpValue() != 0)</span>
+            {
+                // xmitTime is 0 just use rcv time
+<span class="nc" id="L198">                _offset = Long.valueOf(rcvTime - origTime);</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">            } else if (xmitNtpTime.ntpValue() != 0)</span>
+            {
+                // rcvTime is 0 just use xmitTime time
+<span class="nc" id="L202">                _offset = Long.valueOf(xmitTime - _returnTime);</span>
+            }
+<span class="nc" id="L204">        } else</span>
+        {
+<span class="fc" id="L206">             long delayValue = _returnTime - origTime;</span>
+             // assert xmitTime &gt;= rcvTime: difference typically &lt; 1ms
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">             if (xmitTime &lt; rcvTime)</span>
+             {
+                 // server cannot send out a packet before receiving it...
+<span class="nc" id="L211">                 _comments.add(&quot;Error: xmitTime &lt; rcvTime&quot;); // time-travel not allowed</span>
+<span class="nc" id="L212">             } else</span>
+             {
+                 // subtract processing time from round-trip network delay
+<span class="fc" id="L215">                 long delta = xmitTime - rcvTime;</span>
+                 // in normal cases the processing delta is less than
+                 // the total roundtrip network travel time.
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">                 if (delta &lt;= delayValue)</span>
+                 {
+<span class="nc" id="L220">                     delayValue -= delta; // delay = (t4 - t1) - (t3 - t2)</span>
+<span class="nc" id="L221">                 } else</span>
+                 {
+                     // if delta - delayValue == 1 ms then it's a round-off error
+                     // e.g. delay=3ms, processing=4ms
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">                     if (delta - delayValue == 1)</span>
+                     {
+                         // delayValue == 0 -&gt; local clock saw no tick change but destination clock did
+<span class="nc bnc" id="L228" title="All 2 branches missed.">                         if (delayValue != 0)</span>
+                         {
+<span class="nc" id="L230">                             _comments.add(&quot;Info: processing time &gt; total network time by 1 ms -&gt; assume zero delay&quot;);</span>
+<span class="nc" id="L231">                             delayValue = 0;</span>
+                         }
+<span class="nc" id="L233">                     } else {</span>
+<span class="fc" id="L234">                        _comments.add(&quot;Warning: processing time &gt; total network time&quot;);</span>
+                    }
+                 }
+             }
+<span class="fc" id="L238">             _delay = Long.valueOf(delayValue);</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">            if (origTime &gt; _returnTime) {</span>
+<span class="fc" id="L240">                _comments.add(&quot;Error: OrigTime &gt; DestRcvTime&quot;);</span>
+            }
+
+<span class="fc" id="L243">            _offset = Long.valueOf(((rcvTime - origTime) + (xmitTime - _returnTime)) / 2);</span>
+        }
+<span class="fc" id="L245">    }</span>
+
+    /**
+     * Return list of comments (if any) during processing of NTP packet.
+     *
+     * @return List or null if not yet computed
+     */
+    public List&lt;String&gt; getComments()
+    {
+<span class="fc" id="L254">        return _comments;</span>
+    }
+
+    /**
+     * Get round-trip network delay. If null then could not compute the delay.
+     *
+     * @return Long or null if delay not available.
+     */
+    public Long getDelay()
+    {
+<span class="fc" id="L264">        return _delay;</span>
+    }
+
+    /**
+     * Get clock offset needed to adjust local clock to match remote clock. If null then could not
+     * compute the offset.
+     *
+     * @return Long or null if offset not available.
+     */
+    public Long getOffset()
+    {
+<span class="fc" id="L275">        return _offset;</span>
+    }
+
+    /**
+     * Returns NTP message packet.
+     *
+     * @return NTP message packet.
+     */
+    public NtpV3Packet getMessage()
+    {
+<span class="fc" id="L285">        return _message;</span>
+    }
+
+    /**
+     * Get host address from message datagram if available
+     * @return host address of available otherwise null
+     * @since 3.4
+     */
+    public InetAddress getAddress() {
+<span class="fc" id="L294">        DatagramPacket pkt = _message.getDatagramPacket();</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">        return pkt == null ? null : pkt.getAddress();</span>
+    }
+
+    /**
+     * Returns time at which time message packet was received by local machine.
+     *
+     * @return packet return time.
+     */
+    public long getReturnTime()
+    {
+<span class="fc" id="L305">        return _returnTime;</span>
+    }
+
+    /**
+     * Compares this object against the specified object.
+     * The result is &lt;code&gt;true&lt;/code&gt; if and only if the argument is
+     * not &lt;code&gt;null&lt;/code&gt; and is a &lt;code&gt;TimeStamp&lt;/code&gt; object that
+     * contains the same values as this object.
+     *
+     * @param   obj   the object to compare with.
+     * @return  &lt;code&gt;true&lt;/code&gt; if the objects are the same;
+     *          &lt;code&gt;false&lt;/code&gt; otherwise.
+     * @since 3.4
+     */
+    @Override
+    public boolean equals(Object obj)
+    {
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">        if (this == obj) {</span>
+<span class="nc" id="L323">            return true;</span>
+        }
+<span class="fc bfc" id="L325" title="All 4 branches covered.">        if (obj == null || getClass() != obj.getClass()) {</span>
+<span class="fc" id="L326">            return false;</span>
+        }
+<span class="fc" id="L328">        TimeInfo other = (TimeInfo) obj;</span>
+<span class="fc bfc" id="L329" title="All 4 branches covered.">        return _returnTime == other._returnTime &amp;&amp; _message.equals(other._message);</span>
+    }
+
+    /**
+     * Computes a hashcode for this object. The result is the exclusive
+     * OR of the return time and the message hash code.
+     *
+     * @return  a hash code value for this object.
+     * @since 3.4
+     */
+    @Override
+    public int hashCode()
+    {
+<span class="fc" id="L342">        final int prime = 31;</span>
+<span class="fc" id="L343">        int result = (int)_returnTime;</span>
+<span class="fc" id="L344">        result = prime * result + _message.hashCode();</span>
+<span class="fc" id="L345">        return result;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

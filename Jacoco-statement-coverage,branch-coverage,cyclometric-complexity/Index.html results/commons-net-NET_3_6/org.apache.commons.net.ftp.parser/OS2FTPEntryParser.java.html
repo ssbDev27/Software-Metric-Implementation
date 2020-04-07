@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OS2FTPEntryParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp.parser</a> &gt; <span class="el_source">OS2FTPEntryParser.java</span></div><h1>OS2FTPEntryParser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp.parser;
+import java.text.ParseException;
+
+import org.apache.commons.net.ftp.FTPClientConfig;
+import org.apache.commons.net.ftp.FTPFile;
+
+/**
+ * Implementation of FTPFileEntryParser and FTPFileListParser for OS2 Systems.
+ *
+ * @version $Id$
+ * @see org.apache.commons.net.ftp.FTPFileEntryParser FTPFileEntryParser (for usage instructions)
+ */
+public class OS2FTPEntryParser extends ConfigurableFTPFileEntryParserImpl
+
+{
+
+    private static final String DEFAULT_DATE_FORMAT
+        = &quot;MM-dd-yy HH:mm&quot;; //11-09-01 12:30
+    /**
+     * this is the regular expression used by this parser.
+     */
+    private static final String REGEX =
+        &quot;\\s*([0-9]+)\\s*&quot;
+        + &quot;(\\s+|[A-Z]+)\\s*&quot;
+        + &quot;(DIR|\\s+)\\s*&quot;
+        + &quot;(\\S+)\\s+(\\S+)\\s+&quot; /* date stuff */
+        + &quot;(\\S.*)&quot;;
+
+    /**
+     * The default constructor for a OS2FTPEntryParser object.
+     *
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen
+     * under normal conditions.  It it is seen, this is a sign that
+     * &lt;code&gt;REGEX&lt;/code&gt; is  not a valid regular expression.
+     */
+    public OS2FTPEntryParser()
+    {
+<span class="fc" id="L56">        this(null);</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * This constructor allows the creation of an OS2FTPEntryParser object
+     * with something other than the default configuration.
+     *
+     * @param config The {@link FTPClientConfig configuration} object used to
+     * configure this parser.
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen
+     * under normal conditions.  It it is seen, this is a sign that
+     * &lt;code&gt;REGEX&lt;/code&gt; is  not a valid regular expression.
+     * @since 1.4
+     */
+     public OS2FTPEntryParser(FTPClientConfig config)
+    {
+<span class="fc" id="L73">        super(REGEX);</span>
+<span class="fc" id="L74">        configure(config);</span>
+<span class="fc" id="L75">    }</span>
+
+    /**
+     * Parses a line of an OS2 FTP server file listing and converts it into a
+     * usable format in the form of an &lt;code&gt; FTPFile &lt;/code&gt; instance.  If the
+     * file listing line doesn't describe a file, &lt;code&gt; null &lt;/code&gt; is
+     * returned, otherwise a &lt;code&gt; FTPFile &lt;/code&gt; instance representing the
+     * files in the directory is returned.
+     *
+     * @param entry A line of text from the file listing
+     * @return An FTPFile instance corresponding to the supplied entry
+     */
+    @Override
+    public FTPFile parseFTPEntry(String entry)
+    {
+
+<span class="fc" id="L91">        FTPFile f = new FTPFile();</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (matches(entry))</span>
+        {
+<span class="fc" id="L94">            String size = group(1);</span>
+<span class="fc" id="L95">            String attrib = group(2);</span>
+<span class="fc" id="L96">            String dirString = group(3);</span>
+<span class="fc" id="L97">            String datestr = group(4)+&quot; &quot;+group(5);</span>
+<span class="fc" id="L98">            String name = group(6);</span>
+            try
+            {
+<span class="fc" id="L101">                f.setTimestamp(super.parseTimestamp(datestr));</span>
+<span class="fc" id="L102">            }</span>
+<span class="fc" id="L103">            catch (ParseException e)</span>
+            {
+                // intentionally do nothing
+            }
+
+
+            //is it a DIR or a file
+<span class="fc bfc" id="L110" title="All 4 branches covered.">            if (dirString.trim().equals(&quot;DIR&quot;) || attrib.trim().equals(&quot;DIR&quot;))</span>
+            {
+<span class="fc" id="L112">                f.setType(FTPFile.DIRECTORY_TYPE);</span>
+<span class="fc" id="L113">            }</span>
+            else
+            {
+<span class="fc" id="L116">                f.setType(FTPFile.FILE_TYPE);</span>
+            }
+
+
+            //set the name
+<span class="fc" id="L121">            f.setName(name.trim());</span>
+
+            //set the size
+<span class="fc" id="L124">            f.setSize(Long.parseLong(size.trim()));</span>
+
+<span class="fc" id="L126">            return (f);</span>
+        }
+<span class="fc" id="L128">        return null;</span>
+
+    }
+
+    /**
+     * Defines a default configuration to be used when this class is
+     * instantiated without a {@link  FTPClientConfig  FTPClientConfig}
+     * parameter being specified.
+     * @return the default configuration for this parser.
+     */
+    @Override
+    protected FTPClientConfig getDefaultConfiguration() {
+<span class="fc" id="L140">        return new FTPClientConfig(</span>
+<span class="fc" id="L141">                FTPClientConfig.SYST_OS2,</span>
+<span class="fc" id="L142">                DEFAULT_DATE_FORMAT,</span>
+<span class="fc" id="L143">                null);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

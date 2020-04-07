@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EnterpriseUnixFTPEntryParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp.parser</a> &gt; <span class="el_source">EnterpriseUnixFTPEntryParser.java</span></div><h1>EnterpriseUnixFTPEntryParser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp.parser;
+import java.util.Calendar;
+
+import org.apache.commons.net.ftp.FTPFile;
+
+/**
+ * Parser for the Connect Enterprise Unix FTP Server From Sterling Commerce.
+ * Here is a sample of the sort of output line this parser processes:
+ *  &quot;-C--E-----FTP B QUA1I1      18128       41 Aug 12 13:56 QUADTEST&quot;
+ * &lt;P&gt;&lt;B&gt;
+ * Note: EnterpriseUnixFTPEntryParser can only be instantiated through the
+ * DefaultFTPParserFactory by classname.  It will not be chosen
+ * by the autodetection scheme.
+ * &lt;/B&gt;
+ * @version $Id$
+ * @see org.apache.commons.net.ftp.FTPFileEntryParser FTPFileEntryParser (for usage instructions)
+ * @see org.apache.commons.net.ftp.parser.DefaultFTPFileEntryParserFactory
+ */
+public class EnterpriseUnixFTPEntryParser extends RegexFTPFileEntryParserImpl
+{
+
+    /**
+     * months abbreviations looked for by this parser.  Also used
+     * to determine &lt;b&gt;which&lt;/b&gt; month has been matched by the parser.
+     */
+    private static final String MONTHS =
+        &quot;(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)&quot;;
+
+    /**
+     * this is the regular expression used by this parser.
+     */
+    private static final String REGEX =
+        &quot;(([\\-]|[A-Z])([\\-]|[A-Z])([\\-]|[A-Z])([\\-]|[A-Z])([\\-]|[A-Z])&quot;
+        + &quot;([\\-]|[A-Z])([\\-]|[A-Z])([\\-]|[A-Z])([\\-]|[A-Z])([\\-]|[A-Z]))&quot;
+        + &quot;(\\S*)\\s*&quot; // 12
+        + &quot;(\\S+)\\s*&quot; // 13
+        + &quot;(\\S*)\\s*&quot; // 14 user
+        + &quot;(\\d*)\\s*&quot; // 15 group
+        + &quot;(\\d*)\\s*&quot; // 16 filesize
+        + MONTHS       // 17 month
+        + &quot;\\s*&quot;       // TODO should the space be optional?
+        // TODO \\d* should be \\d? surely ? Otherwise 01111 is allowed
+        + &quot;((?:[012]\\d*)|(?:3[01]))\\s*&quot; // 18 date [012]\d* or 3[01]
+        + &quot;((\\d\\d\\d\\d)|((?:[01]\\d)|(?:2[0123])):([012345]\\d))\\s&quot;
+        // 20 \d\d\d\d  = year  OR
+        // 21 [01]\d or 2[0123] hour + ':'
+        // 22 [012345]\d = minute
+        + &quot;(\\S*)(\\s*.*)&quot;; // 23 name
+
+    /**
+     * The sole constructor for a EnterpriseUnixFTPEntryParser object.
+     *
+     */
+    public EnterpriseUnixFTPEntryParser()
+    {
+<span class="fc" id="L73">        super(REGEX);</span>
+<span class="fc" id="L74">    }</span>
+
+    /**
+     * Parses a line of a unix FTP server file listing and converts  it into a
+     * usable format in the form of an &lt;code&gt; FTPFile &lt;/code&gt;  instance.  If
+     * the file listing line doesn't describe a file,  &lt;code&gt; null &lt;/code&gt; is
+     * returned, otherwise a &lt;code&gt; FTPFile &lt;/code&gt;  instance representing the
+     * files in the directory is returned.
+     *
+     * @param entry A line of text from the file listing
+     * @return An FTPFile instance corresponding to the supplied entry
+     */
+    @Override
+    public FTPFile parseFTPEntry(String entry)
+    {
+
+<span class="fc" id="L90">        FTPFile file = new FTPFile();</span>
+<span class="fc" id="L91">        file.setRawListing(entry);</span>
+
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (matches(entry))</span>
+        {
+<span class="fc" id="L95">            String usr = group(14);</span>
+<span class="fc" id="L96">            String grp = group(15);</span>
+<span class="fc" id="L97">            String filesize = group(16);</span>
+<span class="fc" id="L98">            String mo = group(17);</span>
+<span class="fc" id="L99">            String da = group(18);</span>
+<span class="fc" id="L100">            String yr = group(20);</span>
+<span class="fc" id="L101">            String hr = group(21);</span>
+<span class="fc" id="L102">            String min = group(22);</span>
+<span class="fc" id="L103">            String name = group(23);</span>
+
+<span class="fc" id="L105">            file.setType(FTPFile.FILE_TYPE);</span>
+<span class="fc" id="L106">            file.setUser(usr);</span>
+<span class="fc" id="L107">            file.setGroup(grp);</span>
+            try
+            {
+<span class="fc" id="L110">                file.setSize(Long.parseLong(filesize));</span>
+<span class="fc" id="L111">            }</span>
+<span class="nc" id="L112">            catch (NumberFormatException e)</span>
+            {
+                // intentionally do nothing
+            }
+
+<span class="fc" id="L117">            Calendar cal = Calendar.getInstance();</span>
+<span class="fc" id="L118">            cal.set(Calendar.MILLISECOND, 0);</span>
+<span class="fc" id="L119">            cal.set(Calendar.SECOND, 0);</span>
+<span class="fc" id="L120">            cal.set(Calendar.MINUTE, 0);</span>
+<span class="fc" id="L121">            cal.set(Calendar.HOUR_OF_DAY, 0);</span>
+
+<span class="fc" id="L123">            int pos = MONTHS.indexOf(mo);</span>
+<span class="fc" id="L124">            int month = pos / 4;</span>
+            final int missingUnit; // the first missing unit
+            try
+            {
+
+<span class="fc bfc" id="L129" title="All 2 branches covered.">                if (yr != null)</span>
+                {
+                    // it's a year; there are no hours and minutes
+<span class="fc" id="L132">                    cal.set(Calendar.YEAR, Integer.parseInt(yr));</span>
+<span class="fc" id="L133">                    missingUnit = Calendar.HOUR_OF_DAY;</span>
+<span class="fc" id="L134">                }</span>
+                else
+                {
+                    // it must be  hour/minute or we wouldn't have matched
+<span class="fc" id="L138">                    missingUnit = Calendar.SECOND;</span>
+<span class="fc" id="L139">                    int year = cal.get(Calendar.YEAR);</span>
+
+                    // if the month we're reading is greater than now, it must
+                    // be last year
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">                    if (cal.get(Calendar.MONTH) &lt; month)</span>
+                    {
+<span class="fc" id="L145">                        year--;</span>
+                    }
+<span class="fc" id="L147">                    cal.set(Calendar.YEAR, year);</span>
+<span class="fc" id="L148">                    cal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hr));</span>
+<span class="fc" id="L149">                    cal.set(Calendar.MINUTE, Integer.parseInt(min));</span>
+                }
+<span class="fc" id="L151">                cal.set(Calendar.MONTH, month);</span>
+<span class="fc" id="L152">                cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(da));</span>
+<span class="fc" id="L153">                cal.clear(missingUnit);</span>
+<span class="fc" id="L154">                file.setTimestamp(cal);</span>
+<span class="fc" id="L155">            }</span>
+<span class="nc" id="L156">            catch (NumberFormatException e)</span>
+            {
+                // do nothing, date will be uninitialized
+            }
+<span class="fc" id="L160">            file.setName(name);</span>
+
+<span class="fc" id="L162">            return file;</span>
+        }
+<span class="fc" id="L164">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

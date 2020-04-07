@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CRLFLineReader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.io</a> &gt; <span class="el_source">CRLFLineReader.java</span></div><h1>CRLFLineReader.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.io;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+
+/**
+ * CRLFLineReader implements a readLine() method that requires
+ * exactly CRLF to terminate an input line.
+ * This is required for IMAP, which allows bare CR and LF.
+ *
+ * @since 3.0
+ */
+public final class CRLFLineReader extends BufferedReader
+{
+    private static final char LF = '\n';
+    private static final char CR = '\r';
+
+    /**
+     * Creates a CRLFLineReader that wraps an existing Reader
+     * input source.
+     * @param reader  The Reader input source.
+     */
+    public CRLFLineReader(Reader reader)
+    {
+<span class="nc" id="L43">        super(reader);</span>
+<span class="nc" id="L44">    }</span>
+
+    /**
+     * Read a line of text.
+     * A line is considered to be terminated by carriage return followed immediately by a linefeed.
+     * This contrasts with BufferedReader which also allows other combinations.
+     * @since 3.0
+     */
+    @Override
+    public String readLine() throws IOException {
+<span class="nc" id="L54">        StringBuilder sb = new StringBuilder();</span>
+        int intch;
+<span class="nc" id="L56">        boolean prevWasCR = false;</span>
+<span class="nc" id="L57">        synchronized(lock) { // make thread-safe (hopefully!)</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            while((intch = read()) != -1)</span>
+            {
+<span class="nc bnc" id="L60" title="All 4 branches missed.">                if (prevWasCR &amp;&amp; intch == LF) {</span>
+<span class="nc" id="L61">                    return sb.substring(0, sb.length()-1);</span>
+                }
+<span class="nc bnc" id="L63" title="All 2 branches missed.">                if (intch == CR) {</span>
+<span class="nc" id="L64">                    prevWasCR = true;</span>
+<span class="nc" id="L65">                } else {</span>
+<span class="nc" id="L66">                    prevWasCR = false;</span>
+                }
+<span class="nc" id="L68">                sb.append((char) intch);</span>
+            }
+        }
+<span class="nc" id="L71">        String string = sb.toString();</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (string.length() == 0) { // immediate EOF</span>
+<span class="nc" id="L73">            return null;</span>
+        }
+<span class="nc" id="L75">        return string;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

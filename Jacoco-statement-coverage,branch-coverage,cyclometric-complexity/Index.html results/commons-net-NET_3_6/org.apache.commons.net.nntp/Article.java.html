@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Article.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.nntp</a> &gt; <span class="el_source">Article.java</span></div><h1>Article.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.nntp;
+
+import java.io.PrintStream;
+import java.util.ArrayList;
+
+/**
+ * This is a class that contains the basic state needed for message retrieval and threading.
+ * With thanks to Jamie  Zawinski (jwz@jwz.org)
+ */
+public class Article implements Threadable {
+    private long articleNumber;
+    private String subject;
+    private String date;
+    private String articleId;
+    private String simplifiedSubject;
+    private String from;
+    private ArrayList&lt;String&gt; references;
+<span class="nc" id="L35">    private boolean isReply = false;</span>
+
+    public Article kid, next;
+
+<span class="nc" id="L39">    public Article() {</span>
+<span class="nc" id="L40">        articleNumber = -1; // isDummy</span>
+<span class="nc" id="L41">    }</span>
+
+    /**
+     * Adds a message-id to the list of messages that this message references (i.e. replies to)
+     * @param msgId the message id to add
+     */
+    public void addReference(String msgId) {
+<span class="nc bnc" id="L48" title="All 4 branches missed.">        if (msgId == null || msgId.length() == 0) {</span>
+<span class="nc" id="L49">            return;</span>
+        }
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (references == null) {</span>
+<span class="nc" id="L52">            references = new ArrayList&lt;String&gt;();</span>
+        }
+<span class="nc" id="L54">        isReply = true;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        for(String s : msgId.split(&quot; &quot;)) {</span>
+<span class="nc" id="L56">            references.add(s);</span>
+        }
+<span class="nc" id="L58">    }</span>
+
+    /**
+     * Returns the MessageId references as an array of Strings
+     * @return an array of message-ids
+     */
+    public String[] getReferences() {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (references == null) {</span>
+<span class="nc" id="L66">            return new String[0];</span>
+        }
+<span class="nc" id="L68">        return references.toArray(new String[references.size()]);</span>
+    }
+
+    /**
+     * Attempts to parse the subject line for some typical reply signatures, and strip them out
+     *
+     */
+    private void simplifySubject() {
+<span class="nc" id="L76">            int start = 0;</span>
+<span class="nc" id="L77">            String subject = getSubject();</span>
+<span class="nc" id="L78">            int len = subject.length();</span>
+
+<span class="nc" id="L80">            boolean done = false;</span>
+
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            while (!done) {</span>
+<span class="nc" id="L83">                done = true;</span>
+
+                // skip whitespace
+                // &quot;Re: &quot; breaks this
+<span class="nc bnc" id="L87" title="All 4 branches missed.">                while (start &lt; len &amp;&amp; subject.charAt(start) == ' ') {</span>
+<span class="nc" id="L88">                    start++;</span>
+                }
+
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                if (start &lt; (len - 2)</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">                    &amp;&amp; (subject.charAt(start) == 'r' || subject.charAt(start) == 'R')</span>
+<span class="nc bnc" id="L93" title="All 4 branches missed.">                    &amp;&amp; (subject.charAt(start + 1) == 'e' || subject.charAt(start + 1) == 'E')) {</span>
+
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                    if (subject.charAt(start + 2) == ':') {</span>
+<span class="nc" id="L96">                        start += 3; // Skip &quot;Re:&quot;</span>
+<span class="nc" id="L97">                        done = false;</span>
+<span class="nc" id="L98">                    } else if (</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">                        start &lt; (len - 2)</span>
+                        &amp;&amp;
+<span class="nc bnc" id="L101" title="All 4 branches missed.">                        (subject.charAt(start + 2) == '[' || subject.charAt(start + 2) == '(')) {</span>
+
+<span class="nc" id="L103">                        int i = start + 3;</span>
+
+<span class="nc bnc" id="L105" title="All 6 branches missed.">                        while (i &lt; len &amp;&amp; subject.charAt(i) &gt;= '0' &amp;&amp; subject.charAt(i) &lt;= '9') {</span>
+<span class="nc" id="L106">                            i++;</span>
+                        }
+
+<span class="nc bnc" id="L109" title="All 2 branches missed.">                        if (i &lt; (len - 1)</span>
+<span class="nc bnc" id="L110" title="All 4 branches missed.">                            &amp;&amp; (subject.charAt(i) == ']' || subject.charAt(i) == ')')</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">                            &amp;&amp; subject.charAt(i + 1) == ':')</span>
+                        {
+<span class="nc" id="L113">                            start = i + 2;</span>
+<span class="nc" id="L114">                            done = false;</span>
+                        }
+                    }
+                }
+
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                if (&quot;(no subject)&quot;.equals(simplifiedSubject)) {</span>
+<span class="nc" id="L120">                    simplifiedSubject = &quot;&quot;;</span>
+                }
+
+<span class="nc" id="L123">                int end = len;</span>
+
+<span class="nc bnc" id="L125" title="All 4 branches missed.">                while (end &gt; start &amp;&amp; subject.charAt(end - 1) &lt; ' ') {</span>
+<span class="nc" id="L126">                    end--;</span>
+                }
+
+<span class="nc bnc" id="L129" title="All 4 branches missed.">                if (start == 0 &amp;&amp; end == len) {</span>
+<span class="nc" id="L130">                    simplifiedSubject = subject;</span>
+<span class="nc" id="L131">                } else {</span>
+<span class="nc" id="L132">                    simplifiedSubject = subject.substring(start, end);</span>
+                }
+            }
+<span class="nc" id="L135">        }</span>
+
+    /**
+     * Recursive method that traverses a pre-threaded graph (or tree)
+     * of connected Article objects and prints them out.
+     * @param article the root of the article 'tree'
+     * @since 3.4
+     */
+    public static void printThread(Article article) {
+<span class="nc" id="L144">        printThread(article, 0, System.out);</span>
+<span class="nc" id="L145">    }</span>
+
+    /**
+     * Recursive method that traverses a pre-threaded graph (or tree)
+     * of connected Article objects and prints them out.
+     * @param article the root of the article 'tree'
+     * @param ps the PrintStream to use
+     * @since 3.4
+     */
+    public static void printThread(Article article, PrintStream ps) {
+<span class="nc" id="L155">        printThread(article, 0, ps);</span>
+<span class="nc" id="L156">    }</span>
+
+    /**
+     * Recursive method that traverses a pre-threaded graph (or tree)
+     * of connected Article objects and prints them out.
+     * @param article the root of the article 'tree'
+     * @param depth the current tree depth
+     */
+    public static void printThread(Article article, int depth) {
+<span class="nc" id="L165">        printThread(article, depth, System.out);</span>
+<span class="nc" id="L166">    }</span>
+
+    /**
+     * Recursive method that traverses a pre-threaded graph (or tree)
+     * of connected Article objects and prints them out.
+     * @param article the root of the article 'tree'
+     * @param depth the current tree depth
+     * @param ps the PrintStream to use
+     * @since 3.4
+     */
+    public static void printThread(Article article, int depth, PrintStream ps) {
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            for (int i = 0; i &lt; depth; ++i) {</span>
+<span class="nc" id="L178">                ps.print(&quot;==&gt;&quot;);</span>
+            }
+<span class="nc" id="L180">            ps.println(article.getSubject() + &quot;\t&quot; + article.getFrom()+&quot;\t&quot;+article.getArticleId());</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">            if (article.kid != null) {</span>
+<span class="nc" id="L182">                printThread(article.kid, depth + 1);</span>
+            }
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            if (article.next != null) {</span>
+<span class="nc" id="L185">                printThread(article.next, depth);</span>
+            }
+<span class="nc" id="L187">    }</span>
+
+    public String getArticleId() {
+<span class="nc" id="L190">        return articleId;</span>
+    }
+
+    public long getArticleNumberLong() {
+<span class="nc" id="L194">        return articleNumber;</span>
+    }
+
+    public String getDate() {
+<span class="nc" id="L198">        return date;</span>
+    }
+
+    public String getFrom() {
+<span class="nc" id="L202">        return from;</span>
+    }
+
+    public String getSubject() {
+<span class="nc" id="L206">        return subject;</span>
+    }
+
+    public void setArticleId(String string) {
+<span class="nc" id="L210">        articleId = string;</span>
+<span class="nc" id="L211">    }</span>
+
+    public void setArticleNumber(long l) {
+<span class="nc" id="L214">        articleNumber = l;</span>
+<span class="nc" id="L215">    }</span>
+
+    public void setDate(String string) {
+<span class="nc" id="L218">        date = string;</span>
+<span class="nc" id="L219">    }</span>
+
+    public void setFrom(String string) {
+<span class="nc" id="L222">        from = string;</span>
+<span class="nc" id="L223">    }</span>
+
+    public void setSubject(String string) {
+<span class="nc" id="L226">        subject = string;</span>
+<span class="nc" id="L227">    }</span>
+
+
+    @Override
+    public boolean isDummy() {
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        return (articleNumber == -1);</span>
+    }
+
+    @Override
+    public String messageThreadId() {
+<span class="nc" id="L237">        return articleId;</span>
+    }
+
+    @Override
+    public String[] messageThreadReferences() {
+<span class="nc" id="L242">        return getReferences();</span>
+    }
+
+    @Override
+    public String simplifiedSubject() {
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        if(simplifiedSubject == null) {</span>
+<span class="nc" id="L248">            simplifySubject();</span>
+        }
+<span class="nc" id="L250">        return simplifiedSubject;</span>
+    }
+
+
+    @Override
+    public boolean subjectIsReply() {
+<span class="nc" id="L256">        return isReply;</span>
+    }
+
+
+    @Override
+    public void setChild(Threadable child) {
+<span class="nc" id="L262">        this.kid = (Article) child;</span>
+<span class="nc" id="L263">        flushSubjectCache();</span>
+<span class="nc" id="L264">    }</span>
+
+    private void flushSubjectCache() {
+<span class="nc" id="L267">        simplifiedSubject = null;</span>
+<span class="nc" id="L268">    }</span>
+
+
+    @Override
+    public void setNext(Threadable next) {
+<span class="nc" id="L273">        this.next = (Article)next;</span>
+<span class="nc" id="L274">        flushSubjectCache();</span>
+<span class="nc" id="L275">    }</span>
+
+
+    @Override
+    public Threadable makeDummy() {
+<span class="nc" id="L280">        return new Article();</span>
+    }
+
+    @Override
+    public String toString(){ // Useful for Eclipse debugging
+<span class="nc" id="L285">        return articleNumber + &quot; &quot; +articleId + &quot; &quot; + subject;</span>
+    }
+
+    // DEPRECATED METHODS - for API compatibility only - DO NOT USE
+
+    @Deprecated
+    public int getArticleNumber() {
+<span class="nc" id="L292">        return (int) articleNumber;</span>
+    }
+
+    @Deprecated
+    public void setArticleNumber(int a) {
+<span class="nc" id="L297">        articleNumber = a;</span>
+<span class="nc" id="L298">    }</span>
+    @Deprecated
+
+    public void addHeaderField(String name, String val) {
+<span class="nc" id="L302">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

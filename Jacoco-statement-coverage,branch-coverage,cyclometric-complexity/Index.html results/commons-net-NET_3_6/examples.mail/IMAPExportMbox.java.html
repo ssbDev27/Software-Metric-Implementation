@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IMAPExportMbox.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.mail</a> &gt; <span class="el_source">IMAPExportMbox.java</span></div><h1>IMAPExportMbox.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.mail;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.net.PrintCommandListener;
+import org.apache.commons.net.ProtocolCommandEvent;
+import org.apache.commons.net.imap.IMAP.IMAPChunkListener;
+import org.apache.commons.net.imap.IMAP;
+import org.apache.commons.net.imap.IMAPClient;
+import org.apache.commons.net.imap.IMAPReply;
+
+/**
+ * This is an example program demonstrating how to use the IMAP[S]Client class.
+ * This program connects to a IMAP[S] server and exports selected messages from a folder into an mbox file.
+ * &lt;p&gt;
+ * Usage: IMAPExportMbox imap[s]://user:password@host[:port]/folder/path &lt;mboxfile&gt; [sequence-set] [item-names]
+ * &lt;p&gt;
+ * An example sequence-set might be:
+ * &lt;ul&gt;
+ * &lt;li&gt;11,2,3:10,20:*&lt;/li&gt;
+ * &lt;li&gt;1:* - this is the default&lt;/li&gt;
+ * &lt;/ul&gt;
+ * &lt;p&gt;
+ * Some example item-names might be:
+ * &lt;ul&gt;
+ * &lt;li&gt;BODY.PEEK[HEADER]&lt;/li&gt;
+ * &lt;li&gt;'BODY.PEEK[HEADER.FIELDS (SUBJECT)]'&lt;/li&gt;
+ * &lt;li&gt;ALL - macro equivalent to '(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE)'&lt;/li&gt;
+ * &lt;li&gt;FAST - macro equivalent to '(FLAGS INTERNALDATE RFC822.SIZE)'&lt;/li&gt;
+ * &lt;li&gt;FULL - macro equivalent to '(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODY)'&lt;/li&gt;
+ * &lt;li&gt;ENVELOPE X-GM-LABELS&lt;/li&gt;
+ * &lt;li&gt;'(INTERNALDATE BODY.PEEK[])' - this is the default&lt;/li&gt;
+ * &lt;/ul&gt;
+ * &lt;p&gt;
+ * Macro names cannot be combined with anything else; they must be used alone.&lt;br&gt;
+ * Note that using BODY will set the \Seen flag. This is why the default uses BODY.PEEK[].&lt;br&gt;
+ * The item name X-GM-LABELS is a Google Mail extension; it shows the labels for a message.&lt;br&gt;
+ * For example:&lt;br&gt;
+ * IMAPExportMbox imaps://username:password@imap.googlemail.com/messages_for_export exported.mbox 1:10,20&lt;br&gt;
+ * IMAPExportMbox imaps://username:password@imap.googlemail.com/messages_for_export exported.mbox 3 ENVELOPE X-GM-LABELS&lt;br&gt;
+ * &lt;p&gt;
+ * The sequence-set is passed unmodified to the FETCH command.&lt;br&gt;
+ * The item names are wrapped in parentheses if more than one is provided.
+ * Otherwise, the parameter is assumed to be wrapped if necessary.&lt;br&gt;
+ * Parameters with spaces must be quoted otherwise the OS shell will normally treat them as separate parameters.&lt;br&gt;
+ * Also the listener that writes the mailbox only captures the multi-line responses (e.g. ones that include BODY references).
+ * It does not capture the output from FETCH commands using item names such as ENVELOPE or FLAGS that return a single line response.
+ */
+<span class="nc" id="L80">public final class IMAPExportMbox</span>
+{
+
+    private static final String CRLF = &quot;\r\n&quot;;
+    private static final String LF = &quot;\n&quot;;
+<span class="nc" id="L85">    private static final String EOL_DEFAULT = System.getProperty(&quot;line.separator&quot;);</span>
+
+<span class="nc" id="L87">    private static final Pattern PATFROM = Pattern.compile(&quot;&gt;*From &quot;); // unescaped From_</span>
+    // e.g. * nnn (INTERNALDATE &quot;27-Oct-2013 07:43:24 +0000&quot;  BODY[] {nn} ...)
+<span class="nc" id="L89">    private static final Pattern PATID = // INTERNALDATE</span>
+<span class="nc" id="L90">            Pattern.compile(&quot;.*INTERNALDATE \&quot;(\\d\\d-\\w{3}-\\d{4} \\d\\d:\\d\\d:\\d\\d [+-]\\d+)\&quot;&quot;);</span>
+    private static final int PATID_DATE_GROUP = 1;
+
+<span class="nc" id="L93">    private static final Pattern PATSEQ = Pattern.compile(&quot;\\* (\\d+) &quot;); // Sequence number</span>
+    private static final int PATSEQ_SEQUENCE_GROUP = 1;
+
+    // e.g. * 382 EXISTS
+<span class="nc" id="L97">    private static final Pattern PATEXISTS = Pattern.compile(&quot;\\* (\\d+) EXISTS&quot;); // Response from SELECT</span>
+
+    // AAAC NO [TEMPFAIL] FETCH Temporary failure on server [CODE: WBL]
+<span class="nc" id="L100">    private static final Pattern PATTEMPFAIL = Pattern.compile(&quot;[A-Z]{4} NO \\[TEMPFAIL\\] FETCH .*&quot;);</span>
+
+    private static final int CONNECT_TIMEOUT = 10; // Seconds
+<span class="nc" id="L103">    private static final int READ_TIMEOUT = 10;</span>
+
+    public static void main(String[] args) throws IOException, URISyntaxException
+    {
+<span class="nc" id="L107">        int connect_timeout = CONNECT_TIMEOUT;</span>
+<span class="nc" id="L108">        int read_timeout = READ_TIMEOUT;</span>
+
+<span class="nc" id="L110">        int argIdx = 0;</span>
+<span class="nc" id="L111">        String eol = EOL_DEFAULT;</span>
+<span class="nc" id="L112">        boolean printHash = false;</span>
+<span class="nc" id="L113">        boolean printMarker = false;</span>
+<span class="nc" id="L114">        int retryWaitSecs = 0;</span>
+
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        for(argIdx = 0; argIdx &lt; args.length; argIdx++) {</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            if (args[argIdx].equals(&quot;-c&quot;)) {</span>
+<span class="nc" id="L118">                connect_timeout = Integer.parseInt(args[++argIdx]);</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            } else if (args[argIdx].equals(&quot;-r&quot;)) {</span>
+<span class="nc" id="L120">                read_timeout = Integer.parseInt(args[++argIdx]);</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            } else if (args[argIdx].equals(&quot;-R&quot;)) {</span>
+<span class="nc" id="L122">                retryWaitSecs = Integer.parseInt(args[++argIdx]);</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            } else if (args[argIdx].equals(&quot;-LF&quot;)) {</span>
+<span class="nc" id="L124">                eol = LF;</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">            } else if (args[argIdx].equals(&quot;-CRLF&quot;)) {</span>
+<span class="nc" id="L126">                eol = CRLF;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">            } else if (args[argIdx].equals(&quot;-.&quot;)) {</span>
+<span class="nc" id="L128">                printHash = true;</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">            } else if (args[argIdx].equals(&quot;-X&quot;)) {</span>
+<span class="nc" id="L130">                printMarker = true;</span>
+            } else {
+                break;
+            }
+        }
+
+<span class="nc" id="L136">        final int argCount = args.length - argIdx;</span>
+
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        if (argCount &lt; 2)</span>
+        {
+<span class="nc" id="L140">            System.err.println(&quot;Usage: IMAPExportMbox [-LF|-CRLF] [-c n] [-r n] [-R n] [-.] [-X]&quot; +</span>
+                               &quot; imap[s]://user:password@host[:port]/folder/path [+|-]&lt;mboxfile&gt; [sequence-set] [itemnames]&quot;);
+<span class="nc" id="L142">            System.err.println(&quot;\t-LF | -CRLF set end-of-line to LF or CRLF (default is the line.separator system property)&quot;);</span>
+<span class="nc" id="L143">            System.err.println(&quot;\t-c connect timeout in seconds (default 10)&quot;);</span>
+<span class="nc" id="L144">            System.err.println(&quot;\t-r read timeout in seconds (default 10)&quot;);</span>
+<span class="nc" id="L145">            System.err.println(&quot;\t-R temporary failure retry wait in seconds (default 0; i.e. disabled)&quot;);</span>
+<span class="nc" id="L146">            System.err.println(&quot;\t-. print a . for each complete message received&quot;);</span>
+<span class="nc" id="L147">            System.err.println(&quot;\t-X print the X-IMAP line for each complete message received&quot;);</span>
+<span class="nc" id="L148">            System.err.println(&quot;\tthe mboxfile is where the messages are stored; use '-' to write to standard output.&quot;);</span>
+<span class="nc" id="L149">            System.err.println(&quot;\tPrefix filename with '+' to append to the file. Prefix with '-' to allow overwrite.&quot;);</span>
+<span class="nc" id="L150">            System.err.println(&quot;\ta sequence-set is a list of numbers/number ranges e.g. 1,2,3-10,20:* - default 1:*&quot;);</span>
+<span class="nc" id="L151">            System.err.println(&quot;\titemnames are the message data item name(s) e.g. BODY.PEEK[HEADER.FIELDS (SUBJECT)]&quot; +</span>
+                               &quot; or a macro e.g. ALL - default (INTERNALDATE BODY.PEEK[])&quot;);
+<span class="nc" id="L153">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L156">        final String uriString = args[argIdx++];</span>
+        URI uri;
+        try {
+<span class="nc" id="L159">            uri      = URI.create(uriString);</span>
+<span class="nc" id="L160">        } catch(IllegalArgumentException e) { // cannot parse the path as is; let's pull it apart and try again</span>
+<span class="nc" id="L161">            Matcher m = Pattern.compile(&quot;(imaps?://[^/]+)(/.*)&quot;).matcher(uriString);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">            if (m.matches()) {</span>
+<span class="nc" id="L163">                uri = URI.create(m.group(1)); // Just the scheme and auth parts</span>
+<span class="nc" id="L164">                uri = new URI(uri.getScheme(), uri.getAuthority(), m.group(2), null, null);</span>
+<span class="nc" id="L165">            } else {</span>
+<span class="nc" id="L166">                throw e;</span>
+            }
+        }
+<span class="nc" id="L169">        final String file  = args[argIdx++];</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        String sequenceSet = argCount &gt; 2 ? args[argIdx++] : &quot;1:*&quot;;</span>
+        final String itemNames;
+        // Handle 0, 1 or multiple item names
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (argCount &gt; 3) {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            if (argCount &gt; 4) {</span>
+<span class="nc" id="L175">                StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L176">                sb.append(&quot;(&quot;);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                for(int i=4; i &lt;= argCount; i++) {</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">                    if (i&gt;4) {</span>
+<span class="nc" id="L179">                        sb.append(&quot; &quot;);</span>
+                    }
+<span class="nc" id="L181">                    sb.append(args[argIdx++]);</span>
+                }
+<span class="nc" id="L183">                sb.append(&quot;)&quot;);</span>
+<span class="nc" id="L184">                itemNames = sb.toString();</span>
+<span class="nc" id="L185">            } else {</span>
+<span class="nc" id="L186">                itemNames = args[argIdx++];</span>
+            }
+<span class="nc" id="L188">        } else {</span>
+<span class="nc" id="L189">            itemNames = &quot;(INTERNALDATE BODY.PEEK[])&quot;;</span>
+        }
+
+<span class="nc" id="L192">        final boolean checkSequence = sequenceSet.matches(&quot;\\d+:(\\d+|\\*)&quot;); // are we expecting a sequence?</span>
+        final MboxListener chunkListener;
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        if (file.equals(&quot;-&quot;)) {</span>
+<span class="nc" id="L195">            chunkListener = null;</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        } else if (file.startsWith(&quot;+&quot;)) {</span>
+<span class="nc" id="L197">            final File mbox = new File(file.substring(1));</span>
+<span class="nc" id="L198">            System.out.println(&quot;Appending to file &quot; + mbox);</span>
+<span class="nc" id="L199">            chunkListener = new MboxListener(</span>
+<span class="nc" id="L200">                new BufferedWriter(new FileWriter(mbox, true)), eol, printHash, printMarker, checkSequence);</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        } else if (file.startsWith(&quot;-&quot;)) {</span>
+<span class="nc" id="L202">            final File mbox = new File(file.substring(1));</span>
+<span class="nc" id="L203">            System.out.println(&quot;Writing to file &quot; + mbox);</span>
+<span class="nc" id="L204">            chunkListener = new MboxListener(</span>
+<span class="nc" id="L205">                new BufferedWriter(new FileWriter(mbox, false)), eol, printHash, printMarker, checkSequence);</span>
+<span class="nc" id="L206">        } else {</span>
+<span class="nc" id="L207">            final File mbox = new File(file);</span>
+<span class="nc bnc" id="L208" title="All 4 branches missed.">            if (mbox.exists() &amp;&amp; mbox.length() &gt; 0) {</span>
+<span class="nc" id="L209">                throw new IOException(&quot;mailbox file: &quot; + mbox + &quot; already exists and is non-empty!&quot;);</span>
+            }
+<span class="nc" id="L211">            System.out.println(&quot;Creating file &quot; + mbox);</span>
+<span class="nc" id="L212">            chunkListener = new MboxListener(new BufferedWriter(new FileWriter(mbox)), eol, printHash, printMarker, checkSequence);</span>
+        }
+
+<span class="nc" id="L215">        String path = uri.getPath();</span>
+<span class="nc bnc" id="L216" title="All 4 branches missed.">        if (path == null || path.length() &lt; 1) {</span>
+<span class="nc" id="L217">            throw new IllegalArgumentException(&quot;Invalid folderPath: '&quot; + path + &quot;'&quot;);</span>
+        }
+<span class="nc" id="L219">        String folder = path.substring(1); // skip the leading /</span>
+
+        // suppress login details
+<span class="nc" id="L222">        final PrintCommandListener listener = new PrintCommandListener(System.out, true) {</span>
+            @Override
+            public void protocolReplyReceived(ProtocolCommandEvent event) {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                if (event.getReplyCode() != IMAPReply.PARTIAL){ // This is dealt with by the chunk listener</span>
+<span class="nc" id="L226">                    super.protocolReplyReceived(event);</span>
+                }
+<span class="nc" id="L228">            }</span>
+        };
+
+        // Connect and login
+<span class="nc" id="L232">        final IMAPClient imap = IMAPUtils.imapLogin(uri, connect_timeout * 1000, listener);</span>
+
+<span class="nc" id="L234">        String maxIndexInFolder = null;</span>
+
+        try {
+
+<span class="nc" id="L238">            imap.setSoTimeout(read_timeout * 1000);</span>
+
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            if (!imap.select(folder)){</span>
+<span class="nc" id="L241">                throw new IOException(&quot;Could not select folder: &quot; + folder);</span>
+            }
+
+<span class="nc bnc" id="L244" title="All 2 branches missed.">            for(String line : imap.getReplyStrings()) {</span>
+<span class="nc" id="L245">                maxIndexInFolder = matches(line, PATEXISTS, 1);</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">                if (maxIndexInFolder != null) {</span>
+<span class="nc" id="L247">                    break;</span>
+                }
+            }
+
+<span class="nc bnc" id="L251" title="All 2 branches missed.">            if (chunkListener != null) {</span>
+<span class="nc" id="L252">                imap.setChunkListener(chunkListener);</span>
+            } // else the command listener displays the full output without processing
+
+
+            while(true) {
+<span class="nc" id="L257">                boolean ok = imap.fetch(sequenceSet, itemNames);</span>
+                // If the fetch failed, can we retry?
+<span class="nc bnc" id="L259" title="All 8 branches missed.">                if (!ok &amp;&amp; retryWaitSecs &gt; 0 &amp;&amp; chunkListener != null &amp;&amp; checkSequence) {</span>
+<span class="nc" id="L260">                    final String replyString = imap.getReplyString(); //includes EOL</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">                    if (startsWith(replyString, PATTEMPFAIL)) {</span>
+<span class="nc" id="L262">                        System.err.println(&quot;Temporary error detected, will retry in &quot; + retryWaitSecs + &quot;seconds&quot;);</span>
+<span class="nc" id="L263">                        sequenceSet = (chunkListener.lastSeq+1)+&quot;:*&quot;;</span>
+                        try {
+<span class="nc" id="L265">                            Thread.sleep(retryWaitSecs * 1000);</span>
+<span class="nc" id="L266">                        } catch (InterruptedException e) {</span>
+                            // ignored
+                        }
+<span class="nc" id="L269">                    } else {</span>
+<span class="nc" id="L270">                        throw new IOException(&quot;FETCH &quot; + sequenceSet + &quot; &quot; + itemNames+ &quot; failed with &quot; + replyString);</span>
+                    }
+                } else {
+                    break;
+                }
+            }
+
+<span class="nc" id="L277">        } catch (IOException ioe) {</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            String count = chunkListener == null ? &quot;?&quot; : Integer.toString(chunkListener.total);</span>
+<span class="nc" id="L279">            System.err.println(</span>
+<span class="nc" id="L280">                    &quot;FETCH &quot; + sequenceSet + &quot; &quot; + itemNames + &quot; failed after processing &quot; + count + &quot; complete messages &quot;);</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">            if (chunkListener != null) {</span>
+<span class="nc" id="L282">                System.err.println(&quot;Last complete response seen: &quot;+chunkListener.lastFetched);</span>
+            }
+<span class="nc" id="L284">            throw ioe;</span>
+        } finally {
+
+<span class="nc bnc" id="L287" title="All 2 branches missed.">            if (printHash) {</span>
+<span class="nc" id="L288">                System.err.println();</span>
+            }
+
+<span class="nc bnc" id="L291" title="All 2 branches missed.">            if (chunkListener != null) {</span>
+<span class="nc" id="L292">                chunkListener.close();</span>
+<span class="nc" id="L293">                final Iterator&lt;String&gt; missingIds = chunkListener.missingIds.iterator();</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">                if (missingIds.hasNext()) {</span>
+<span class="nc" id="L295">                    StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L296">                    for(;;) {</span>
+<span class="nc" id="L297">                        sb.append(missingIds.next());</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">                        if (!missingIds.hasNext()) {</span>
+<span class="nc" id="L299">                            break;</span>
+                        }
+<span class="nc" id="L301">                        sb.append(&quot;,&quot;);</span>
+                    }
+<span class="nc" id="L303">                    System.err.println(&quot;*** Missing ids: &quot; + sb.toString());</span>
+                }
+            }
+<span class="nc" id="L306">            imap.logout();</span>
+<span class="nc" id="L307">            imap.disconnect();</span>
+        }
+<span class="nc bnc" id="L309" title="All 2 branches missed.">        if (chunkListener != null) {</span>
+<span class="nc" id="L310">            System.out.println(&quot;Processed &quot; + chunkListener.total + &quot; messages.&quot;);</span>
+        }
+<span class="nc bnc" id="L312" title="All 2 branches missed.">        if (maxIndexInFolder != null) {</span>
+<span class="nc" id="L313">            System.out.println(&quot;Folder contained &quot; + maxIndexInFolder + &quot; messages.&quot;);</span>
+        }
+<span class="nc" id="L315">    }</span>
+
+    private static boolean startsWith(String input, Pattern pat) {
+<span class="nc" id="L318">        Matcher m = pat.matcher(input);</span>
+<span class="nc" id="L319">        return m.lookingAt();</span>
+    }
+
+    private static String matches(String input, Pattern pat, int index) {
+<span class="nc" id="L323">        Matcher m = pat.matcher(input);</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        if (m.lookingAt()) {</span>
+<span class="nc" id="L325">            return m.group(index);</span>
+        }
+<span class="nc" id="L327">        return null;</span>
+    }
+
+    private static class MboxListener implements IMAPChunkListener {
+
+        private final BufferedWriter bw;
+<span class="nc" id="L333">        volatile int total = 0;</span>
+        volatile String lastFetched;
+<span class="nc" id="L335">        volatile List&lt;String&gt; missingIds = new ArrayList&lt;String&gt;();</span>
+<span class="nc" id="L336">        volatile long lastSeq = -1;</span>
+        private final String eol;
+<span class="nc" id="L338">        private final SimpleDateFormat DATE_FORMAT // for mbox From_ lines</span>
+<span class="nc" id="L339">            = new SimpleDateFormat(&quot;EEE MMM dd HH:mm:ss YYYY&quot;);</span>
+
+        // e.g. INTERNALDATE &quot;27-Oct-2013 07:43:24 +0000&quot;
+<span class="nc" id="L342">        private final SimpleDateFormat IDPARSE // for parsing INTERNALDATE</span>
+<span class="nc" id="L343">        = new SimpleDateFormat(&quot;dd-MMM-yyyy HH:mm:ss Z&quot;);</span>
+        private final boolean printHash;
+        private final boolean printMarker;
+        private final boolean checkSequence;
+
+<span class="nc" id="L348">        MboxListener(BufferedWriter bw, String eol, boolean printHash, boolean printMarker, boolean checkSequence)</span>
+                throws IOException {
+<span class="nc" id="L350">          this.eol = eol;</span>
+<span class="nc" id="L351">          this.printHash = printHash;</span>
+<span class="nc" id="L352">          this.printMarker = printMarker;</span>
+<span class="nc" id="L353">          DATE_FORMAT.setTimeZone(TimeZone.getTimeZone(&quot;GMT&quot;));</span>
+<span class="nc" id="L354">          this.bw = bw;</span>
+<span class="nc" id="L355">          this.checkSequence = checkSequence;</span>
+<span class="nc" id="L356">        }</span>
+
+        @Override
+        public boolean chunkReceived(IMAP imap) {
+<span class="nc" id="L360">            final String[] replyStrings = imap.getReplyStrings();</span>
+<span class="nc" id="L361">            Date received = new Date();</span>
+<span class="nc" id="L362">            final String firstLine = replyStrings[0];</span>
+<span class="nc" id="L363">            Matcher m = PATID.matcher(firstLine);</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">            if (m.lookingAt()) { // found a match</span>
+<span class="nc" id="L365">                String date = m.group(PATID_DATE_GROUP);</span>
+                try {
+<span class="nc" id="L367">                    received=IDPARSE.parse(date);</span>
+<span class="nc" id="L368">                } catch (ParseException e) {</span>
+<span class="nc" id="L369">                    System.err.println(e);</span>
+                }
+<span class="nc" id="L371">            } else {</span>
+<span class="nc" id="L372">                System.err.println(&quot;No timestamp found in: &quot; + firstLine + &quot;  - using current time&quot;);</span>
+            }
+<span class="nc" id="L374">            String replyTo = &quot;MAILER-DAEMON&quot;; // default</span>
+<span class="nc bnc" id="L375" title="All 2 branches missed.">            for(int i=1; i&lt; replyStrings.length - 1; i++) {</span>
+<span class="nc" id="L376">                final String line = replyStrings[i];</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">                if (line.startsWith(&quot;Return-Path: &quot;)) {</span>
+<span class="nc" id="L378">                   String[] parts = line.split(&quot; &quot;, 2);</span>
+<span class="nc" id="L379">                    replyTo = parts[1];</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">                    if (replyTo.startsWith(&quot;&lt;&quot;)) {</span>
+<span class="nc" id="L381">                        replyTo = replyTo.substring(1,replyTo.length()-1); // drop &lt;&gt; wrapper</span>
+<span class="nc" id="L382">                    } else {</span>
+<span class="nc" id="L383">                        System.err.println(&quot;Unexpected Return-path:&quot; + line+ &quot; in &quot; + firstLine);</span>
+                    }
+<span class="nc" id="L385">                    break;</span>
+                }
+            }
+            try {
+                // Add initial mbox header line
+<span class="nc" id="L390">                bw.append(&quot;From &quot;);</span>
+<span class="nc" id="L391">                bw.append(replyTo);</span>
+<span class="nc" id="L392">                bw.append(' ');</span>
+<span class="nc" id="L393">                bw.append(DATE_FORMAT.format(received));</span>
+<span class="nc" id="L394">                bw.append(eol);</span>
+                // Debug
+<span class="nc" id="L396">                bw.append(&quot;X-IMAP-Response: &quot;).append(firstLine).append(eol);</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">                if (printMarker) {</span>
+<span class="nc" id="L398">                    System.err.println(&quot;[&quot; + total + &quot;] &quot; + firstLine);</span>
+                }
+                // Skip first and last lines
+<span class="nc bnc" id="L401" title="All 2 branches missed.">                for(int i=1; i&lt; replyStrings.length - 1; i++) {</span>
+<span class="nc" id="L402">                    final String line = replyStrings[i];</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">                        if (startsWith(line, PATFROM)) {</span>
+<span class="nc" id="L404">                            bw.append('&gt;'); // Escape a From_ line</span>
+                        }
+<span class="nc" id="L406">                        bw.append(line);</span>
+<span class="nc" id="L407">                        bw.append(eol);</span>
+                }
+                // The last line ends with the trailing closing &quot;)&quot; which needs to be stripped
+<span class="nc" id="L410">                String lastLine = replyStrings[replyStrings.length-1];</span>
+<span class="nc" id="L411">                final int lastLength = lastLine.length();</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">                if (lastLength &gt; 1) { // there's some content, we need to save it</span>
+<span class="nc" id="L413">                    bw.append(lastLine, 0, lastLength-1);</span>
+<span class="nc" id="L414">                    bw.append(eol);</span>
+                }
+<span class="nc" id="L416">                bw.append(eol); // blank line between entries</span>
+<span class="nc" id="L417">            } catch (IOException e) {</span>
+<span class="nc" id="L418">                e.printStackTrace();</span>
+<span class="nc" id="L419">                throw new RuntimeException(e); // chunkReceived cannot throw a checked Exception</span>
+            }
+<span class="nc" id="L421">            lastFetched = firstLine;</span>
+<span class="nc" id="L422">            total++;</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">            if (checkSequence) {</span>
+<span class="nc" id="L424">                m = PATSEQ.matcher(firstLine);</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">                if (m.lookingAt()) { // found a match</span>
+<span class="nc" id="L426">                    final long msgSeq = Long.parseLong(m.group(PATSEQ_SEQUENCE_GROUP)); // Cannot fail to parse</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">                    if (lastSeq != -1) {</span>
+<span class="nc" id="L428">                        long missing = msgSeq - lastSeq - 1;</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">                        if (missing != 0) {</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">                            for(long j = lastSeq + 1; j &lt; msgSeq; j++) {</span>
+<span class="nc" id="L431">                                missingIds.add(String.valueOf(j));</span>
+                            }
+<span class="nc" id="L433">                            System.err.println(</span>
+<span class="nc" id="L434">                                &quot;*** Sequence error: current=&quot; + msgSeq + &quot; previous=&quot; + lastSeq + &quot; Missing=&quot; + missing);</span>
+                        }
+                    }
+<span class="nc" id="L437">                    lastSeq = msgSeq;</span>
+                }
+            }
+<span class="nc bnc" id="L440" title="All 2 branches missed.">            if (printHash) {</span>
+<span class="nc" id="L441">                System.err.print(&quot;.&quot;);</span>
+            }
+<span class="nc" id="L443">            return true;</span>
+        }
+
+        public void close() throws IOException {
+<span class="nc bnc" id="L447" title="All 2 branches missed.">            if (bw != null) {</span>
+<span class="nc" id="L448">                bw.close();</span>
+            }
+<span class="nc" id="L450">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

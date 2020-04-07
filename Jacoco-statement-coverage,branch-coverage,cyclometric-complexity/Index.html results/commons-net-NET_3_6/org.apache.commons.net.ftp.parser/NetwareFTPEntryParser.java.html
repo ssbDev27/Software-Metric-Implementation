@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NetwareFTPEntryParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp.parser</a> &gt; <span class="el_source">NetwareFTPEntryParser.java</span></div><h1>NetwareFTPEntryParser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp.parser;
+
+import java.text.ParseException;
+
+import org.apache.commons.net.ftp.FTPClientConfig;
+import org.apache.commons.net.ftp.FTPFile;
+
+/**
+ * Implementation of FTPFileEntryParser and FTPFileListParser for Netware Systems. Note that some of the proprietary
+ * extensions for Novell-specific operations are not supported. See
+ * &lt;a href=&quot;http://www.novell.com/documentation/nw65/index.html?page=/documentation/nw65/ftp_enu/data/fbhbgcfa.html&quot;&gt;
+ * http://www.novell.com/documentation/nw65/index.html?page=/documentation/nw65/ftp_enu/data/fbhbgcfa.html&lt;/a&gt;
+ * for more details.
+ *
+ * @see org.apache.commons.net.ftp.FTPFileEntryParser FTPFileEntryParser (for usage instructions)
+ * @version $Id$
+ * @since 1.5
+ */
+public class NetwareFTPEntryParser extends ConfigurableFTPFileEntryParserImpl {
+
+    /**
+     * Default date format is e.g. Feb 22 2006
+     */
+    private static final String DEFAULT_DATE_FORMAT = &quot;MMM dd yyyy&quot;;
+
+    /**
+     * Default recent date format is e.g. Feb 22 17:32
+     */
+    private static final String DEFAULT_RECENT_DATE_FORMAT = &quot;MMM dd HH:mm&quot;;
+
+    /**
+     * this is the regular expression used by this parser.
+     * Example: d [-W---F--] SCION_VOL2                        512 Apr 13 23:12 VOL2
+     */
+    private static final String REGEX = &quot;(d|-){1}\\s+&quot;      // Directory/file flag
+            + &quot;\\[([-A-Z]+)\\]\\s+&quot;                         // Attributes RWCEAFMS or -
+            + &quot;(\\S+)\\s+&quot; + &quot;(\\d+)\\s+&quot;                   // Owner and size
+            + &quot;(\\S+\\s+\\S+\\s+((\\d+:\\d+)|(\\d{4})))&quot;    // Long/short date format
+            + &quot;\\s+(.*)&quot;;                                   // Filename (incl. spaces)
+
+    /**
+     * The default constructor for a NetwareFTPEntryParser object.
+     *
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen
+     * under normal conditions.  It it is seen, this is a sign that
+     * &lt;code&gt;REGEX&lt;/code&gt; is  not a valid regular expression.
+     */
+    public NetwareFTPEntryParser() {
+<span class="fc" id="L67">        this(null);</span>
+<span class="fc" id="L68">    }</span>
+
+    /**
+     * This constructor allows the creation of an NetwareFTPEntryParser object
+     * with something other than the default configuration.
+     *
+     * @param config The {@link FTPClientConfig configuration} object used to
+     * configure this parser.
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen
+     * under normal conditions.  It it is seen, this is a sign that
+     * &lt;code&gt;REGEX&lt;/code&gt; is  not a valid regular expression.
+     * @since 1.4
+     */
+    public NetwareFTPEntryParser(FTPClientConfig config) {
+<span class="fc" id="L83">        super(REGEX);</span>
+<span class="fc" id="L84">        configure(config);</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Parses a line of an NetwareFTP server file listing and converts it into a
+     * usable format in the form of an &lt;code&gt; FTPFile &lt;/code&gt; instance.  If the
+     * file listing line doesn't describe a file, &lt;code&gt; null &lt;/code&gt; is
+     * returned, otherwise a &lt;code&gt; FTPFile &lt;/code&gt; instance representing the
+     * files in the directory is returned.
+     * &lt;p&gt;
+     * Netware file permissions are in the following format:  RWCEAFMS, and are explained as follows:
+     * &lt;ul&gt;
+     * &lt;li&gt;&lt;b&gt;S&lt;/b&gt; - Supervisor; All rights.
+     * &lt;li&gt;&lt;b&gt;R&lt;/b&gt; - Read; Right to open and read or execute.
+     * &lt;li&gt;&lt;b&gt;W&lt;/b&gt; - Write; Right to open and modify.
+     * &lt;li&gt;&lt;b&gt;C&lt;/b&gt; - Create; Right to create; when assigned to a file, allows a deleted file to be recovered.
+     * &lt;li&gt;&lt;b&gt;E&lt;/b&gt; - Erase; Right to delete.
+     * &lt;li&gt;&lt;b&gt;M&lt;/b&gt; - Modify; Right to rename a file and to change attributes.
+     * &lt;li&gt;&lt;b&gt;F&lt;/b&gt; - File Scan; Right to see directory or file listings.
+     * &lt;li&gt;&lt;b&gt;A&lt;/b&gt; - Access Control; Right to modify trustee assignments and the Inherited Rights Mask.
+     * &lt;/ul&gt;
+     *
+     * See
+     * &lt;a href=&quot;http://www.novell.com/documentation/nfap10/index.html?page=/documentation/nfap10/nfaubook/data/abxraws.html&quot;&gt;
+     * here&lt;/a&gt;
+     * for more details
+     *
+     * @param entry A line of text from the file listing
+     * @return An FTPFile instance corresponding to the supplied entry
+     */
+    @Override
+    public FTPFile parseFTPEntry(String entry) {
+
+<span class="fc" id="L117">        FTPFile f = new FTPFile();</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (matches(entry)) {</span>
+<span class="fc" id="L119">            String dirString = group(1);</span>
+<span class="fc" id="L120">            String attrib = group(2);</span>
+<span class="fc" id="L121">            String user = group(3);</span>
+<span class="fc" id="L122">            String size = group(4);</span>
+<span class="fc" id="L123">            String datestr = group(5);</span>
+<span class="fc" id="L124">            String name = group(9);</span>
+
+            try {
+<span class="fc" id="L127">                f.setTimestamp(super.parseTimestamp(datestr));</span>
+<span class="pc" id="L128">            } catch (ParseException e) {</span>
+                 // intentionally do nothing
+            }
+
+            //is it a DIR or a file
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            if (dirString.trim().equals(&quot;d&quot;)) {</span>
+<span class="fc" id="L134">                f.setType(FTPFile.DIRECTORY_TYPE);</span>
+<span class="fc" id="L135">            } else // Should be &quot;-&quot;</span>
+            {
+<span class="fc" id="L137">                f.setType(FTPFile.FILE_TYPE);</span>
+            }
+
+<span class="fc" id="L140">            f.setUser(user);</span>
+
+            //set the name
+<span class="fc" id="L143">            f.setName(name.trim());</span>
+
+            //set the size
+<span class="fc" id="L146">            f.setSize(Long.parseLong(size.trim()));</span>
+
+            // Now set the permissions (or at least a subset thereof - full permissions would probably require
+            // subclassing FTPFile and adding extra metainformation there)
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            if (attrib.indexOf(&quot;R&quot;) != -1) {</span>
+<span class="fc" id="L151">                f.setPermission(FTPFile.USER_ACCESS, FTPFile.READ_PERMISSION,</span>
+<span class="fc" id="L152">                        true);</span>
+            }
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (attrib.indexOf(&quot;W&quot;) != -1) {</span>
+<span class="fc" id="L155">                f.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION,</span>
+<span class="fc" id="L156">                        true);</span>
+            }
+
+<span class="fc" id="L159">            return (f);</span>
+        }
+<span class="fc" id="L161">        return null;</span>
+
+    }
+
+    /**
+     * Defines a default configuration to be used when this class is
+     * instantiated without a {@link  FTPClientConfig  FTPClientConfig}
+     * parameter being specified.
+     * @return the default configuration for this parser.
+     */
+    @Override
+    protected FTPClientConfig getDefaultConfiguration() {
+<span class="fc" id="L173">        return new FTPClientConfig(FTPClientConfig.SYST_NETWARE,</span>
+<span class="fc" id="L174">                DEFAULT_DATE_FORMAT, DEFAULT_RECENT_DATE_FORMAT);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ToNetASCIIOutputStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.io</a> &gt; <span class="el_source">ToNetASCIIOutputStream.java</span></div><h1>ToNetASCIIOutputStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.io;
+
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
+/***
+ * This class wraps an output stream, replacing all singly occurring
+ * &amp;lt;LF&amp;gt; (linefeed) characters with &amp;lt;CR&amp;gt;&amp;lt;LF&amp;gt; (carriage return
+ * followed by linefeed), which is the NETASCII standard for representing
+ * a newline.
+ * You would use this class to implement ASCII file transfers requiring
+ * conversion to NETASCII.
+ *
+ *
+ ***/
+
+public final class ToNetASCIIOutputStream extends FilterOutputStream
+{
+    private boolean __lastWasCR;
+
+    /***
+     * Creates a ToNetASCIIOutputStream instance that wraps an existing
+     * OutputStream.
+     *
+     * @param output  The OutputStream to wrap.
+     ***/
+    public ToNetASCIIOutputStream(OutputStream output)
+    {
+<span class="nc" id="L47">        super(output);</span>
+<span class="nc" id="L48">        __lastWasCR = false;</span>
+<span class="nc" id="L49">    }</span>
+
+
+    /***
+     * Writes a byte to the stream.    Note that a call to this method
+     * may result in multiple writes to the underlying input stream in order
+     * to convert naked newlines to NETASCII line separators.
+     * This is transparent to the programmer and is only mentioned for
+     * completeness.
+     *
+     * @param ch The byte to write.
+     * @throws IOException If an error occurs while writing to the underlying
+     *            stream.
+     ***/
+    @Override
+    public synchronized void write(int ch)
+    throws IOException
+    {
+<span class="nc bnc" id="L67" title="All 3 branches missed.">        switch (ch)</span>
+        {
+        case '\r':
+<span class="nc" id="L70">            __lastWasCR = true;</span>
+<span class="nc" id="L71">            out.write('\r');</span>
+<span class="nc" id="L72">            return ;</span>
+        case '\n':
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            if (!__lastWasCR) {</span>
+<span class="nc" id="L75">                out.write('\r');</span>
+            }
+            //$FALL-THROUGH$
+        default:
+<span class="nc" id="L79">            __lastWasCR = false;</span>
+<span class="nc" id="L80">            out.write(ch);</span>
+<span class="nc" id="L81">            return ;</span>
+        }
+    }
+
+
+    /***
+     * Writes a byte array to the stream.
+     *
+     * @param buffer  The byte array to write.
+     * @throws IOException If an error occurs while writing to the underlying
+     *            stream.
+     ***/
+    @Override
+    public synchronized void write(byte buffer[])
+    throws IOException
+    {
+<span class="nc" id="L97">        write(buffer, 0, buffer.length);</span>
+<span class="nc" id="L98">    }</span>
+
+
+    /***
+     * Writes a number of bytes from a byte array to the stream starting from
+     * a given offset.
+     *
+     * @param buffer  The byte array to write.
+     * @param offset  The offset into the array at which to start copying data.
+     * @param length  The number of bytes to write.
+     * @throws IOException If an error occurs while writing to the underlying
+     *            stream.
+     ***/
+    @Override
+    public synchronized void write(byte buffer[], int offset, int length)
+    throws IOException
+    {
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        while (length-- &gt; 0) {</span>
+<span class="nc" id="L116">            write(buffer[offset++]);</span>
+        }
+<span class="nc" id="L118">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

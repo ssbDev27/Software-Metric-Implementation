@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TFTPDataPacket.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.tftp</a> &gt; <span class="el_source">TFTPDataPacket.java</span></div><h1>TFTPDataPacket.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.tftp;
+
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+
+/***
+ * A final class derived from TFTPPacket definiing the TFTP Data
+ * packet type.
+ * &lt;p&gt;
+ * Details regarding the TFTP protocol and the format of TFTP packets can
+ * be found in RFC 783.  But the point of these classes is to keep you
+ * from having to worry about the internals.  Additionally, only very
+ * few people should have to care about any of the TFTPPacket classes
+ * or derived classes.  Almost all users should only be concerned with the
+ * {@link org.apache.commons.net.tftp.TFTPClient} class
+ * {@link org.apache.commons.net.tftp.TFTPClient#receiveFile receiveFile()}
+ * and
+ * {@link org.apache.commons.net.tftp.TFTPClient#sendFile sendFile()}
+ * methods.
+ *
+ *
+ * @see TFTPPacket
+ * @see TFTPPacketException
+ * @see TFTP
+ ***/
+
+public final class TFTPDataPacket extends TFTPPacket
+{
+    /*** The maximum number of bytes in a TFTP data packet (512) ***/
+    public static final int MAX_DATA_LENGTH = 512;
+
+    /*** The minimum number of bytes in a TFTP data packet (0) ***/
+    public static final int MIN_DATA_LENGTH = 0;
+
+    /*** The block number of the packet. ***/
+    int _blockNumber;
+
+    /*** The length of the data. ***/
+    int _length;
+
+    /*** The offset into the _data array at which the data begins. ***/
+    int _offset;
+
+    /*** The data stored in the packet. ***/
+    byte[] _data;
+
+    /***
+     * Creates a data packet to be sent to a host at a given port
+     * with a given block number.  The actual data to be sent is passed as
+     * an array, an offset, and a length.  The offset is the offset into
+     * the byte array where the data starts.  The length is the length of
+     * the data.  If the length is greater than MAX_DATA_LENGTH, it is
+     * truncated.
+     *
+     * @param destination  The host to which the packet is going to be sent.
+     * @param port  The port to which the packet is going to be sent.
+     * @param blockNumber The block number of the data.
+     * @param data The byte array containing the data.
+     * @param offset The offset into the array where the data starts.
+     * @param length The length of the data.
+     ***/
+    public TFTPDataPacket(InetAddress destination, int port, int blockNumber,
+                          byte[] data, int offset, int length)
+    {
+<span class="fc" id="L82">        super(TFTPPacket.DATA, destination, port);</span>
+
+<span class="fc" id="L84">        _blockNumber = blockNumber;</span>
+<span class="fc" id="L85">        _data = data;</span>
+<span class="fc" id="L86">        _offset = offset;</span>
+
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (length &gt; MAX_DATA_LENGTH) {</span>
+<span class="nc" id="L89">            _length = MAX_DATA_LENGTH;</span>
+<span class="nc" id="L90">        } else {</span>
+<span class="fc" id="L91">            _length = length;</span>
+        }
+<span class="fc" id="L93">    }</span>
+
+    public TFTPDataPacket(InetAddress destination, int port, int blockNumber,
+                          byte[] data)
+    {
+<span class="nc" id="L98">        this(destination, port, blockNumber, data, 0, data.length);</span>
+<span class="nc" id="L99">    }</span>
+
+
+    /***
+     * Creates a data packet based from a received
+     * datagram.  Assumes the datagram is at least length 4, else an
+     * ArrayIndexOutOfBoundsException may be thrown.
+     *
+     * @param datagram  The datagram containing the received data.
+     * @throws TFTPPacketException  If the datagram isn't a valid TFTP
+     *         data packet.
+     ***/
+    TFTPDataPacket(DatagramPacket datagram) throws TFTPPacketException
+    {
+<span class="fc" id="L113">        super(TFTPPacket.DATA, datagram.getAddress(), datagram.getPort());</span>
+
+<span class="fc" id="L115">        _data = datagram.getData();</span>
+<span class="fc" id="L116">        _offset = 4;</span>
+
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (getType() != _data[1]) {</span>
+<span class="nc" id="L119">            throw new TFTPPacketException(&quot;TFTP operator code does not match type.&quot;);</span>
+        }
+
+<span class="fc" id="L122">        _blockNumber = (((_data[2] &amp; 0xff) &lt;&lt; 8) | (_data[3] &amp; 0xff));</span>
+
+<span class="fc" id="L124">        _length = datagram.getLength() - 4;</span>
+
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (_length &gt; MAX_DATA_LENGTH) {</span>
+<span class="nc" id="L127">            _length = MAX_DATA_LENGTH;</span>
+        }
+<span class="fc" id="L129">    }</span>
+
+    /***
+     * This is a method only available within the package for
+     * implementing efficient datagram transport by elminating buffering.
+     * It takes a datagram as an argument, and a byte buffer in which
+     * to store the raw datagram data.  Inside the method, the data
+     * is set as the datagram's data and the datagram returned.
+     *
+     * @param datagram  The datagram to create.
+     * @param data The buffer to store the packet and to use in the datagram.
+     * @return The datagram argument.
+     ***/
+    @Override
+    DatagramPacket _newDatagram(DatagramPacket datagram, byte[] data)
+    {
+<span class="fc" id="L145">        data[0] = 0;</span>
+<span class="fc" id="L146">        data[1] = (byte)_type;</span>
+<span class="fc" id="L147">        data[2] = (byte)((_blockNumber &amp; 0xffff) &gt;&gt; 8);</span>
+<span class="fc" id="L148">        data[3] = (byte)(_blockNumber &amp; 0xff);</span>
+
+        // Doublecheck we're not the same
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        if (data != _data) {</span>
+<span class="fc" id="L152">            System.arraycopy(_data, _offset, data, 4, _length);</span>
+        }
+
+<span class="fc" id="L155">        datagram.setAddress(_address);</span>
+<span class="fc" id="L156">        datagram.setPort(_port);</span>
+<span class="fc" id="L157">        datagram.setData(data);</span>
+<span class="fc" id="L158">        datagram.setLength(_length + 4);</span>
+
+<span class="fc" id="L160">        return datagram;</span>
+    }
+
+    /***
+     * Creates a UDP datagram containing all the TFTP
+     * data packet data in the proper format.
+     * This is a method exposed to the programmer in case he
+     * wants to implement his own TFTP client instead of using
+     * the {@link org.apache.commons.net.tftp.TFTPClient}
+     * class.
+     * Under normal circumstances, you should not have a need to call this
+     * method.
+     *
+     * @return A UDP datagram containing the TFTP data packet.
+     ***/
+    @Override
+    public DatagramPacket newDatagram()
+    {
+        byte[] data;
+
+<span class="nc" id="L180">        data = new byte[_length + 4];</span>
+<span class="nc" id="L181">        data[0] = 0;</span>
+<span class="nc" id="L182">        data[1] = (byte)_type;</span>
+<span class="nc" id="L183">        data[2] = (byte)((_blockNumber &amp; 0xffff) &gt;&gt; 8);</span>
+<span class="nc" id="L184">        data[3] = (byte)(_blockNumber &amp; 0xff);</span>
+
+<span class="nc" id="L186">        System.arraycopy(_data, _offset, data, 4, _length);</span>
+
+<span class="nc" id="L188">        return new DatagramPacket(data, _length + 4, _address, _port);</span>
+    }
+
+    /***
+     * Returns the block number of the data packet.
+     *
+     * @return The block number of the data packet.
+     ***/
+    public int getBlockNumber()
+    {
+<span class="fc" id="L198">        return _blockNumber;</span>
+    }
+
+    /*** Sets the block number of the data packet.
+     * @param blockNumber the number to set
+     ***/
+    public void setBlockNumber(int blockNumber)
+    {
+<span class="fc" id="L206">        _blockNumber = blockNumber;</span>
+<span class="fc" id="L207">    }</span>
+
+    /***
+     * Sets the data for the data packet.
+     *
+     * @param data The byte array containing the data.
+     * @param offset The offset into the array where the data starts.
+     * @param length The length of the data.
+     ***/
+    public void setData(byte[] data, int offset, int length)
+    {
+<span class="fc" id="L218">        _data = data;</span>
+<span class="fc" id="L219">        _offset = offset;</span>
+<span class="fc" id="L220">        _length = length;</span>
+
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        if (length &gt; MAX_DATA_LENGTH) {</span>
+<span class="nc" id="L223">            _length = MAX_DATA_LENGTH;</span>
+<span class="nc" id="L224">        } else {</span>
+<span class="fc" id="L225">            _length = length;</span>
+        }
+<span class="fc" id="L227">    }</span>
+
+    /***
+     * Returns the length of the data part of the data packet.
+     *
+     * @return The length of the data part of the data packet.
+     ***/
+    public int getDataLength()
+    {
+<span class="fc" id="L236">        return _length;</span>
+    }
+
+    /***
+     * Returns the offset into the byte array where the packet data actually
+     * starts.
+     *
+     * @return The offset into the byte array where the packet data actually
+     *         starts.
+     ***/
+    public int getDataOffset()
+    {
+<span class="fc" id="L248">        return _offset;</span>
+    }
+
+    /***
+     * Returns the byte array containing the packet data.
+     *
+     * @return The byte array containing the packet data.
+     ***/
+    public byte[] getData()
+    {
+<span class="fc" id="L258">        return _data;</span>
+    }
+
+    /**
+     * For debugging
+     * @since 3.6
+     */
+    @Override
+    public String toString() {
+<span class="nc" id="L267">        return super.toString() + &quot; DATA &quot; + _blockNumber + &quot; &quot; + _length;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

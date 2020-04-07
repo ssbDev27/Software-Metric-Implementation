@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NewGroupsOrNewsQuery.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.nntp</a> &gt; <span class="el_source">NewGroupsOrNewsQuery.java</span></div><h1>NewGroupsOrNewsQuery.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.nntp;
+
+import java.util.Calendar;
+
+/***
+ * The NewGroupsOrNewsQuery class.  This is used to issue NNTP NEWGROUPS and
+ * NEWNEWS queries, implemented by
+ * {@link org.apache.commons.net.nntp.NNTPClient#listNewNewsgroups listNewNewsGroups }
+ *  and
+ * {@link org.apache.commons.net.nntp.NNTPClient#listNewNews listNewNews }
+ *  respectively.  It prevents you from having to format
+ * date, time, distribution, and newgroup arguments.
+ * &lt;p&gt;
+ * You might use the class as follows:
+ * &lt;pre&gt;
+ * query = new NewsGroupsOrNewsQuery(new GregorianCalendar(97, 11, 15), false);
+ * query.addDistribution(&quot;comp&quot;);
+ * NewsgroupInfo[] newsgroups = client.listNewgroups(query);
+ * &lt;/pre&gt;
+ * This will retrieve the list of newsgroups starting with the comp.
+ * distribution prefix created since midnight 11/15/97.
+ *
+ * @see NNTPClient
+ ***/
+
+public final class NewGroupsOrNewsQuery
+{
+    private final String __date, __time;
+    private StringBuffer __distributions;
+    private StringBuffer __newsgroups;
+    private final boolean __isGMT;
+
+
+    /***
+     * Creates a new query using the given time as a reference point.
+     * &lt;p&gt;
+     * @param date  The date since which new groups or news have arrived.
+     * @param gmt   True if the date should be considered as GMT, false if not.
+     ***/
+<span class="nc" id="L57">    public NewGroupsOrNewsQuery(Calendar date, boolean gmt)</span>
+    {
+        int num;
+        String str;
+        StringBuilder buffer;
+
+<span class="nc" id="L63">        __distributions = null;</span>
+<span class="nc" id="L64">        __newsgroups = null;</span>
+<span class="nc" id="L65">        __isGMT = gmt;</span>
+
+<span class="nc" id="L67">        buffer = new StringBuilder();</span>
+
+        // Get year
+<span class="nc" id="L70">        num = date.get(Calendar.YEAR);</span>
+<span class="nc" id="L71">        str = Integer.toString(num);</span>
+<span class="nc" id="L72">        num = str.length();</span>
+
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (num &gt;= 2) {</span>
+<span class="nc" id="L75">            buffer.append(str.substring(num - 2));</span>
+<span class="nc" id="L76">        } else {</span>
+<span class="nc" id="L77">            buffer.append(&quot;00&quot;);</span>
+        }
+
+        // Get month
+<span class="nc" id="L81">        num = date.get(Calendar.MONTH) + 1;</span>
+<span class="nc" id="L82">        str = Integer.toString(num);</span>
+<span class="nc" id="L83">        num = str.length();</span>
+
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (num == 1) {</span>
+<span class="nc" id="L86">            buffer.append('0');</span>
+<span class="nc" id="L87">            buffer.append(str);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        } else if (num == 2) {</span>
+<span class="nc" id="L89">            buffer.append(str);</span>
+<span class="nc" id="L90">        } else {</span>
+<span class="nc" id="L91">            buffer.append(&quot;01&quot;);</span>
+        }
+
+        // Get day
+<span class="nc" id="L95">        num = date.get(Calendar.DAY_OF_MONTH);</span>
+<span class="nc" id="L96">        str = Integer.toString(num);</span>
+<span class="nc" id="L97">        num = str.length();</span>
+
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (num == 1) {</span>
+<span class="nc" id="L100">            buffer.append('0');</span>
+<span class="nc" id="L101">            buffer.append(str);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        } else if (num == 2) {</span>
+<span class="nc" id="L103">            buffer.append(str);</span>
+<span class="nc" id="L104">        } else {</span>
+<span class="nc" id="L105">            buffer.append(&quot;01&quot;);</span>
+        }
+
+<span class="nc" id="L108">        __date = buffer.toString();</span>
+
+<span class="nc" id="L110">        buffer.setLength(0);</span>
+
+        // Get hour
+<span class="nc" id="L113">        num = date.get(Calendar.HOUR_OF_DAY);</span>
+<span class="nc" id="L114">        str = Integer.toString(num);</span>
+<span class="nc" id="L115">        num = str.length();</span>
+
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (num == 1) {</span>
+<span class="nc" id="L118">            buffer.append('0');</span>
+<span class="nc" id="L119">            buffer.append(str);</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        } else if (num == 2) {</span>
+<span class="nc" id="L121">            buffer.append(str);</span>
+<span class="nc" id="L122">        } else {</span>
+<span class="nc" id="L123">            buffer.append(&quot;00&quot;);</span>
+        }
+
+        // Get minutes
+<span class="nc" id="L127">        num = date.get(Calendar.MINUTE);</span>
+<span class="nc" id="L128">        str = Integer.toString(num);</span>
+<span class="nc" id="L129">        num = str.length();</span>
+
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        if (num == 1) {</span>
+<span class="nc" id="L132">            buffer.append('0');</span>
+<span class="nc" id="L133">            buffer.append(str);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        } else if (num == 2) {</span>
+<span class="nc" id="L135">            buffer.append(str);</span>
+<span class="nc" id="L136">        } else {</span>
+<span class="nc" id="L137">            buffer.append(&quot;00&quot;);</span>
+        }
+
+
+        // Get seconds
+<span class="nc" id="L142">        num = date.get(Calendar.SECOND);</span>
+<span class="nc" id="L143">        str = Integer.toString(num);</span>
+<span class="nc" id="L144">        num = str.length();</span>
+
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (num == 1) {</span>
+<span class="nc" id="L147">            buffer.append('0');</span>
+<span class="nc" id="L148">            buffer.append(str);</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        } else if (num == 2) {</span>
+<span class="nc" id="L150">            buffer.append(str);</span>
+<span class="nc" id="L151">        } else {</span>
+<span class="nc" id="L152">            buffer.append(&quot;00&quot;);</span>
+        }
+
+<span class="nc" id="L155">        __time = buffer.toString();</span>
+<span class="nc" id="L156">    }</span>
+
+
+    /***
+     * Add a newsgroup to the list of newsgroups being queried.  Newsgroups
+     * added this way are only meaningful to the NEWNEWS command.  Newsgroup
+     * names may include the &lt;code&gt; * &lt;/code&gt; wildcard, as in
+     * &lt;code&gt;comp.lang.* &lt;/code&gt; or &lt;code&gt; comp.lang.java.* &lt;/code&gt;.  Adding
+     * at least one newsgroup is mandatory for the NEWNEWS command.
+     * &lt;p&gt;
+     * @param newsgroup  The newsgroup to add to the list of groups to be
+     *                   checked for new news.
+     ***/
+    public void addNewsgroup(String newsgroup)
+    {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (__newsgroups != null) {</span>
+<span class="nc" id="L172">            __newsgroups.append(',');</span>
+<span class="nc" id="L173">        } else {</span>
+<span class="nc" id="L174">            __newsgroups = new StringBuffer();</span>
+        }
+<span class="nc" id="L176">        __newsgroups.append(newsgroup);</span>
+<span class="nc" id="L177">    }</span>
+
+
+    /***
+     * Add a newsgroup to the list of newsgroups being queried, but indicate
+     * that group should not be checked for new news.  Newsgroups
+     * added this way are only meaningful to the NEWNEWS command.
+     * Newsgroup names may include the &lt;code&gt; * &lt;/code&gt; wildcard, as in
+     * &lt;code&gt;comp.lang.* &lt;/code&gt; or &lt;code&gt; comp.lang.java.* &lt;/code&gt;.
+     * &lt;p&gt;
+     * The following would create a query that searched for new news in
+     * all comp.lang.java newsgroups except for comp.lang.java.advocacy.
+     * &lt;pre&gt;
+     * query.addNewsgroup(&quot;comp.lang.java.*&quot;);
+     * query.omitNewsgroup(&quot;comp.lang.java.advocacy&quot;);
+     * &lt;/pre&gt;
+     * &lt;p&gt;
+     * @param newsgroup  The newsgroup to add to the list of groups to be
+     *                   checked for new news, but which should be omitted from
+     *                   the search for new news..
+     ***/
+    public void omitNewsgroup(String newsgroup)
+    {
+<span class="nc" id="L200">        addNewsgroup(&quot;!&quot; + newsgroup);</span>
+<span class="nc" id="L201">    }</span>
+
+
+    /***
+     * Add a distribution group to the query.  The distribution part of a
+     * newsgroup is the segment of the name preceding the first dot (e.g.,
+     * comp, alt, rec).  Only those newsgroups matching one of the
+     * distributions or, in the case of NEWNEWS, an article in a newsgroup
+     * matching one of the distributions, will be reported as a query result.
+     * Adding distributions is purely optional.
+     * &lt;p&gt;
+     * @param distribution A distribution to add to the query.
+     ***/
+    public void addDistribution(String distribution)
+    {
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (__distributions != null) {</span>
+<span class="nc" id="L217">            __distributions.append(',');</span>
+<span class="nc" id="L218">        } else {</span>
+<span class="nc" id="L219">            __distributions = new StringBuffer();</span>
+        }
+<span class="nc" id="L221">        __distributions.append(distribution);</span>
+<span class="nc" id="L222">    }</span>
+
+    /***
+     * Return the NNTP query formatted date (year, month, day in the form
+     * YYMMDD.
+     * &lt;p&gt;
+     * @return The NNTP query formatted date.
+     ***/
+    public String getDate()
+    {
+<span class="nc" id="L232">        return __date;</span>
+    }
+
+    /***
+     * Return the NNTP query formatted time (hour, minutes, seconds in the form
+     * HHMMSS.
+     * &lt;p&gt;
+     * @return The NNTP query formatted time.
+     ***/
+    public String getTime()
+    {
+<span class="nc" id="L243">        return __time;</span>
+    }
+
+    /***
+     * Return whether or not the query date should be treated as GMT.
+     * &lt;p&gt;
+     * @return True if the query date is to be treated as GMT, false if not.
+     ***/
+    public boolean isGMT()
+    {
+<span class="nc" id="L253">        return __isGMT;</span>
+    }
+
+    /***
+     * Return the comma separated list of distributions.  This may be null
+     * if there are no distributions.
+     * &lt;p&gt;
+     * @return The list of distributions, which may be null if no distributions
+     *         have been specified.
+     ***/
+    public String getDistributions()
+    {
+<span class="nc bnc" id="L265" title="All 2 branches missed.">        return (__distributions == null ? null : __distributions.toString());</span>
+    }
+
+    /***
+     * Return the comma separated list of newsgroups.  This may be null
+     * if there are no newsgroups
+     * &lt;p&gt;
+     * @return The list of newsgroups, which may be null if no newsgroups
+     *         have been specified.
+     ***/
+    public String getNewsgroups()
+    {
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        return (__newsgroups == null ? null : __newsgroups.toString());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SSLSocketUtils.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.util</a> &gt; <span class="el_source">SSLSocketUtils.java</span></div><h1>SSLSocketUtils.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package org.apache.commons.net.util;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+import javax.net.ssl.SSLSocket;
+
+/**
+ * General utilities for SSLSocket.
+ * @since 3.4
+ */
+public class SSLSocketUtils {
+    private SSLSocketUtils() {
+        // Not instantiable
+    }
+
+    /**
+     * Enable the HTTPS endpoint identification algorithm on an SSLSocket.
+     * @param socket the SSL socket
+     * @return {@code true} on success (this is only supported on Java 1.7+)
+     */
+    public static boolean enableEndpointNameVerification(SSLSocket socket) {
+        try {
+<span class="nc" id="L42">            Class&lt;?&gt; cls = Class.forName(&quot;javax.net.ssl.SSLParameters&quot;);</span>
+<span class="nc" id="L43">            Method setEndpointIdentificationAlgorithm = cls.getDeclaredMethod(&quot;setEndpointIdentificationAlgorithm&quot;, String.class);</span>
+<span class="nc" id="L44">            Method getSSLParameters = SSLSocket.class.getDeclaredMethod(&quot;getSSLParameters&quot;);</span>
+<span class="nc" id="L45">            Method setSSLParameters = SSLSocket.class.getDeclaredMethod(&quot;setSSLParameters&quot;, cls);</span>
+<span class="nc bnc" id="L46" title="All 6 branches missed.">            if (setEndpointIdentificationAlgorithm != null &amp;&amp; getSSLParameters != null &amp;&amp; setSSLParameters != null) {</span>
+<span class="nc" id="L47">                Object sslParams = getSSLParameters.invoke(socket);</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">                if (sslParams != null) {</span>
+<span class="nc" id="L49">                    setEndpointIdentificationAlgorithm.invoke(sslParams, &quot;HTTPS&quot;);</span>
+<span class="nc" id="L50">                    setSSLParameters.invoke(socket, sslParams);</span>
+<span class="nc" id="L51">                    return true;</span>
+                }
+            }
+<span class="nc" id="L54">        } catch (SecurityException e) { // Ignored</span>
+<span class="nc" id="L55">        } catch (ClassNotFoundException e) { // Ignored</span>
+<span class="nc" id="L56">        } catch (NoSuchMethodException e) { // Ignored</span>
+<span class="nc" id="L57">        } catch (IllegalArgumentException e) { // Ignored</span>
+<span class="nc" id="L58">        } catch (IllegalAccessException e) { // Ignored</span>
+<span class="nc" id="L59">        } catch (InvocationTargetException e) { // Ignored</span>
+        }
+<span class="nc" id="L61">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

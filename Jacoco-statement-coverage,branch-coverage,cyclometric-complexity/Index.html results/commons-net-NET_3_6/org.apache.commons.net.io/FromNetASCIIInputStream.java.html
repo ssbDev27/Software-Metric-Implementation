@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FromNetASCIIInputStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.io</a> &gt; <span class="el_source">FromNetASCIIInputStream.java</span></div><h1>FromNetASCIIInputStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.io;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PushbackInputStream;
+import java.io.UnsupportedEncodingException;
+
+/***
+ * This class wraps an input stream, replacing all occurrences
+ * of &amp;lt;CR&amp;gt;&amp;lt;LF&amp;gt; (carriage return followed by a linefeed),
+ * which is the NETASCII standard for representing a newline, with the
+ * local line separator representation.  You would use this class to
+ * implement ASCII file transfers requiring conversion from NETASCII.
+ *
+ *
+ ***/
+
+public final class FromNetASCIIInputStream extends PushbackInputStream
+{
+    static final boolean _noConversionRequired;
+    static final String _lineSeparator;
+    static final byte[] _lineSeparatorBytes;
+
+    static {
+<span class="fc" id="L42">        _lineSeparator = System.getProperty(&quot;line.separator&quot;);</span>
+<span class="fc" id="L43">        _noConversionRequired = _lineSeparator.equals(&quot;\r\n&quot;);</span>
+        try {
+<span class="fc" id="L45">            _lineSeparatorBytes = _lineSeparator.getBytes(&quot;US-ASCII&quot;);</span>
+<span class="pc" id="L46">        } catch (UnsupportedEncodingException e) {</span>
+<span class="nc" id="L47">           throw new RuntimeException(&quot;Broken JVM - cannot find US-ASCII charset!&quot;,e);</span>
+        }
+<span class="fc" id="L49">    }</span>
+
+<span class="nc" id="L51">    private int __length = 0;</span>
+
+    /***
+     * Returns true if the NetASCII line separator differs from the system
+     * line separator, false if they are the same.  This method is useful
+     * to determine whether or not you need to instantiate a
+     * FromNetASCIIInputStream object.
+     *
+     * @return True if the NETASCII line separator differs from the local
+     *   system line separator, false if they are the same.
+     ***/
+    public static final boolean isConversionRequired()
+    {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        return !_noConversionRequired;</span>
+    }
+
+    /***
+     * Creates a FromNetASCIIInputStream instance that wraps an existing
+     * InputStream.
+     * @param input the stream to wrap
+     ***/
+    public FromNetASCIIInputStream(InputStream input)
+    {
+<span class="nc" id="L74">        super(input, _lineSeparatorBytes.length + 1);</span>
+<span class="nc" id="L75">    }</span>
+
+
+    private int __read() throws IOException
+    {
+        int ch;
+
+<span class="nc" id="L82">        ch = super.read();</span>
+
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (ch == '\r')</span>
+        {
+<span class="nc" id="L86">            ch = super.read();</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">            if (ch == '\n')</span>
+            {
+<span class="nc" id="L89">                unread(_lineSeparatorBytes);</span>
+<span class="nc" id="L90">                ch = super.read();</span>
+                // This is a kluge for read(byte[], ...) to read the right amount
+<span class="nc" id="L92">                --__length;</span>
+<span class="nc" id="L93">            }</span>
+            else
+            {
+<span class="nc bnc" id="L96" title="All 2 branches missed.">                if (ch != -1) {</span>
+<span class="nc" id="L97">                    unread(ch);</span>
+                }
+<span class="nc" id="L99">                return '\r';</span>
+            }
+        }
+
+<span class="nc" id="L103">        return ch;</span>
+    }
+
+
+    /***
+     * Reads and returns the next byte in the stream.  If the end of the
+     * message has been reached, returns -1.  Note that a call to this method
+     * may result in multiple reads from the underlying input stream in order
+     * to convert NETASCII line separators to the local line separator format.
+     * This is transparent to the programmer and is only mentioned for
+     * completeness.
+     *
+     * @return The next character in the stream. Returns -1 if the end of the
+     *          stream has been reached.
+     * @throws IOException If an error occurs while reading the underlying
+     *            stream.
+     ***/
+    @Override
+    public int read() throws IOException
+    {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (_noConversionRequired) {</span>
+<span class="nc" id="L124">            return super.read();</span>
+        }
+
+<span class="nc" id="L127">        return __read();</span>
+    }
+
+
+    /***
+     * Reads the next number of bytes from the stream into an array and
+     * returns the number of bytes read.  Returns -1 if the end of the
+     * stream has been reached.
+     *
+     * @param buffer  The byte array in which to store the data.
+     * @return The number of bytes read. Returns -1 if the
+     *          end of the message has been reached.
+     * @throws IOException If an error occurs in reading the underlying
+     *            stream.
+     ***/
+    @Override
+    public int read(byte buffer[]) throws IOException
+    {
+<span class="nc" id="L145">        return read(buffer, 0, buffer.length);</span>
+    }
+
+
+    /***
+     * Reads the next number of bytes from the stream into an array and returns
+     * the number of bytes read.  Returns -1 if the end of the
+     * message has been reached.  The characters are stored in the array
+     * starting from the given offset and up to the length specified.
+     *
+     * @param buffer The byte array in which to store the data.
+     * @param offset  The offset into the array at which to start storing data.
+     * @param length   The number of bytes to read.
+     * @return The number of bytes read. Returns -1 if the
+     *          end of the stream has been reached.
+     * @throws IOException If an error occurs while reading the underlying
+     *            stream.
+     ***/
+    @Override
+    public int read(byte buffer[], int offset, int length) throws IOException
+    {
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        if (_noConversionRequired) {</span>
+<span class="nc" id="L167">            return super.read(buffer, offset, length);</span>
+        }
+
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (length &lt; 1) {</span>
+<span class="nc" id="L171">            return 0;</span>
+        }
+
+        int ch, off;
+
+<span class="nc" id="L176">        ch = available();</span>
+
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        __length = (length &gt; ch ? ch : length);</span>
+
+        // If nothing is available, block to read only one character
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (__length &lt; 1) {</span>
+<span class="nc" id="L182">            __length = 1;</span>
+        }
+
+
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        if ((ch = __read()) == -1) {</span>
+<span class="nc" id="L187">            return -1;</span>
+        }
+
+<span class="nc" id="L190">        off = offset;</span>
+
+        do
+        {
+<span class="nc" id="L194">            buffer[offset++] = (byte)ch;</span>
+        }
+<span class="nc bnc" id="L196" title="All 4 branches missed.">        while (--__length &gt; 0 &amp;&amp; (ch = __read()) != -1);</span>
+
+
+<span class="nc" id="L199">        return (offset - off);</span>
+    }
+
+
+    // PushbackInputStream in JDK 1.1.3 returns the wrong thing
+    // TODO - can we delete this override now?
+    /***
+     * Returns the number of bytes that can be read without blocking EXCEPT
+     * when newline conversions have to be made somewhere within the
+     * available block of bytes.  In other words, you really should not
+     * rely on the value returned by this method if you are trying to avoid
+     * blocking.
+     ***/
+    @Override
+    public int available() throws IOException
+    {
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (in == null) {</span>
+<span class="nc" id="L216">            throw new IOException(&quot;Stream closed&quot;);</span>
+        }
+<span class="nc" id="L218">        return (buf.length - pos) + in.available();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

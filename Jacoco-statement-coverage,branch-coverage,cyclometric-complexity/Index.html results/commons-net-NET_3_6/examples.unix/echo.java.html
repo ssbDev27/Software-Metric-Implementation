@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>echo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.unix</a> &gt; <span class="el_source">echo.java</span></div><h1>echo.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.unix;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.SocketException;
+
+import org.apache.commons.net.echo.EchoTCPClient;
+import org.apache.commons.net.echo.EchoUDPClient;
+
+/***
+ * This is an example program demonstrating how to use the EchoTCPClient
+ * and EchoUDPClient classes.  This program connects to the default echo
+ * service port of a specified server, then reads lines from standard
+ * input, writing them to the echo server, and then printing the echo.
+ * The default is to use the TCP port.  Use the -udp flag to use the UDP
+ * port.
+ * &lt;p&gt;
+ * Usage: echo [-udp] &lt;hostname&gt;
+ ***/
+<span class="nc" id="L42">public final class echo</span>
+{
+
+    public static final void echoTCP(String host) throws IOException
+    {
+<span class="nc" id="L47">        EchoTCPClient client = new EchoTCPClient();</span>
+        BufferedReader input, echoInput;
+        PrintWriter echoOutput;
+        String line;
+
+        // We want to timeout if a response takes longer than 60 seconds
+<span class="nc" id="L53">        client.setDefaultTimeout(60000);</span>
+<span class="nc" id="L54">        client.connect(host);</span>
+<span class="nc" id="L55">        System.out.println(&quot;Connected to &quot; + host + &quot;.&quot;);</span>
+<span class="nc" id="L56">        input = new BufferedReader(new InputStreamReader(System.in));</span>
+<span class="nc" id="L57">        echoOutput =</span>
+<span class="nc" id="L58">            new PrintWriter(new OutputStreamWriter(client.getOutputStream()), true);</span>
+<span class="nc" id="L59">        echoInput =</span>
+<span class="nc" id="L60">            new BufferedReader(new InputStreamReader(client.getInputStream()));</span>
+
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        while ((line = input.readLine()) != null)</span>
+        {
+<span class="nc" id="L64">            echoOutput.println(line);</span>
+<span class="nc" id="L65">            System.out.println(echoInput.readLine());</span>
+        }
+
+<span class="nc" id="L68">        client.disconnect();</span>
+<span class="nc" id="L69">    }</span>
+
+    public static final void echoUDP(String host) throws IOException
+    {
+        int length, count;
+        byte[] data;
+        String line;
+        BufferedReader input;
+        InetAddress address;
+        EchoUDPClient client;
+
+<span class="nc" id="L80">        input = new BufferedReader(new InputStreamReader(System.in));</span>
+<span class="nc" id="L81">        address = InetAddress.getByName(host);</span>
+<span class="nc" id="L82">        client = new EchoUDPClient();</span>
+
+<span class="nc" id="L84">        client.open();</span>
+        // If we don't receive an echo within 5 seconds, assume the packet is lost.
+<span class="nc" id="L86">        client.setSoTimeout(5000);</span>
+<span class="nc" id="L87">        System.out.println(&quot;Ready to echo to &quot; + host + &quot;.&quot;);</span>
+
+        // Remember, there are no guarantees about the ordering of returned
+        // UDP packets, so there is a chance the output may be jumbled.
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        while ((line = input.readLine()) != null)</span>
+        {
+<span class="nc" id="L93">            data = line.getBytes();</span>
+<span class="nc" id="L94">            client.send(data, address);</span>
+<span class="nc" id="L95">            count = 0;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">            do</span>
+            {
+                try
+                {
+<span class="nc" id="L100">                    length = client.receive(data);</span>
+<span class="nc" id="L101">                }</span>
+                // Here we catch both SocketException and InterruptedIOException,
+                // because even though the JDK 1.1 docs claim that
+                // InterruptedIOException is thrown on a timeout, it seems
+                // SocketException is also thrown.
+<span class="nc" id="L106">                catch (SocketException e)</span>
+                {
+                    // We timed out and assume the packet is lost.
+<span class="nc" id="L109">                    System.err.println(</span>
+<span class="nc" id="L110">                        &quot;SocketException: Timed out and dropped packet&quot;);</span>
+<span class="nc" id="L111">                    break;</span>
+                }
+<span class="nc" id="L113">                catch (InterruptedIOException e)</span>
+                {
+                    // We timed out and assume the packet is lost.
+<span class="nc" id="L116">                    System.err.println(</span>
+<span class="nc" id="L117">                        &quot;InterruptedIOException: Timed out and dropped packet&quot;);</span>
+<span class="nc" id="L118">                    break;</span>
+                }
+<span class="nc" id="L120">                System.out.print(new String(data, 0, length));</span>
+<span class="nc" id="L121">                count += length;</span>
+            }
+<span class="nc" id="L123">            while (count &lt; data.length);</span>
+
+<span class="nc" id="L125">            System.out.println();</span>
+        }
+
+<span class="nc" id="L128">        client.close();</span>
+<span class="nc" id="L129">    }</span>
+
+
+    public static void main(String[] args)
+    {
+
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        if (args.length == 1)</span>
+        {
+            try
+            {
+<span class="nc" id="L139">                echoTCP(args[0]);</span>
+<span class="nc" id="L140">            }</span>
+<span class="nc" id="L141">            catch (IOException e)</span>
+            {
+<span class="nc" id="L143">                e.printStackTrace();</span>
+<span class="nc" id="L144">                System.exit(1);</span>
+            }
+<span class="nc" id="L146">        }</span>
+<span class="nc bnc" id="L147" title="All 4 branches missed.">        else if (args.length == 2 &amp;&amp; args[0].equals(&quot;-udp&quot;))</span>
+        {
+            try
+            {
+<span class="nc" id="L151">                echoUDP(args[1]);</span>
+<span class="nc" id="L152">            }</span>
+<span class="nc" id="L153">            catch (IOException e)</span>
+            {
+<span class="nc" id="L155">                e.printStackTrace();</span>
+<span class="nc" id="L156">                System.exit(1);</span>
+            }
+<span class="nc" id="L158">        }</span>
+        else
+        {
+<span class="nc" id="L161">            System.err.println(&quot;Usage: echo [-udp] &lt;hostname&gt;&quot;);</span>
+<span class="nc" id="L162">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L165">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

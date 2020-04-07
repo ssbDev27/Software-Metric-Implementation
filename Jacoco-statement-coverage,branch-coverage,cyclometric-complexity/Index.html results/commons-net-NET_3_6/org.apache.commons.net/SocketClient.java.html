@@ -1,0 +1,888 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SocketClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net</a> &gt; <span class="el_source">SocketClient.java</span></div><h1>SocketClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.Socket;
+import java.net.SocketException;
+import java.nio.charset.Charset;
+
+import javax.net.ServerSocketFactory;
+import javax.net.SocketFactory;
+
+
+/**
+ * The SocketClient provides the basic operations that are required of
+ * client objects accessing sockets.  It is meant to be
+ * subclassed to avoid having to rewrite the same code over and over again
+ * to open a socket, close a socket, set timeouts, etc.  Of special note
+ * is the {@link #setSocketFactory  setSocketFactory }
+ * method, which allows you to control the type of Socket the SocketClient
+ * creates for initiating network connections.  This is especially useful
+ * for adding SSL or proxy support as well as better support for applets.  For
+ * example, you could create a
+ * {@link javax.net.SocketFactory} that
+ * requests browser security capabilities before creating a socket.
+ * All classes derived from SocketClient should use the
+ * {@link #_socketFactory_  _socketFactory_ } member variable to
+ * create Socket and ServerSocket instances rather than instantiating
+ * them by directly invoking a constructor.  By honoring this contract
+ * you guarantee that a user will always be able to provide his own
+ * Socket implementations by substituting his own SocketFactory.
+ * @see SocketFactory
+ */
+public abstract class SocketClient
+{
+    /**
+     * The end of line character sequence used by most IETF protocols.  That
+     * is a carriage return followed by a newline: &quot;\r\n&quot;
+     */
+    public static final String NETASCII_EOL = &quot;\r\n&quot;;
+
+    /** The default SocketFactory shared by all SocketClient instances. */
+<span class="fc" id="L64">    private static final SocketFactory __DEFAULT_SOCKET_FACTORY =</span>
+<span class="fc" id="L65">            SocketFactory.getDefault();</span>
+
+    /** The default {@link ServerSocketFactory} */
+<span class="fc" id="L68">    private static final ServerSocketFactory __DEFAULT_SERVER_SOCKET_FACTORY =</span>
+<span class="fc" id="L69">            ServerSocketFactory.getDefault();</span>
+
+    /**
+     * A ProtocolCommandSupport object used to manage the registering of
+     * ProtocolCommandListeners and the firing of ProtocolCommandEvents.
+     */
+    private ProtocolCommandSupport __commandSupport;
+
+    /** The timeout to use after opening a socket. */
+    protected int _timeout_;
+
+    /** The socket used for the connection. */
+    protected Socket _socket_;
+
+    /** The hostname used for the connection (null = no hostname supplied). */
+    protected String _hostname_;
+
+    /** The default port the client should connect to. */
+    protected int _defaultPort_;
+
+    /** The socket's InputStream. */
+    protected InputStream _input_;
+
+    /** The socket's OutputStream. */
+    protected OutputStream _output_;
+
+    /** The socket's SocketFactory. */
+    protected SocketFactory _socketFactory_;
+
+    /** The socket's ServerSocket Factory. */
+    protected ServerSocketFactory _serverSocketFactory_;
+
+    /** The socket's connect timeout (0 = infinite timeout) */
+<span class="fc" id="L102">    private static final int DEFAULT_CONNECT_TIMEOUT = 0;</span>
+<span class="fc" id="L103">    protected int connectTimeout = DEFAULT_CONNECT_TIMEOUT;</span>
+
+    /** Hint for SO_RCVBUF size */
+<span class="fc" id="L106">    private int receiveBufferSize = -1;</span>
+
+    /** Hint for SO_SNDBUF size */
+<span class="fc" id="L109">    private int sendBufferSize = -1;</span>
+
+    /** The proxy to use when connecting. */
+    private Proxy connProxy;
+
+    /**
+     * Charset to use for byte IO.
+     */
+<span class="fc" id="L117">    private Charset charset = Charset.defaultCharset();</span>
+
+    /**
+     * Default constructor for SocketClient.  Initializes
+     * _socket_ to null, _timeout_ to 0, _defaultPort to 0,
+     * _isConnected_ to false, charset to {@code Charset.defaultCharset()}
+     * and _socketFactory_ to a shared instance of
+     * {@link org.apache.commons.net.DefaultSocketFactory}.
+     */
+<span class="fc" id="L126">    public SocketClient()</span>
+    {
+<span class="fc" id="L128">        _socket_ = null;</span>
+<span class="fc" id="L129">        _hostname_ = null;</span>
+<span class="fc" id="L130">        _input_ = null;</span>
+<span class="fc" id="L131">        _output_ = null;</span>
+<span class="fc" id="L132">        _timeout_ = 0;</span>
+<span class="fc" id="L133">        _defaultPort_ = 0;</span>
+<span class="fc" id="L134">        _socketFactory_ = __DEFAULT_SOCKET_FACTORY;</span>
+<span class="fc" id="L135">        _serverSocketFactory_ = __DEFAULT_SERVER_SOCKET_FACTORY;</span>
+<span class="fc" id="L136">    }</span>
+
+
+    /**
+     * Because there are so many connect() methods, the _connectAction_()
+     * method is provided as a means of performing some action immediately
+     * after establishing a connection, rather than reimplementing all
+     * of the connect() methods.  The last action performed by every
+     * connect() method after opening a socket is to call this method.
+     * &lt;p&gt;
+     * This method sets the timeout on the just opened socket to the default
+     * timeout set by {@link #setDefaultTimeout  setDefaultTimeout() },
+     * sets _input_ and _output_ to the socket's InputStream and OutputStream
+     * respectively, and sets _isConnected_ to true.
+     * &lt;p&gt;
+     * Subclasses overriding this method should start by calling
+     * &lt;code&gt; super._connectAction_() &lt;/code&gt; first to ensure the
+     * initialization of the aforementioned protected variables.
+     * @throws IOException (SocketException) if a problem occurs with the socket
+     */
+    protected void _connectAction_() throws IOException
+    {
+<span class="fc" id="L158">        _socket_.setSoTimeout(_timeout_);</span>
+<span class="fc" id="L159">        _input_ = _socket_.getInputStream();</span>
+<span class="fc" id="L160">        _output_ = _socket_.getOutputStream();</span>
+<span class="fc" id="L161">    }</span>
+
+
+    /**
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the current host at a system assigned port.
+     * Before returning, {@link #_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     * &lt;p&gt;
+     * @param host  The remote host.
+     * @param port  The port to connect to on the remote host.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     */
+    public void connect(InetAddress host, int port)
+    throws SocketException, IOException
+    {
+<span class="fc" id="L180">        _hostname_ = null;</span>
+<span class="fc" id="L181">        _connect(host, port, null, -1);</span>
+<span class="fc" id="L182">    }</span>
+
+    /**
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the current host at a system assigned port.
+     * Before returning, {@link #_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     * &lt;p&gt;
+     * @param hostname  The name of the remote host.
+     * @param port  The port to connect to on the remote host.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     * @throws java.net.UnknownHostException If the hostname cannot be resolved.
+     */
+    public void connect(String hostname, int port)
+    throws SocketException, IOException
+    {
+<span class="fc" id="L201">        _hostname_ = hostname;</span>
+<span class="fc" id="L202">        _connect(InetAddress.getByName(hostname), port, null, -1);</span>
+<span class="fc" id="L203">    }</span>
+
+
+    /**
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the specified local address and port.
+     * Before returning, {@link #_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     * &lt;p&gt;
+     * @param host  The remote host.
+     * @param port  The port to connect to on the remote host.
+     * @param localAddr  The local address to use.
+     * @param localPort  The local port to use.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     */
+    public void connect(InetAddress host, int port,
+                        InetAddress localAddr, int localPort)
+    throws SocketException, IOException
+    {
+<span class="nc" id="L225">        _hostname_ = null;</span>
+<span class="nc" id="L226">        _connect(host, port, localAddr, localPort);</span>
+<span class="nc" id="L227">    }</span>
+
+    // helper method to allow code to be shared with connect(String,...) methods
+    private void _connect(InetAddress host, int port, InetAddress localAddr, int localPort)
+        throws SocketException, IOException
+    {
+<span class="fc" id="L233">        _socket_ = _socketFactory_.createSocket();</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">        if (receiveBufferSize != -1) {</span>
+<span class="nc" id="L235">            _socket_.setReceiveBufferSize(receiveBufferSize);</span>
+        }
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (sendBufferSize != -1) {</span>
+<span class="nc" id="L238">            _socket_.setSendBufferSize(sendBufferSize);</span>
+        }
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">        if (localAddr != null) {</span>
+<span class="nc" id="L241">            _socket_.bind(new InetSocketAddress(localAddr, localPort));</span>
+        }
+<span class="fc" id="L243">        _socket_.connect(new InetSocketAddress(host, port), connectTimeout);</span>
+<span class="fc" id="L244">        _connectAction_();</span>
+<span class="fc" id="L245">    }</span>
+
+    /**
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the specified local address and port.
+     * Before returning, {@link #_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     * &lt;p&gt;
+     * @param hostname  The name of the remote host.
+     * @param port  The port to connect to on the remote host.
+     * @param localAddr  The local address to use.
+     * @param localPort  The local port to use.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     * @throws java.net.UnknownHostException If the hostname cannot be resolved.
+     */
+    public void connect(String hostname, int port,
+                        InetAddress localAddr, int localPort)
+    throws SocketException, IOException
+    {
+<span class="nc" id="L267">        _hostname_ = hostname;</span>
+<span class="nc" id="L268">       _connect(InetAddress.getByName(hostname), port, localAddr, localPort);</span>
+<span class="nc" id="L269">    }</span>
+
+
+    /**
+     * Opens a Socket connected to a remote host at the current default port
+     * and originating from the current host at a system assigned port.
+     * Before returning, {@link #_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     * &lt;p&gt;
+     * @param host  The remote host.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     */
+    public void connect(InetAddress host) throws SocketException, IOException
+    {
+<span class="nc" id="L286">        _hostname_ = null;</span>
+<span class="nc" id="L287">        connect(host, _defaultPort_);</span>
+<span class="nc" id="L288">    }</span>
+
+
+    /**
+     * Opens a Socket connected to a remote host at the current default
+     * port and originating from the current host at a system assigned port.
+     * Before returning, {@link #_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     * &lt;p&gt;
+     * @param hostname  The name of the remote host.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     * @throws java.net.UnknownHostException If the hostname cannot be resolved.
+     */
+    public void connect(String hostname) throws SocketException, IOException
+    {
+<span class="nc" id="L306">        connect(hostname, _defaultPort_);</span>
+<span class="nc" id="L307">    }</span>
+
+
+    /**
+     * Disconnects the socket connection.
+     * You should call this method after you've finished using the class
+     * instance and also before you call
+     * {@link #connect connect() }
+     * again.  _isConnected_ is set to false, _socket_ is set to null,
+     * _input_ is set to null, and _output_ is set to null.
+     * &lt;p&gt;
+     * @throws IOException  If there is an error closing the socket.
+     */
+    public void disconnect() throws IOException
+    {
+<span class="fc" id="L322">        closeQuietly(_socket_);</span>
+<span class="fc" id="L323">        closeQuietly(_input_);</span>
+<span class="fc" id="L324">        closeQuietly(_output_);</span>
+<span class="fc" id="L325">        _socket_ = null;</span>
+<span class="fc" id="L326">        _hostname_ = null;</span>
+<span class="fc" id="L327">        _input_ = null;</span>
+<span class="fc" id="L328">        _output_ = null;</span>
+<span class="fc" id="L329">    }</span>
+
+    private void closeQuietly(Socket socket) {
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">        if (socket != null){</span>
+            try {
+<span class="fc" id="L334">                socket.close();</span>
+<span class="pc" id="L335">            } catch (IOException e) {</span>
+                // Ignored
+            }
+        }
+<span class="fc" id="L339">    }</span>
+
+    private void closeQuietly(Closeable close){
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        if (close != null){</span>
+            try {
+<span class="fc" id="L344">                close.close();</span>
+<span class="pc" id="L345">            } catch (IOException e) {</span>
+                // Ignored
+            }
+        }
+<span class="fc" id="L349">    }</span>
+    /**
+     * Returns true if the client is currently connected to a server.
+     * &lt;p&gt;
+     * Delegates to {@link Socket#isConnected()}
+     * @return True if the client is currently connected to a server,
+     *         false otherwise.
+     */
+    public boolean isConnected()
+    {
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        if (_socket_ == null) {</span>
+<span class="fc" id="L360">            return false;</span>
+        }
+
+<span class="fc" id="L363">        return _socket_.isConnected();</span>
+    }
+
+    /**
+     * Make various checks on the socket to test if it is available for use.
+     * Note that the only sure test is to use it, but these checks may help
+     * in some cases.
+     * @see &lt;a href=&quot;https://issues.apache.org/jira/browse/NET-350&quot;&gt;NET-350&lt;/a&gt;
+     * @return {@code true} if the socket appears to be available for use
+     * @since 3.0
+     */
+    public boolean isAvailable(){
+<span class="nc bnc" id="L375" title="All 2 branches missed.">        if (isConnected()) {</span>
+            try
+            {
+<span class="nc bnc" id="L378" title="All 2 branches missed.">                if (_socket_.getInetAddress() == null) {</span>
+<span class="nc" id="L379">                    return false;</span>
+                }
+<span class="nc bnc" id="L381" title="All 2 branches missed.">                if (_socket_.getPort() == 0) {</span>
+<span class="nc" id="L382">                    return false;</span>
+                }
+<span class="nc bnc" id="L384" title="All 2 branches missed.">                if (_socket_.getRemoteSocketAddress() == null) {</span>
+<span class="nc" id="L385">                    return false;</span>
+                }
+<span class="nc bnc" id="L387" title="All 2 branches missed.">                if (_socket_.isClosed()) {</span>
+<span class="nc" id="L388">                    return false;</span>
+                }
+                /* these aren't exact checks (a Socket can be half-open),
+                   but since we usually require two-way data transfer,
+                   we check these here too: */
+<span class="nc bnc" id="L393" title="All 2 branches missed.">                if (_socket_.isInputShutdown()) {</span>
+<span class="nc" id="L394">                    return false;</span>
+                }
+<span class="nc bnc" id="L396" title="All 2 branches missed.">                if (_socket_.isOutputShutdown()) {</span>
+<span class="nc" id="L397">                    return false;</span>
+                }
+                /* ignore the result, catch exceptions: */
+<span class="nc" id="L400">                _socket_.getInputStream();</span>
+<span class="nc" id="L401">                _socket_.getOutputStream();</span>
+<span class="nc" id="L402">            }</span>
+<span class="nc" id="L403">            catch (IOException ioex)</span>
+            {
+<span class="nc" id="L405">                return false;</span>
+            }
+<span class="nc" id="L407">            return true;</span>
+        } else {
+<span class="nc" id="L409">            return false;</span>
+        }
+    }
+
+    /**
+     * Sets the default port the SocketClient should connect to when a port
+     * is not specified.  The {@link #_defaultPort_  _defaultPort_ }
+     * variable stores this value.  If never set, the default port is equal
+     * to zero.
+     * &lt;p&gt;
+     * @param port  The default port to set.
+     */
+    public void setDefaultPort(int port)
+    {
+<span class="fc" id="L423">        _defaultPort_ = port;</span>
+<span class="fc" id="L424">    }</span>
+
+    /**
+     * Returns the current value of the default port (stored in
+     * {@link #_defaultPort_  _defaultPort_ }).
+     * &lt;p&gt;
+     * @return The current value of the default port.
+     */
+    public int getDefaultPort()
+    {
+<span class="nc" id="L434">        return _defaultPort_;</span>
+    }
+
+
+    /**
+     * Set the default timeout in milliseconds to use when opening a socket.
+     * This value is only used previous to a call to
+     * {@link #connect connect()}
+     * and should not be confused with {@link #setSoTimeout setSoTimeout()}
+     * which operates on an the currently opened socket.  _timeout_ contains
+     * the new timeout value.
+     * &lt;p&gt;
+     * @param timeout  The timeout in milliseconds to use for the socket
+     *                 connection.
+     */
+    public void setDefaultTimeout(int timeout)
+    {
+<span class="fc" id="L451">        _timeout_ = timeout;</span>
+<span class="fc" id="L452">    }</span>
+
+
+    /**
+     * Returns the default timeout in milliseconds that is used when
+     * opening a socket.
+     * &lt;p&gt;
+     * @return The default timeout in milliseconds that is used when
+     *         opening a socket.
+     */
+    public int getDefaultTimeout()
+    {
+<span class="nc" id="L464">        return _timeout_;</span>
+    }
+
+
+    /**
+     * Set the timeout in milliseconds of a currently open connection.
+     * Only call this method after a connection has been opened
+     * by {@link #connect connect()}.
+     * &lt;p&gt;
+     * To set the initial timeout, use {@link #setDefaultTimeout(int)} instead.
+     *
+     * @param timeout  The timeout in milliseconds to use for the currently
+     *                 open socket connection.
+     * @throws SocketException If the operation fails.
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public void setSoTimeout(int timeout) throws SocketException
+    {
+<span class="nc" id="L482">        _socket_.setSoTimeout(timeout);</span>
+<span class="nc" id="L483">    }</span>
+
+
+    /**
+     * Set the underlying socket send buffer size.
+     * &lt;p&gt;
+     * @param size The size of the buffer in bytes.
+     * @throws SocketException never thrown, but subclasses might want to do so
+     * @since 2.0
+     */
+    public void setSendBufferSize(int size) throws SocketException {
+<span class="nc" id="L494">        sendBufferSize = size;</span>
+<span class="nc" id="L495">    }</span>
+
+    /**
+     * Get the current sendBuffer size
+     * @return the size, or -1 if not initialised
+     * @since 3.0
+     */
+    protected int getSendBufferSize(){
+<span class="nc" id="L503">        return sendBufferSize;</span>
+    }
+
+    /**
+     * Sets the underlying socket receive buffer size.
+     * &lt;p&gt;
+     * @param size The size of the buffer in bytes.
+     * @throws SocketException never (but subclasses may wish to do so)
+     * @since 2.0
+     */
+    public void setReceiveBufferSize(int size) throws SocketException  {
+<span class="nc" id="L514">        receiveBufferSize = size;</span>
+<span class="nc" id="L515">    }</span>
+
+    /**
+     * Get the current receivedBuffer size
+     * @return the size, or -1 if not initialised
+     * @since 3.0
+     */
+    protected int getReceiveBufferSize(){
+<span class="nc" id="L523">        return receiveBufferSize;</span>
+    }
+
+    /**
+     * Returns the timeout in milliseconds of the currently opened socket.
+     * &lt;p&gt;
+     * @return The timeout in milliseconds of the currently opened socket.
+     * @throws SocketException If the operation fails.
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public int getSoTimeout() throws SocketException
+    {
+<span class="nc" id="L535">        return _socket_.getSoTimeout();</span>
+    }
+
+    /**
+     * Enables or disables the Nagle's algorithm (TCP_NODELAY) on the
+     * currently opened socket.
+     * &lt;p&gt;
+     * @param on  True if Nagle's algorithm is to be enabled, false if not.
+     * @throws SocketException If the operation fails.
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public void setTcpNoDelay(boolean on) throws SocketException
+    {
+<span class="nc" id="L548">        _socket_.setTcpNoDelay(on);</span>
+<span class="nc" id="L549">    }</span>
+
+
+    /**
+     * Returns true if Nagle's algorithm is enabled on the currently opened
+     * socket.
+     * &lt;p&gt;
+     * @return True if Nagle's algorithm is enabled on the currently opened
+     *        socket, false otherwise.
+     * @throws SocketException If the operation fails.
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public boolean getTcpNoDelay() throws SocketException
+    {
+<span class="nc" id="L563">        return _socket_.getTcpNoDelay();</span>
+    }
+
+    /**
+     * Sets the SO_KEEPALIVE flag on the currently opened socket.
+     *
+     * From the Javadocs, the default keepalive time is 2 hours (although this is
+     * implementation  dependent). It looks as though the Windows WSA sockets implementation
+     * allows a specific keepalive value to be set, although this seems not to be the case on
+     * other systems.
+     * @param  keepAlive If true, keepAlive is turned on
+     * @throws SocketException if there is a problem with the socket
+     * @throws NullPointerException if the socket is not currently open
+     * @since 2.2
+     */
+    public void setKeepAlive(boolean keepAlive) throws SocketException {
+<span class="nc" id="L579">        _socket_.setKeepAlive(keepAlive);</span>
+<span class="nc" id="L580">    }</span>
+
+    /**
+     * Returns the current value of the SO_KEEPALIVE flag on the currently opened socket.
+     * Delegates to {@link Socket#getKeepAlive()}
+     * @return True if SO_KEEPALIVE is enabled.
+     * @throws SocketException if there is a problem with the socket
+     * @throws NullPointerException if the socket is not currently open
+     * @since 2.2
+     */
+    public boolean getKeepAlive() throws SocketException {
+<span class="nc" id="L591">        return _socket_.getKeepAlive();</span>
+    }
+
+    /**
+     * Sets the SO_LINGER timeout on the currently opened socket.
+     * &lt;p&gt;
+     * @param on  True if linger is to be enabled, false if not.
+     * @param val The linger timeout (in hundredths of a second?)
+     * @throws SocketException If the operation fails.
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public void setSoLinger(boolean on, int val) throws SocketException
+    {
+<span class="nc" id="L604">        _socket_.setSoLinger(on, val);</span>
+<span class="nc" id="L605">    }</span>
+
+
+    /**
+     * Returns the current SO_LINGER timeout of the currently opened socket.
+     * &lt;p&gt;
+     * @return The current SO_LINGER timeout.  If SO_LINGER is disabled returns
+     *         -1.
+     * @throws SocketException If the operation fails.
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public int getSoLinger() throws SocketException
+    {
+<span class="nc" id="L618">        return _socket_.getSoLinger();</span>
+    }
+
+
+    /**
+     * Returns the port number of the open socket on the local host used
+     * for the connection.
+     * Delegates to {@link Socket#getLocalPort()}
+     * &lt;p&gt;
+     * @return The port number of the open socket on the local host used
+     *         for the connection.
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public int getLocalPort()
+    {
+<span class="nc" id="L633">        return _socket_.getLocalPort();</span>
+    }
+
+
+    /**
+     * Returns the local address  to which the client's socket is bound.
+     * Delegates to {@link Socket#getLocalAddress()}
+     * &lt;p&gt;
+     * @return The local address to which the client's socket is bound.
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public InetAddress getLocalAddress()
+    {
+<span class="nc" id="L646">        return _socket_.getLocalAddress();</span>
+    }
+
+    /**
+     * Returns the port number of the remote host to which the client is
+     * connected.
+     * Delegates to {@link Socket#getPort()}
+     * &lt;p&gt;
+     * @return The port number of the remote host to which the client is
+     *         connected.
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public int getRemotePort()
+    {
+<span class="nc" id="L660">        return _socket_.getPort();</span>
+    }
+
+
+    /**
+     * @return The remote address to which the client is connected.
+     * Delegates to {@link Socket#getInetAddress()}
+     * @throws NullPointerException if the socket is not currently open
+     */
+    public InetAddress getRemoteAddress()
+    {
+<span class="nc" id="L671">        return _socket_.getInetAddress();</span>
+    }
+
+
+    /**
+     * Verifies that the remote end of the given socket is connected to the
+     * the same host that the SocketClient is currently connected to.  This
+     * is useful for doing a quick security check when a client needs to
+     * accept a connection from a server, such as an FTP data connection or
+     * a BSD R command standard error stream.
+     * &lt;p&gt;
+     * @param socket the item to check against
+     * @return True if the remote hosts are the same, false if not.
+     */
+    public boolean verifyRemote(Socket socket)
+    {
+        InetAddress host1, host2;
+
+<span class="nc" id="L689">        host1 = socket.getInetAddress();</span>
+<span class="nc" id="L690">        host2 = getRemoteAddress();</span>
+
+<span class="nc" id="L692">        return host1.equals(host2);</span>
+    }
+
+
+    /**
+     * Sets the SocketFactory used by the SocketClient to open socket
+     * connections.  If the factory value is null, then a default
+     * factory is used (only do this to reset the factory after having
+     * previously altered it).
+     * Any proxy setting is discarded.
+     * &lt;p&gt;
+     * @param factory  The new SocketFactory the SocketClient should use.
+     */
+    public void setSocketFactory(SocketFactory factory)
+    {
+<span class="pc bpc" id="L707" title="1 of 2 branches missed.">        if (factory == null) {</span>
+<span class="nc" id="L708">            _socketFactory_ = __DEFAULT_SOCKET_FACTORY;</span>
+<span class="nc" id="L709">        } else {</span>
+<span class="fc" id="L710">            _socketFactory_ = factory;</span>
+        }
+        // re-setting the socket factory makes the proxy setting useless,
+        // so set the field to null so that getProxy() doesn't return a
+        // Proxy that we're actually not using.
+<span class="fc" id="L715">        connProxy = null;</span>
+<span class="fc" id="L716">    }</span>
+
+    /**
+     * Sets the ServerSocketFactory used by the SocketClient to open ServerSocket
+     * connections.  If the factory value is null, then a default
+     * factory is used (only do this to reset the factory after having
+     * previously altered it).
+     * &lt;p&gt;
+     * @param factory  The new ServerSocketFactory the SocketClient should use.
+     * @since 2.0
+     */
+    public void setServerSocketFactory(ServerSocketFactory factory) {
+<span class="nc bnc" id="L728" title="All 2 branches missed.">        if (factory == null) {</span>
+<span class="nc" id="L729">            _serverSocketFactory_ = __DEFAULT_SERVER_SOCKET_FACTORY;</span>
+<span class="nc" id="L730">        } else {</span>
+<span class="nc" id="L731">            _serverSocketFactory_ = factory;</span>
+        }
+<span class="nc" id="L733">    }</span>
+
+    /**
+     * Sets the connection timeout in milliseconds, which will be passed to the {@link Socket} object's
+     * connect() method.
+     * @param connectTimeout The connection timeout to use (in ms)
+     * @since 2.0
+     */
+    public void setConnectTimeout(int connectTimeout) {
+<span class="fc" id="L742">        this.connectTimeout = connectTimeout;</span>
+<span class="fc" id="L743">    }</span>
+
+    /**
+     * Get the underlying socket connection timeout.
+     * @return timeout (in ms)
+     * @since 2.0
+     */
+    public int getConnectTimeout() {
+<span class="nc" id="L751">        return connectTimeout;</span>
+    }
+
+    /**
+     * Get the underlying {@link ServerSocketFactory}
+     * @return The server socket factory
+     * @since 2.2
+     */
+    public ServerSocketFactory getServerSocketFactory() {
+<span class="nc" id="L760">        return _serverSocketFactory_;</span>
+    }
+
+
+    /**
+     * Adds a ProtocolCommandListener.
+     *
+     * @param listener  The ProtocolCommandListener to add.
+     * @since 3.0
+     */
+    public void addProtocolCommandListener(ProtocolCommandListener listener) {
+<span class="nc" id="L771">        getCommandSupport().addProtocolCommandListener(listener);</span>
+<span class="nc" id="L772">    }</span>
+
+    /**
+     * Removes a ProtocolCommandListener.
+     *
+     * @param listener  The ProtocolCommandListener to remove.
+     * @since 3.0
+     */
+    public void removeProtocolCommandListener(ProtocolCommandListener listener) {
+<span class="nc" id="L781">        getCommandSupport().removeProtocolCommandListener(listener);</span>
+<span class="nc" id="L782">    }</span>
+
+    /**
+     * If there are any listeners, send them the reply details.
+     *
+     * @param replyCode the code extracted from the reply
+     * @param reply the full reply text
+     * @since 3.0
+     */
+    protected void fireReplyReceived(int replyCode, String reply) {
+<span class="pc bpc" id="L792" title="1 of 2 branches missed.">        if (getCommandSupport().getListenerCount() &gt; 0) {</span>
+<span class="nc" id="L793">            getCommandSupport().fireReplyReceived(replyCode, reply);</span>
+        }
+<span class="fc" id="L795">    }</span>
+
+    /**
+     * If there are any listeners, send them the command details.
+     *
+     * @param command the command name
+     * @param message the complete message, including command name
+     * @since 3.0
+     */
+    protected void fireCommandSent(String command, String message) {
+<span class="nc bnc" id="L805" title="All 2 branches missed.">        if (getCommandSupport().getListenerCount() &gt; 0) {</span>
+<span class="nc" id="L806">            getCommandSupport().fireCommandSent(command, message);</span>
+        }
+<span class="nc" id="L808">    }</span>
+
+    /**
+     * Create the CommandSupport instance if required
+     */
+    protected void createCommandSupport(){
+<span class="fc" id="L814">        __commandSupport = new ProtocolCommandSupport(this);</span>
+<span class="fc" id="L815">    }</span>
+
+    /**
+     * Subclasses can override this if they need to provide their own
+     * instance field for backwards compatibilty.
+     *
+     * @return the CommandSupport instance, may be {@code null}
+     * @since 3.0
+     */
+    protected ProtocolCommandSupport getCommandSupport() {
+<span class="nc" id="L825">        return __commandSupport;</span>
+    }
+
+    /**
+     * Sets the proxy for use with all the connections.
+     * The proxy is used for connections established after the
+     * call to this method.
+     *
+     * @param proxy the new proxy for connections.
+     * @since 3.2
+     */
+    public void setProxy(Proxy proxy) {
+<span class="fc" id="L837">        setSocketFactory(new DefaultSocketFactory(proxy));</span>
+<span class="fc" id="L838">        connProxy = proxy;</span>
+<span class="fc" id="L839">    }</span>
+
+    /**
+     * Gets the proxy for use with all the connections.
+     * @return the current proxy for connections.
+     */
+    public Proxy getProxy() {
+<span class="fc" id="L846">        return connProxy;</span>
+    }
+
+    /**
+     * Gets the charset name.
+     *
+     * @return the charset.
+     * @since 3.3
+     * @deprecated Since the code now requires Java 1.6 as a mininmum
+     */
+    @Deprecated
+    public String getCharsetName() {
+<span class="nc" id="L858">        return charset.name();</span>
+    }
+
+    /**
+     * Gets the charset.
+     *
+     * @return the charset.
+     * @since 3.3
+     */
+    public Charset getCharset() {
+<span class="fc" id="L868">        return charset;</span>
+    }
+
+    /**
+     * Sets the charset.
+     *
+     * @param charset the charset.
+     * @since 3.3
+     */
+    public void setCharset(Charset charset) {
+<span class="nc" id="L878">        this.charset = charset;</span>
+<span class="nc" id="L879">    }</span>
+
+    /*
+     *  N.B. Fields cannot be pulled up into a super-class without breaking binary compatibility,
+     *  so the abstract method is needed to pass the instance to the methods which were moved here.
+     */
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

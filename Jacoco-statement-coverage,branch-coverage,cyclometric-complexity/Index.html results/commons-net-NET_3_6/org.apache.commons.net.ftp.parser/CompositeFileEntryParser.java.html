@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CompositeFileEntryParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp.parser</a> &gt; <span class="el_source">CompositeFileEntryParser.java</span></div><h1>CompositeFileEntryParser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp.parser;
+
+import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.FTPFileEntryParser;
+import org.apache.commons.net.ftp.FTPFileEntryParserImpl;
+
+/**
+ * This implementation allows to pack some FileEntryParsers together
+ * and handle the case where to returned dirstyle isnt clearly defined.
+ * The matching parser will be cached.
+ * If the cached parser wont match due to the server changed the dirstyle,
+ * a new matching parser will be searched.
+ */
+public class CompositeFileEntryParser extends FTPFileEntryParserImpl
+{
+    private final FTPFileEntryParser[] ftpFileEntryParsers;
+    private FTPFileEntryParser cachedFtpFileEntryParser;
+
+    public CompositeFileEntryParser(FTPFileEntryParser[] ftpFileEntryParsers)
+    {
+<span class="fc" id="L38">        super();</span>
+
+<span class="fc" id="L40">        this.cachedFtpFileEntryParser = null;</span>
+<span class="fc" id="L41">        this.ftpFileEntryParsers = ftpFileEntryParsers;</span>
+<span class="fc" id="L42">    }</span>
+
+    @Override
+    public FTPFile parseFTPEntry(String listEntry)
+    {
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (cachedFtpFileEntryParser != null)</span>
+        {
+<span class="fc" id="L49">            FTPFile matched = cachedFtpFileEntryParser.parseFTPEntry(listEntry);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            if (matched != null)</span>
+            {
+<span class="fc" id="L52">                return matched;</span>
+            }
+        }
+        else
+        {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            for (FTPFileEntryParser ftpFileEntryParser : ftpFileEntryParsers)</span>
+            {
+<span class="fc" id="L59">                FTPFile matched = ftpFileEntryParser.parseFTPEntry(listEntry);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                if (matched != null)</span>
+                {
+<span class="fc" id="L62">                    cachedFtpFileEntryParser = ftpFileEntryParser;</span>
+<span class="fc" id="L63">                    return matched;</span>
+                }
+            }
+        }
+<span class="fc" id="L67">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

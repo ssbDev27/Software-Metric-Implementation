@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SMTPMail.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.mail</a> &gt; <span class="el_source">SMTPMail.java</span></div><h1>SMTPMail.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.mail;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.net.PrintCommandListener;
+import org.apache.commons.net.io.Util;
+import org.apache.commons.net.smtp.SMTPClient;
+import org.apache.commons.net.smtp.SMTPReply;
+import org.apache.commons.net.smtp.SimpleSMTPHeader;
+
+/***
+ * This is an example program using the SMTP package to send a message
+ * to the specified recipients.  It prompts you for header information and
+ * a filename containing the message.
+ ***/
+
+<span class="nc" id="L42">public final class SMTPMail</span>
+{
+
+    public static void main(String[] args)
+    {
+        String sender, recipient, subject, filename, server, cc;
+<span class="nc" id="L48">        List&lt;String&gt; ccList = new ArrayList&lt;String&gt;();</span>
+        BufferedReader stdin;
+<span class="nc" id="L50">        FileReader fileReader = null;</span>
+        Writer writer;
+        SimpleSMTPHeader header;
+        SMTPClient client;
+
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (args.length &lt; 1)</span>
+        {
+<span class="nc" id="L57">            System.err.println(&quot;Usage: mail smtpserver&quot;);</span>
+<span class="nc" id="L58">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L61">        server = args[0];</span>
+
+<span class="nc" id="L63">        stdin = new BufferedReader(new InputStreamReader(System.in));</span>
+
+        try
+        {
+<span class="nc" id="L67">            System.out.print(&quot;From: &quot;);</span>
+<span class="nc" id="L68">            System.out.flush();</span>
+
+<span class="nc" id="L70">            sender = stdin.readLine();</span>
+
+<span class="nc" id="L72">            System.out.print(&quot;To: &quot;);</span>
+<span class="nc" id="L73">            System.out.flush();</span>
+
+<span class="nc" id="L75">            recipient = stdin.readLine();</span>
+
+<span class="nc" id="L77">            System.out.print(&quot;Subject: &quot;);</span>
+<span class="nc" id="L78">            System.out.flush();</span>
+
+<span class="nc" id="L80">            subject = stdin.readLine();</span>
+
+<span class="nc" id="L82">            header = new SimpleSMTPHeader(sender, recipient, subject);</span>
+
+
+<span class="nc" id="L85">            while (true)</span>
+            {
+<span class="nc" id="L87">                System.out.print(&quot;CC &lt;enter one address per line, hit enter to end&gt;: &quot;);</span>
+<span class="nc" id="L88">                System.out.flush();</span>
+
+<span class="nc" id="L90">                cc = stdin.readLine();</span>
+
+<span class="nc bnc" id="L92" title="All 4 branches missed.">                if (cc== null || cc.length() == 0) {</span>
+<span class="nc" id="L93">                    break;</span>
+                }
+
+<span class="nc" id="L96">                header.addCC(cc.trim());</span>
+<span class="nc" id="L97">                ccList.add(cc.trim());</span>
+            }
+
+<span class="nc" id="L100">            System.out.print(&quot;Filename: &quot;);</span>
+<span class="nc" id="L101">            System.out.flush();</span>
+
+<span class="nc" id="L103">            filename = stdin.readLine();</span>
+
+            try
+            {
+<span class="nc" id="L107">                fileReader = new FileReader(filename);</span>
+<span class="nc" id="L108">            }</span>
+<span class="nc" id="L109">            catch (FileNotFoundException e)</span>
+            {
+<span class="nc" id="L111">                System.err.println(&quot;File not found. &quot; + e.getMessage());</span>
+            }
+
+<span class="nc" id="L114">            client = new SMTPClient();</span>
+<span class="nc" id="L115">            client.addProtocolCommandListener(new PrintCommandListener(</span>
+<span class="nc" id="L116">                                                  new PrintWriter(System.out), true));</span>
+
+<span class="nc" id="L118">            client.connect(server);</span>
+
+<span class="nc bnc" id="L120" title="All 2 branches missed.">            if (!SMTPReply.isPositiveCompletion(client.getReplyCode()))</span>
+            {
+<span class="nc" id="L122">                client.disconnect();</span>
+<span class="nc" id="L123">                System.err.println(&quot;SMTP server refused connection.&quot;);</span>
+<span class="nc" id="L124">                System.exit(1);</span>
+            }
+
+<span class="nc" id="L127">            client.login();</span>
+
+<span class="nc" id="L129">            client.setSender(sender);</span>
+<span class="nc" id="L130">            client.addRecipient(recipient);</span>
+
+
+
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            for (String recpt : ccList) {</span>
+<span class="nc" id="L135">                client.addRecipient(recpt);</span>
+            }
+
+<span class="nc" id="L138">            writer = client.sendMessageData();</span>
+
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            if (writer != null)</span>
+            {
+<span class="nc" id="L142">                writer.write(header.toString());</span>
+<span class="nc" id="L143">                Util.copyReader(fileReader, writer);</span>
+<span class="nc" id="L144">                writer.close();</span>
+<span class="nc" id="L145">                client.completePendingCommand();</span>
+            }
+
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (fileReader != null ) {</span>
+<span class="nc" id="L149">                fileReader.close();</span>
+            }
+
+<span class="nc" id="L152">            client.logout();</span>
+
+<span class="nc" id="L154">            client.disconnect();</span>
+<span class="nc" id="L155">        }</span>
+<span class="nc" id="L156">        catch (IOException e)</span>
+        {
+<span class="nc" id="L158">            e.printStackTrace();</span>
+<span class="nc" id="L159">            System.exit(1);</span>
+        }
+<span class="nc" id="L161">    }</span>
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,926 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FTPSClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp</a> &gt; <span class="el_source">FTPSClient.java</span></div><h1>FTPSClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.Socket;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+
+import org.apache.commons.net.util.Base64;
+import org.apache.commons.net.util.SSLContextUtils;
+import org.apache.commons.net.util.SSLSocketUtils;
+import org.apache.commons.net.util.TrustManagerUtils;
+
+/**
+ * FTP over SSL processing. If desired, the JVM property -Djavax.net.debug=all can be used to
+ * see wire-level SSL details.
+ *
+ * Warning: the hostname is not verified against the certificate by default, use
+ * {@link #setHostnameVerifier(HostnameVerifier)} or {@link #setEndpointCheckingEnabled(boolean)}
+ * (on Java 1.7+) to enable verification. Verification is only performed on client mode connections.
+ * @version $Id$
+ * @since 2.0
+ */
+public class FTPSClient extends FTPClient {
+
+// From http://www.iana.org/assignments/port-numbers
+
+//    ftps-data   989/tcp    ftp protocol, data, over TLS/SSL
+//    ftps-data   989/udp    ftp protocol, data, over TLS/SSL
+//    ftps        990/tcp    ftp protocol, control, over TLS/SSL
+//    ftps        990/udp    ftp protocol, control, over TLS/SSL
+
+    public static final int DEFAULT_FTPS_DATA_PORT = 989;
+    public static final int DEFAULT_FTPS_PORT = 990;
+
+    /** The value that I can set in PROT command  (C = Clear, P = Protected) */
+<span class="nc" id="L64">    private static final String[] PROT_COMMAND_VALUE = {&quot;C&quot;,&quot;E&quot;,&quot;S&quot;,&quot;P&quot;};</span>
+    /** Default PROT Command */
+    private static final String DEFAULT_PROT = &quot;C&quot;;
+    /** Default secure socket protocol name, i.e. TLS */
+    private static final String DEFAULT_PROTOCOL = &quot;TLS&quot;;
+
+    /** The AUTH (Authentication/Security Mechanism) command. */
+    private static final String CMD_AUTH = &quot;AUTH&quot;;
+    /**  The ADAT (Authentication/Security Data) command. */
+    private static final String CMD_ADAT = &quot;ADAT&quot;;
+    /**  The PROT (Data Channel Protection Level) command. */
+    private static final String CMD_PROT = &quot;PROT&quot;;
+    /**  The PBSZ (Protection Buffer Size) command. */
+    private static final String CMD_PBSZ = &quot;PBSZ&quot;;
+    /**  The MIC (Integrity Protected Command) command. */
+    private static final String CMD_MIC = &quot;MIC&quot;;
+    /**  The CONF (Confidentiality Protected Command) command. */
+    private static final String CMD_CONF = &quot;CONF&quot;;
+    /**  The ENC (Privacy Protected Command) command. */
+    private static final String CMD_ENC = &quot;ENC&quot;;
+    /**  The CCC (Clear Command Channel) command. */
+    private static final String CMD_CCC = &quot;CCC&quot;;
+
+    /** The security mode. (True - Implicit Mode / False - Explicit Mode) */
+    private final boolean isImplicit;
+    /** The secure socket protocol to be used, e.g. SSL/TLS. */
+    private final String protocol;
+    /** The AUTH Command value */
+<span class="nc" id="L92">    private String auth = DEFAULT_PROTOCOL;</span>
+    /** The context object. */
+    private SSLContext context;
+    /** The socket object. */
+    private Socket plainSocket;
+    /** Controls whether a new SSL session may be established by this socket. Default true. */
+<span class="nc" id="L98">    private boolean isCreation = true;</span>
+    /** The use client mode flag. */
+<span class="nc" id="L100">    private boolean isClientMode = true;</span>
+    /** The need client auth flag. */
+<span class="nc" id="L102">    private boolean isNeedClientAuth = false;</span>
+    /** The want client auth flag. */
+<span class="nc" id="L104">    private boolean isWantClientAuth = false;</span>
+    /** The cipher suites */
+<span class="nc" id="L106">    private String[] suites = null;</span>
+    /** The protocol versions */
+<span class="nc" id="L108">    private String[] protocols = null;</span>
+
+    /** The FTPS {@link TrustManager} implementation, default validate only
+     * {@link TrustManagerUtils#getValidateServerCertificateTrustManager()}.
+     */
+<span class="nc" id="L113">    private TrustManager trustManager = TrustManagerUtils.getValidateServerCertificateTrustManager();</span>
+
+    /** The {@link KeyManager}, default null (i.e. use system default). */
+<span class="nc" id="L116">    private KeyManager keyManager = null;</span>
+
+    /** The {@link HostnameVerifier} to use post-TLS, default null (i.e. no verification). */
+<span class="nc" id="L119">    private HostnameVerifier hostnameVerifier = null;</span>
+
+    /** Use Java 1.7+ HTTPS Endpoint Identification Algorithim. */
+    private boolean tlsEndpointChecking;
+
+    /**
+     * Constructor for FTPSClient, calls {@link #FTPSClient(String, boolean)}.
+     *
+     * Sets protocol to {@link #DEFAULT_PROTOCOL} - i.e. TLS - and security mode to explicit (isImplicit = false)
+     */
+    public FTPSClient() {
+<span class="nc" id="L130">        this(DEFAULT_PROTOCOL, false);</span>
+<span class="nc" id="L131">    }</span>
+
+    /**
+     * Constructor for FTPSClient, using {@link #DEFAULT_PROTOCOL} - i.e. TLS
+     * Calls {@link #FTPSClient(String, boolean)}
+     * @param isImplicit The security mode (Implicit/Explicit).
+     */
+    public FTPSClient(boolean isImplicit) {
+<span class="nc" id="L139">        this(DEFAULT_PROTOCOL, isImplicit);</span>
+<span class="nc" id="L140">    }</span>
+
+    /**
+     * Constructor for FTPSClient, using explict mode, calls {@link #FTPSClient(String, boolean)}.
+     *
+     * @param protocol the protocol to use
+     */
+    public FTPSClient(String protocol) {
+<span class="nc" id="L148">        this(protocol, false);</span>
+<span class="nc" id="L149">    }</span>
+
+    /**
+     * Constructor for FTPSClient allowing specification of protocol
+     * and security mode. If isImplicit is true, the port is set to
+     * {@link #DEFAULT_FTPS_PORT} i.e. 990.
+     * The default TrustManager is set from {@link TrustManagerUtils#getValidateServerCertificateTrustManager()}
+     * @param protocol the protocol
+     * @param isImplicit The security mode(Implicit/Explicit).
+     */
+    public FTPSClient(String protocol, boolean isImplicit) {
+<span class="nc" id="L160">        super();</span>
+<span class="nc" id="L161">        this.protocol = protocol;</span>
+<span class="nc" id="L162">        this.isImplicit = isImplicit;</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        if (isImplicit) {</span>
+<span class="nc" id="L164">            setDefaultPort(DEFAULT_FTPS_PORT);</span>
+        }
+<span class="nc" id="L166">    }</span>
+
+    /**
+     * Constructor for FTPSClient, using {@link #DEFAULT_PROTOCOL} - i.e. TLS
+     * The default TrustManager is set from {@link TrustManagerUtils#getValidateServerCertificateTrustManager()}
+     * @param isImplicit The security mode(Implicit/Explicit).
+     * @param context A pre-configured SSL Context
+     */
+    public FTPSClient(boolean isImplicit, SSLContext context) {
+<span class="nc" id="L175">        this(DEFAULT_PROTOCOL, isImplicit);</span>
+<span class="nc" id="L176">        this.context = context;</span>
+<span class="nc" id="L177">    }</span>
+
+    /**
+     * Constructor for FTPSClient, using {@link #DEFAULT_PROTOCOL} - i.e. TLS
+     * and isImplicit {@code false}
+     * Calls {@link #FTPSClient(boolean, SSLContext)}
+     * @param context A pre-configured SSL Context
+     */
+    public FTPSClient(SSLContext context) {
+<span class="nc" id="L186">        this(false, context);</span>
+<span class="nc" id="L187">    }</span>
+
+
+    /**
+     * Set AUTH command use value.
+     * This processing is done before connected processing.
+     * @param auth AUTH command use value.
+     */
+    public void setAuthValue(String auth) {
+<span class="nc" id="L196">        this.auth = auth;</span>
+<span class="nc" id="L197">    }</span>
+
+    /**
+     * Return AUTH command use value.
+     * @return AUTH command use value.
+     */
+    public String getAuthValue() {
+<span class="nc" id="L204">        return this.auth;</span>
+    }
+
+
+    /**
+     * Because there are so many connect() methods,
+     * the _connectAction_() method is provided as a means of performing
+     * some action immediately after establishing a connection,
+     * rather than reimplementing all of the connect() methods.
+     * @throws IOException If it throw by _connectAction_.
+     * @see org.apache.commons.net.SocketClient#_connectAction_()
+     */
+    @Override
+    protected void _connectAction_() throws IOException {
+        // Implicit mode.
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (isImplicit) {</span>
+<span class="nc" id="L220">            sslNegotiation();</span>
+        }
+<span class="nc" id="L222">        super._connectAction_();</span>
+        // Explicit mode.
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        if (!isImplicit) {</span>
+<span class="nc" id="L225">            execAUTH();</span>
+<span class="nc" id="L226">            sslNegotiation();</span>
+        }
+<span class="nc" id="L228">    }</span>
+
+    /**
+     * AUTH command.
+     * @throws SSLException If it server reply code not equal &quot;234&quot; and &quot;334&quot;.
+     * @throws IOException If an I/O error occurs while either sending
+     * the command.
+     */
+    protected void execAUTH() throws SSLException, IOException {
+<span class="nc" id="L237">        int replyCode = sendCommand(CMD_AUTH, auth);</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        if (FTPReply.SECURITY_MECHANISM_IS_OK == replyCode) {</span>
+            // replyCode = 334
+            // I carry out an ADAT command.
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        } else if (FTPReply.SECURITY_DATA_EXCHANGE_COMPLETE != replyCode) {</span>
+<span class="nc" id="L242">            throw new SSLException(getReplyString());</span>
+        }
+<span class="nc" id="L244">    }</span>
+
+    /**
+     * Performs a lazy init of the SSL context
+     * @throws IOException
+     */
+    private void initSslContext() throws IOException {
+<span class="nc bnc" id="L251" title="All 2 branches missed.">        if (context == null) {</span>
+<span class="nc" id="L252">            context = SSLContextUtils.createSSLContext(protocol, getKeyManager(), getTrustManager());</span>
+        }
+<span class="nc" id="L254">    }</span>
+
+    /**
+     * SSL/TLS negotiation. Acquires an SSL socket of a control
+     * connection and carries out handshake processing.
+     * @throws IOException If server negotiation fails
+     */
+    protected void sslNegotiation() throws IOException {
+<span class="nc" id="L262">        plainSocket = _socket_;</span>
+<span class="nc" id="L263">        initSslContext();</span>
+
+<span class="nc" id="L265">        SSLSocketFactory ssf = context.getSocketFactory();</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        String host = (_hostname_ != null) ? _hostname_ : getRemoteAddress().getHostAddress();</span>
+<span class="nc" id="L267">        int port = _socket_.getPort();</span>
+<span class="nc" id="L268">        SSLSocket socket =</span>
+<span class="nc" id="L269">            (SSLSocket) ssf.createSocket(_socket_, host, port, false);</span>
+<span class="nc" id="L270">        socket.setEnableSessionCreation(isCreation);</span>
+<span class="nc" id="L271">        socket.setUseClientMode(isClientMode);</span>
+
+        // client mode
+<span class="nc bnc" id="L274" title="All 2 branches missed.">        if (isClientMode) {</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">            if (tlsEndpointChecking) {</span>
+<span class="nc" id="L276">                SSLSocketUtils.enableEndpointNameVerification(socket);</span>
+            }
+<span class="nc" id="L278">        } else { // server mode</span>
+<span class="nc" id="L279">            socket.setNeedClientAuth(isNeedClientAuth);</span>
+<span class="nc" id="L280">            socket.setWantClientAuth(isWantClientAuth);</span>
+        }
+
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (protocols != null) {</span>
+<span class="nc" id="L284">            socket.setEnabledProtocols(protocols);</span>
+        }
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (suites != null) {</span>
+<span class="nc" id="L287">            socket.setEnabledCipherSuites(suites);</span>
+        }
+<span class="nc" id="L289">        socket.startHandshake();</span>
+
+        // TODO the following setup appears to duplicate that in the super class methods
+<span class="nc" id="L292">        _socket_ = socket;</span>
+<span class="nc" id="L293">        _controlInput_ = new BufferedReader(new InputStreamReader(</span>
+<span class="nc" id="L294">                socket .getInputStream(), getControlEncoding()));</span>
+<span class="nc" id="L295">        _controlOutput_ = new BufferedWriter(new OutputStreamWriter(</span>
+<span class="nc" id="L296">                socket.getOutputStream(), getControlEncoding()));</span>
+
+<span class="nc bnc" id="L298" title="All 2 branches missed.">        if (isClientMode) {</span>
+<span class="nc bnc" id="L299" title="All 4 branches missed.">            if (hostnameVerifier != null &amp;&amp; !hostnameVerifier.verify(host, socket.getSession())) {</span>
+<span class="nc" id="L300">                throw new SSLHandshakeException(&quot;Hostname doesn't match certificate&quot;);</span>
+            }
+        }
+<span class="nc" id="L303">    }</span>
+
+    /**
+     * Get the {@link KeyManager} instance.
+     * @return The {@link KeyManager} instance
+     */
+    private KeyManager getKeyManager() {
+<span class="nc" id="L310">        return keyManager;</span>
+    }
+
+    /**
+    * Set a {@link KeyManager} to use
+    *
+    * @param keyManager The KeyManager implementation to set.
+    * @see org.apache.commons.net.util.KeyManagerUtils
+    */
+    public void setKeyManager(KeyManager keyManager) {
+<span class="nc" id="L320">        this.keyManager = keyManager;</span>
+<span class="nc" id="L321">    }</span>
+
+    /**
+     * Controls whether a new SSL session may be established by this socket.
+     * @param isCreation The established socket flag.
+     */
+    public void setEnabledSessionCreation(boolean isCreation) {
+<span class="nc" id="L328">        this.isCreation = isCreation;</span>
+<span class="nc" id="L329">    }</span>
+
+    /**
+     * Returns true if new SSL sessions may be established by this socket.
+     * When the underlying {@link Socket} instance is not SSL-enabled (i.e. an
+     * instance of {@link SSLSocket} with {@link SSLSocket}{@link #getEnableSessionCreation()}) enabled,
+     * this returns False.
+     * @return true - Indicates that sessions may be created;
+     * this is the default.
+     * false - indicates that an existing session must be resumed.
+     */
+    public boolean getEnableSessionCreation() {
+<span class="nc bnc" id="L341" title="All 2 branches missed.">        if (_socket_ instanceof SSLSocket) {</span>
+<span class="nc" id="L342">            return ((SSLSocket)_socket_).getEnableSessionCreation();</span>
+        }
+<span class="nc" id="L344">        return false;</span>
+    }
+
+    /**
+     * Configures the socket to require client authentication.
+     * @param isNeedClientAuth The need client auth flag.
+     */
+    public void setNeedClientAuth(boolean isNeedClientAuth) {
+<span class="nc" id="L352">        this.isNeedClientAuth = isNeedClientAuth;</span>
+<span class="nc" id="L353">    }</span>
+
+    /**
+     * Returns true if the socket will require client authentication.
+     * When the underlying {@link Socket} is not an {@link SSLSocket} instance, returns false.
+     * @return true - If the server mode socket should request
+     * that the client authenticate itself.
+     */
+    public boolean getNeedClientAuth() {
+<span class="nc bnc" id="L362" title="All 2 branches missed.">        if (_socket_ instanceof SSLSocket) {</span>
+<span class="nc" id="L363">            return ((SSLSocket)_socket_).getNeedClientAuth();</span>
+        }
+<span class="nc" id="L365">        return false;</span>
+    }
+
+    /**
+     * Configures the socket to request client authentication,
+     * but only if such a request is appropriate to the cipher
+     * suite negotiated.
+     * @param isWantClientAuth The want client auth flag.
+     */
+    public void setWantClientAuth(boolean isWantClientAuth) {
+<span class="nc" id="L375">        this.isWantClientAuth = isWantClientAuth;</span>
+<span class="nc" id="L376">    }</span>
+
+    /**
+     * Returns true if the socket will request client authentication.
+     * When the underlying {@link Socket} is not an {@link SSLSocket} instance, returns false.
+     * @return true - If the server mode socket should request
+     * that the client authenticate itself.
+     */
+    public boolean getWantClientAuth() {
+<span class="nc bnc" id="L385" title="All 2 branches missed.">        if (_socket_ instanceof SSLSocket) {</span>
+<span class="nc" id="L386">            return ((SSLSocket)_socket_).getWantClientAuth();</span>
+        }
+<span class="nc" id="L388">        return false;</span>
+    }
+
+    /**
+     * Configures the socket to use client (or server) mode in its first
+     * handshake.
+     * @param isClientMode The use client mode flag.
+     */
+    public void setUseClientMode(boolean isClientMode) {
+<span class="nc" id="L397">        this.isClientMode = isClientMode;</span>
+<span class="nc" id="L398">    }</span>
+
+    /**
+     * Returns true if the socket is set to use client mode
+     * in its first handshake.
+     * When the underlying {@link Socket} is not an {@link SSLSocket} instance, returns false.
+     * @return true - If the socket should start its first handshake
+     * in &quot;client&quot; mode.
+     */
+    public boolean getUseClientMode() {
+<span class="nc bnc" id="L408" title="All 2 branches missed.">        if (_socket_ instanceof SSLSocket) {</span>
+<span class="nc" id="L409">            return ((SSLSocket)_socket_).getUseClientMode();</span>
+        }
+<span class="nc" id="L411">        return false;</span>
+    }
+
+    /**
+     * Controls which particular cipher suites are enabled for use on this
+     * connection. Called before server negotiation.
+     * @param cipherSuites The cipher suites.
+     */
+    public void setEnabledCipherSuites(String[] cipherSuites) {
+<span class="nc" id="L420">        suites = new String[cipherSuites.length];</span>
+<span class="nc" id="L421">        System.arraycopy(cipherSuites, 0, suites, 0, cipherSuites.length);</span>
+<span class="nc" id="L422">    }</span>
+
+    /**
+     * Returns the names of the cipher suites which could be enabled
+     * for use on this connection.
+     * When the underlying {@link Socket} is not an {@link SSLSocket} instance, returns null.
+     * @return An array of cipher suite names, or &lt;code&gt;null&lt;/code&gt;
+     */
+    public String[] getEnabledCipherSuites() {
+<span class="nc bnc" id="L431" title="All 2 branches missed.">        if (_socket_ instanceof SSLSocket) {</span>
+<span class="nc" id="L432">            return ((SSLSocket)_socket_).getEnabledCipherSuites();</span>
+        }
+<span class="nc" id="L434">        return null;</span>
+    }
+
+    /**
+     * Controls which particular protocol versions are enabled for use on this
+     * connection. I perform setting before a server negotiation.
+     * @param protocolVersions The protocol versions.
+     */
+    public void setEnabledProtocols(String[] protocolVersions) {
+<span class="nc" id="L443">        protocols = new String[protocolVersions.length];</span>
+<span class="nc" id="L444">        System.arraycopy(protocolVersions, 0, protocols, 0, protocolVersions.length);</span>
+<span class="nc" id="L445">    }</span>
+
+    /**
+     * Returns the names of the protocol versions which are currently
+     * enabled for use on this connection.
+     * When the underlying {@link Socket} is not an {@link SSLSocket} instance, returns null.
+     * @return An array of protocols, or &lt;code&gt;null&lt;/code&gt;
+     */
+    public String[] getEnabledProtocols() {
+<span class="nc bnc" id="L454" title="All 2 branches missed.">        if (_socket_ instanceof SSLSocket) {</span>
+<span class="nc" id="L455">            return ((SSLSocket)_socket_).getEnabledProtocols();</span>
+        }
+<span class="nc" id="L457">        return null;</span>
+    }
+
+    /**
+     * PBSZ command. pbsz value: 0 to (2^32)-1 decimal integer.
+     * @param pbsz Protection Buffer Size.
+     * @throws SSLException If the server reply code does not equal &quot;200&quot;.
+     * @throws IOException If an I/O error occurs while sending
+     * the command.
+     * @see #parsePBSZ(long)
+     */
+    public void execPBSZ(long pbsz) throws SSLException, IOException {
+<span class="nc bnc" id="L469" title="All 4 branches missed.">        if (pbsz &lt; 0 || 4294967295L &lt; pbsz) { // 32-bit unsigned number</span>
+<span class="nc" id="L470">            throw new IllegalArgumentException();</span>
+        }
+<span class="nc" id="L472">        int status = sendCommand(CMD_PBSZ, String.valueOf(pbsz));</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">        if (FTPReply.COMMAND_OK != status) {</span>
+<span class="nc" id="L474">            throw new SSLException(getReplyString());</span>
+        }
+<span class="nc" id="L476">    }</span>
+
+    /**
+     * PBSZ command. pbsz value: 0 to (2^32)-1 decimal integer.
+     * Issues the command and parses the response to return the negotiated value.
+     *
+     * @param pbsz Protection Buffer Size.
+     * @throws SSLException If the server reply code does not equal &quot;200&quot;.
+     * @throws IOException If an I/O error occurs while sending
+     * the command.
+     * @return the negotiated value.
+     * @see #execPBSZ(long)
+     * @since 3.0
+     */
+    public long parsePBSZ(long pbsz) throws SSLException, IOException {
+<span class="nc" id="L491">        execPBSZ(pbsz);</span>
+<span class="nc" id="L492">        long minvalue = pbsz;</span>
+<span class="nc" id="L493">        String remainder = extractPrefixedData(&quot;PBSZ=&quot;, getReplyString());</span>
+<span class="nc bnc" id="L494" title="All 2 branches missed.">        if (remainder != null) {</span>
+<span class="nc" id="L495">            long replysz = Long.parseLong(remainder);</span>
+<span class="nc bnc" id="L496" title="All 2 branches missed.">            if (replysz &lt; minvalue) {</span>
+<span class="nc" id="L497">                minvalue = replysz;</span>
+            }
+        }
+<span class="nc" id="L500">        return minvalue;</span>
+    }
+
+    /**
+     * PROT command.
+     * &lt;ul&gt;
+     * &lt;li&gt;C - Clear&lt;/li&gt;
+     * &lt;li&gt;S - Safe(SSL protocol only)&lt;/li&gt;
+     * &lt;li&gt;E - Confidential(SSL protocol only)&lt;/li&gt;
+     * &lt;li&gt;P - Private&lt;/li&gt;
+     * &lt;/ul&gt;
+     * &lt;b&gt;N.B.&lt;/b&gt; the method calls
+     *  {@link #setSocketFactory(javax.net.SocketFactory)} and
+     *  {@link #setServerSocketFactory(javax.net.ServerSocketFactory)}
+     *
+     * @param prot Data Channel Protection Level, if {@code null}, use {@link #DEFAULT_PROT}.
+     * @throws SSLException If the server reply code does not equal  {@code 200}.
+     * @throws IOException If an I/O error occurs while sending
+     * the command.
+     */
+    public void execPROT(String prot) throws SSLException, IOException {
+<span class="nc bnc" id="L521" title="All 2 branches missed.">        if (prot == null) {</span>
+<span class="nc" id="L522">            prot = DEFAULT_PROT;</span>
+        }
+<span class="nc bnc" id="L524" title="All 2 branches missed.">        if (!checkPROTValue(prot)) {</span>
+<span class="nc" id="L525">            throw new IllegalArgumentException();</span>
+        }
+<span class="nc bnc" id="L527" title="All 2 branches missed.">        if (FTPReply.COMMAND_OK != sendCommand(CMD_PROT, prot)) {</span>
+<span class="nc" id="L528">            throw new SSLException(getReplyString());</span>
+        }
+<span class="nc bnc" id="L530" title="All 2 branches missed.">        if (DEFAULT_PROT.equals(prot)) {</span>
+<span class="nc" id="L531">            setSocketFactory(null);</span>
+<span class="nc" id="L532">            setServerSocketFactory(null);</span>
+<span class="nc" id="L533">        } else {</span>
+<span class="nc" id="L534">            setSocketFactory(new FTPSSocketFactory(context));</span>
+<span class="nc" id="L535">            setServerSocketFactory(new FTPSServerSocketFactory(context));</span>
+<span class="nc" id="L536">            initSslContext();</span>
+        }
+<span class="nc" id="L538">    }</span>
+
+    /**
+     * Check the value that can be set in PROT Command value.
+     * @param prot Data Channel Protection Level.
+     * @return True - A set point is right / False - A set point is not right
+     */
+    private boolean checkPROTValue(String prot) {
+<span class="nc bnc" id="L546" title="All 2 branches missed.">        for (String element : PROT_COMMAND_VALUE)</span>
+        {
+<span class="nc bnc" id="L548" title="All 2 branches missed.">            if (element.equals(prot)) {</span>
+<span class="nc" id="L549">                return true;</span>
+            }
+        }
+<span class="nc" id="L552">        return false;</span>
+    }
+
+    /**
+     * Send an FTP command.
+     * A successful CCC (Clear Command Channel) command causes the underlying {@link SSLSocket}
+     * instance to be assigned to a plain {@link Socket}
+     * @param command The FTP command.
+     * @return server reply.
+     * @throws IOException If an I/O error occurs while sending the command.
+     * @throws SSLException if a CCC command fails
+     * @see org.apache.commons.net.ftp.FTP#sendCommand(java.lang.String)
+     */
+    // Would like to remove this method, but that will break any existing clients that are using CCC
+    @Override
+    public int sendCommand(String command, String args) throws IOException {
+<span class="nc" id="L568">        int repCode = super.sendCommand(command, args);</span>
+        /* If CCC is issued, restore socket i/o streams to unsecured versions */
+<span class="nc bnc" id="L570" title="All 2 branches missed.">        if (CMD_CCC.equals(command)) {</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">            if (FTPReply.COMMAND_OK == repCode) {</span>
+<span class="nc" id="L572">                _socket_.close();</span>
+<span class="nc" id="L573">                _socket_ = plainSocket;</span>
+<span class="nc" id="L574">                _controlInput_ = new BufferedReader(</span>
+<span class="nc" id="L575">                    new InputStreamReader(</span>
+<span class="nc" id="L576">                        _socket_ .getInputStream(), getControlEncoding()));</span>
+<span class="nc" id="L577">                _controlOutput_ = new BufferedWriter(</span>
+<span class="nc" id="L578">                    new OutputStreamWriter(</span>
+<span class="nc" id="L579">                        _socket_.getOutputStream(), getControlEncoding()));</span>
+<span class="nc" id="L580">            } else {</span>
+<span class="nc" id="L581">                throw new SSLException(getReplyString());</span>
+            }
+        }
+<span class="nc" id="L584">        return repCode;</span>
+    }
+
+    /**
+     * Returns a socket of the data connection.
+     * Wrapped as an {@link SSLSocket}, which carries out handshake processing.
+     * @param command The int representation of the FTP command to send.
+     * @param arg The arguments to the FTP command.
+     * If this parameter is set to null, then the command is sent with
+     * no arguments.
+     * @return corresponding to the established data connection.
+     * Null is returned if an FTP protocol error is reported at any point
+     * during the establishment and initialization of the connection.
+     * @throws IOException If there is any problem with the connection.
+     * @see FTPClient#_openDataConnection_(int, String)
+     * @deprecated (3.3) Use {@link FTPClient#_openDataConnection_(FTPCmd, String)} instead
+     */
+    @Override
+    // Strictly speaking this is not needed, but it works round a Clirr bug
+    // So rather than invoke the parent code, we do it here
+    @Deprecated
+    protected Socket _openDataConnection_(int command, String arg)
+            throws IOException {
+<span class="nc" id="L607">        return _openDataConnection_(FTPCommand.getCommand(command), arg);</span>
+    }
+
+   /**
+     * Returns a socket of the data connection.
+     * Wrapped as an {@link SSLSocket}, which carries out handshake processing.
+     * @param command The textual representation of the FTP command to send.
+     * @param arg The arguments to the FTP command.
+     * If this parameter is set to null, then the command is sent with
+     * no arguments.
+     * @return corresponding to the established data connection.
+     * Null is returned if an FTP protocol error is reported at any point
+     * during the establishment and initialization of the connection.
+     * @throws IOException If there is any problem with the connection.
+     * @see FTPClient#_openDataConnection_(int, String)
+     * @since 3.2
+     */
+    @Override
+    protected Socket _openDataConnection_(String command, String arg)
+            throws IOException {
+<span class="nc" id="L627">        Socket socket = super._openDataConnection_(command, arg);</span>
+<span class="nc" id="L628">        _prepareDataSocket_(socket);</span>
+<span class="nc bnc" id="L629" title="All 2 branches missed.">        if (socket instanceof SSLSocket) {</span>
+<span class="nc" id="L630">            SSLSocket sslSocket = (SSLSocket)socket;</span>
+
+<span class="nc" id="L632">            sslSocket.setUseClientMode(isClientMode);</span>
+<span class="nc" id="L633">            sslSocket.setEnableSessionCreation(isCreation);</span>
+
+            // server mode
+<span class="nc bnc" id="L636" title="All 2 branches missed.">            if (!isClientMode) {</span>
+<span class="nc" id="L637">                sslSocket.setNeedClientAuth(isNeedClientAuth);</span>
+<span class="nc" id="L638">                sslSocket.setWantClientAuth(isWantClientAuth);</span>
+            }
+<span class="nc bnc" id="L640" title="All 2 branches missed.">            if (suites != null) {</span>
+<span class="nc" id="L641">                sslSocket.setEnabledCipherSuites(suites);</span>
+            }
+<span class="nc bnc" id="L643" title="All 2 branches missed.">            if (protocols != null) {</span>
+<span class="nc" id="L644">                sslSocket.setEnabledProtocols(protocols);</span>
+            }
+<span class="nc" id="L646">            sslSocket.startHandshake();</span>
+        }
+
+<span class="nc" id="L649">        return socket;</span>
+    }
+
+    /**
+    * Performs any custom initialization for a newly created SSLSocket (before
+    * the SSL handshake happens).
+    * Called by {@link #_openDataConnection_(int, String)} immediately
+    * after creating the socket.
+    * The default implementation is a no-op
+     * @param socket the socket to set up
+    * @throws IOException on error
+    * @since 3.1
+    */
+    protected void _prepareDataSocket_(Socket socket)
+            throws IOException {
+<span class="nc" id="L664">    }</span>
+
+    /**
+     * Get the currently configured {@link TrustManager}.
+     *
+     * @return A TrustManager instance.
+     */
+    public TrustManager getTrustManager() {
+<span class="nc" id="L672">        return trustManager;</span>
+    }
+
+    /**
+     * Override the default {@link TrustManager} to use; if set to {@code null},
+     * the default TrustManager from the JVM will be used.
+     *
+     * @param trustManager The TrustManager implementation to set, may be {@code null}
+     * @see org.apache.commons.net.util.TrustManagerUtils
+     */
+    public void setTrustManager(TrustManager trustManager) {
+<span class="nc" id="L683">        this.trustManager = trustManager;</span>
+<span class="nc" id="L684">    }</span>
+
+    /**
+     * Get the currently configured {@link HostnameVerifier}.
+     * The verifier is only used on client mode connections.
+     * @return A HostnameVerifier instance.
+     * @since 3.4
+     */
+    public HostnameVerifier getHostnameVerifier()
+    {
+<span class="nc" id="L694">        return hostnameVerifier;</span>
+    }
+
+    /**
+     * Override the default {@link HostnameVerifier} to use.
+     * The verifier is only used on client mode connections.
+     * @param newHostnameVerifier The HostnameVerifier implementation to set or &lt;code&gt;null&lt;/code&gt; to disable.
+     * @since 3.4
+     */
+    public void setHostnameVerifier(HostnameVerifier newHostnameVerifier)
+    {
+<span class="nc" id="L705">        hostnameVerifier = newHostnameVerifier;</span>
+<span class="nc" id="L706">    }</span>
+
+    /**
+     * Return whether or not endpoint identification using the HTTPS algorithm
+     * on Java 1.7+ is enabled. The default behaviour is for this to be disabled.
+     *
+     * This check is only performed on client mode connections.
+     *
+     * @return True if enabled, false if not.
+     * @since 3.4
+     */
+    public boolean isEndpointCheckingEnabled()
+    {
+<span class="nc" id="L719">        return tlsEndpointChecking;</span>
+    }
+
+    /**
+     * Automatic endpoint identification checking using the HTTPS algorithm
+     * is supported on Java 1.7+. The default behaviour is for this to be disabled.
+     *
+     * This check is only performed on client mode connections.
+     *
+     * @param enable Enable automatic endpoint identification checking using the HTTPS algorithm on Java 1.7+.
+     * @since 3.4
+     */
+    public void setEndpointCheckingEnabled(boolean enable)
+    {
+<span class="nc" id="L733">        tlsEndpointChecking = enable;</span>
+<span class="nc" id="L734">    }</span>
+
+    /**
+     * Closes the connection to the FTP server and restores
+     * connection parameters to the default values.
+     * &lt;p&gt;
+     * Calls {@code setSocketFactory(null)} and {@code setServerSocketFactory(null)}
+     * to reset the factories that may have been changed during the session,
+     * e.g. by {@link #execPROT(String)}
+     * @throws IOException If an error occurs while disconnecting.
+     * @since 3.0
+     */
+    @Override
+    public void disconnect() throws IOException
+    {
+<span class="nc" id="L749">        super.disconnect();</span>
+<span class="nc bnc" id="L750" title="All 2 branches missed.">        if (plainSocket != null) {</span>
+<span class="nc" id="L751">            plainSocket.close();</span>
+        }
+<span class="nc" id="L753">        setSocketFactory(null);</span>
+<span class="nc" id="L754">        setServerSocketFactory(null);</span>
+<span class="nc" id="L755">    }</span>
+
+    /**
+     * Send the AUTH command with the specified mechanism.
+     * @param mechanism The mechanism name to send with the command.
+     * @return server reply.
+     * @throws IOException If an I/O error occurs while sending
+     * the command.
+     * @since 3.0
+     */
+    public int execAUTH(String mechanism) throws IOException
+    {
+<span class="nc" id="L767">        return sendCommand(CMD_AUTH, mechanism);</span>
+    }
+
+    /**
+     * Send the ADAT command with the specified authentication data.
+     * @param data The data to send with the command.
+     * @return server reply.
+     * @throws IOException If an I/O error occurs while sending
+     * the command.
+     * @since 3.0
+     */
+    public int execADAT(byte[] data) throws IOException
+    {
+<span class="nc bnc" id="L780" title="All 2 branches missed.">        if (data != null)</span>
+        {
+<span class="nc" id="L782">            return sendCommand(CMD_ADAT, Base64.encodeBase64StringUnChunked(data));</span>
+        }
+        else
+        {
+<span class="nc" id="L786">            return sendCommand(CMD_ADAT);</span>
+        }
+    }
+
+    /**
+     * Send the CCC command to the server.
+     * The CCC (Clear Command Channel) command causes the underlying {@link SSLSocket} instance  to be assigned
+     * to a plain {@link Socket} instances
+     * @return server reply.
+     * @throws IOException If an I/O error occurs while sending
+     * the command.
+     * @since 3.0
+     */
+    public int execCCC() throws IOException
+    {
+<span class="nc" id="L801">        int repCode = sendCommand(CMD_CCC);</span>
+// This will be performed by sendCommand(String, String)
+//        if (FTPReply.isPositiveCompletion(repCode)) {
+//            _socket_.close();
+//            _socket_ = plainSocket;
+//            _controlInput_ = new BufferedReader(
+//                new InputStreamReader(
+//                    _socket_.getInputStream(), getControlEncoding()));
+//            _controlOutput_ = new BufferedWriter(
+//                new OutputStreamWriter(
+//                    _socket_.getOutputStream(), getControlEncoding()));
+//        }
+<span class="nc" id="L813">        return repCode;</span>
+    }
+
+    /**
+     * Send the MIC command with the specified data.
+     * @param data The data to send with the command.
+     * @return server reply.
+     * @throws IOException If an I/O error occurs while sending
+     * the command.
+     * @since 3.0
+     */
+    public int execMIC(byte[] data) throws IOException
+    {
+<span class="nc bnc" id="L826" title="All 2 branches missed.">        if (data != null)</span>
+        {
+<span class="nc" id="L828">            return sendCommand(CMD_MIC, Base64.encodeBase64StringUnChunked(data));</span>
+        }
+        else
+        {
+<span class="nc" id="L832">            return sendCommand(CMD_MIC, &quot;&quot;); // perhaps &quot;=&quot; or just sendCommand(String)?</span>
+        }
+    }
+
+    /**
+     * Send the CONF command with the specified data.
+     * @param data The data to send with the command.
+     * @return server reply.
+     * @throws IOException If an I/O error occurs while sending
+     * the command.
+     * @since 3.0
+     */
+    public int execCONF(byte[] data) throws IOException
+    {
+<span class="nc bnc" id="L846" title="All 2 branches missed.">        if (data != null)</span>
+        {
+<span class="nc" id="L848">            return sendCommand(CMD_CONF, Base64.encodeBase64StringUnChunked(data));</span>
+        }
+        else
+        {
+<span class="nc" id="L852">            return sendCommand(CMD_CONF, &quot;&quot;); // perhaps &quot;=&quot; or just sendCommand(String)?</span>
+        }
+    }
+
+    /**
+     * Send the ENC command with the specified data.
+     * @param data The data to send with the command.
+     * @return server reply.
+     * @throws IOException If an I/O error occurs while sending
+     * the command.
+     * @since 3.0
+     */
+    public int execENC(byte[] data) throws IOException
+    {
+<span class="nc bnc" id="L866" title="All 2 branches missed.">        if (data != null)</span>
+        {
+<span class="nc" id="L868">            return sendCommand(CMD_ENC, Base64.encodeBase64StringUnChunked(data));</span>
+        }
+        else
+        {
+<span class="nc" id="L872">            return sendCommand(CMD_ENC, &quot;&quot;); // perhaps &quot;=&quot; or just sendCommand(String)?</span>
+        }
+    }
+
+    /**
+     * Parses the given ADAT response line and base64-decodes the data.
+     * @param reply The ADAT reply to parse.
+     * @return the data in the reply, base64-decoded.
+     * @since 3.0
+     */
+    public byte[] parseADATReply(String reply)
+    {
+<span class="nc bnc" id="L884" title="All 2 branches missed.">        if (reply == null) {</span>
+<span class="nc" id="L885">            return null;</span>
+        } else {
+<span class="nc" id="L887">            return Base64.decodeBase64(extractPrefixedData(&quot;ADAT=&quot;, reply));</span>
+        }
+    }
+
+    /**
+     * Extract the data from a reply with a prefix, e.g. PBSZ=1234 =&gt; 1234
+     * @param prefix the prefix to find
+     * @param reply where to find the prefix
+     * @return the remainder of the string after the prefix, or null if the prefix was not present.
+     */
+    private String extractPrefixedData(String prefix, String reply) {
+<span class="nc" id="L898">        int idx = reply.indexOf(prefix);</span>
+<span class="nc bnc" id="L899" title="All 2 branches missed.">        if (idx == -1) {</span>
+<span class="nc" id="L900">            return null;</span>
+        }
+        // N.B. Cannot use trim before substring as leading space would affect the offset.
+<span class="nc" id="L903">        return reply.substring(idx+prefix.length()).trim();</span>
+    }
+
+    // DEPRECATED - for API compatibility only - DO NOT USE
+
+    /** @deprecated - not used - may be removed in a future release */
+    @Deprecated
+    public static String KEYSTORE_ALGORITHM;
+
+    /** @deprecated - not used - may be removed in a future release */
+    @Deprecated
+    public static String TRUSTSTORE_ALGORITHM;
+
+    /** @deprecated - not used - may be removed in a future release */
+    @Deprecated
+    public static String PROVIDER;
+
+    /** @deprecated - not used - may be removed in a future release */
+    @Deprecated
+<span class="nc" id="L922">    public static String STORE_TYPE;</span>
+
+}
+/* kate: indent-width 4; replace-tabs on; */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

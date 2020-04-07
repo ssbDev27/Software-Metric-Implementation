@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TelnetOption.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.telnet</a> &gt; <span class="el_source">TelnetOption.java</span></div><h1>TelnetOption.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.telnet;
+
+/***
+ * The TelnetOption class cannot be instantiated and only serves as a
+ * storehouse for telnet option constants.
+ * &lt;p&gt;
+ * Details regarding Telnet option specification can be found in RFC 855.
+ *
+ *
+ * @see org.apache.commons.net.telnet.Telnet
+ * @see org.apache.commons.net.telnet.TelnetClient
+ ***/
+
+public class TelnetOption
+{
+    /*** The maximum value an option code can have.  This value is 255. ***/
+    public static final int MAX_OPTION_VALUE = 255;
+
+    public static final int BINARY = 0;
+
+    public static final int ECHO = 1;
+
+    public static final int PREPARE_TO_RECONNECT = 2;
+
+    public static final int SUPPRESS_GO_AHEAD = 3;
+
+    public static final int APPROXIMATE_MESSAGE_SIZE = 4;
+
+    public static final int STATUS = 5;
+
+    public static final int TIMING_MARK = 6;
+
+    public static final int REMOTE_CONTROLLED_TRANSMISSION = 7;
+
+    public static final int NEGOTIATE_OUTPUT_LINE_WIDTH = 8;
+
+    public static final int NEGOTIATE_OUTPUT_PAGE_SIZE = 9;
+
+    public static final int NEGOTIATE_CARRIAGE_RETURN = 10;
+
+    public static final int NEGOTIATE_HORIZONTAL_TAB_STOP = 11;
+
+    public static final int NEGOTIATE_HORIZONTAL_TAB = 12;
+
+    public static final int NEGOTIATE_FORMFEED = 13;
+
+    public static final int NEGOTIATE_VERTICAL_TAB_STOP = 14;
+
+    public static final int NEGOTIATE_VERTICAL_TAB = 15;
+
+    public static final int NEGOTIATE_LINEFEED = 16;
+
+    public static final int EXTENDED_ASCII = 17;
+
+    public static final int FORCE_LOGOUT = 18;
+
+    public static final int BYTE_MACRO = 19;
+
+    public static final int DATA_ENTRY_TERMINAL = 20;
+
+    public static final int SUPDUP = 21;
+
+    public static final int SUPDUP_OUTPUT = 22;
+
+    public static final int SEND_LOCATION = 23;
+
+    public static final int TERMINAL_TYPE = 24;
+
+    public static final int END_OF_RECORD = 25;
+
+    public static final int TACACS_USER_IDENTIFICATION = 26;
+
+    public static final int OUTPUT_MARKING = 27;
+
+    public static final int TERMINAL_LOCATION_NUMBER = 28;
+
+    public static final int REGIME_3270 = 29;
+
+    public static final int X3_PAD = 30;
+
+    public static final int WINDOW_SIZE = 31;
+
+    public static final int TERMINAL_SPEED = 32;
+
+    public static final int REMOTE_FLOW_CONTROL = 33;
+
+    public static final int LINEMODE = 34;
+
+    public static final int X_DISPLAY_LOCATION = 35;
+
+    public static final int OLD_ENVIRONMENT_VARIABLES = 36;
+
+    public static final int AUTHENTICATION = 37;
+
+    public static final int ENCRYPTION = 38;
+
+    public static final int NEW_ENVIRONMENT_VARIABLES = 39;
+
+    public static final int EXTENDED_OPTIONS_LIST = 255;
+
+    @SuppressWarnings(&quot;unused&quot;)
+    private static final int __FIRST_OPTION = BINARY;
+    private static final int __LAST_OPTION = EXTENDED_OPTIONS_LIST;
+
+<span class="fc" id="L122">    private static final String __optionString[] = {</span>
+<span class="fc" id="L123">                &quot;BINARY&quot;, &quot;ECHO&quot;, &quot;RCP&quot;, &quot;SUPPRESS GO AHEAD&quot;, &quot;NAME&quot;, &quot;STATUS&quot;,</span>
+<span class="fc" id="L124">                &quot;TIMING MARK&quot;, &quot;RCTE&quot;, &quot;NAOL&quot;, &quot;NAOP&quot;, &quot;NAOCRD&quot;, &quot;NAOHTS&quot;, &quot;NAOHTD&quot;,</span>
+<span class="fc" id="L125">                &quot;NAOFFD&quot;, &quot;NAOVTS&quot;, &quot;NAOVTD&quot;, &quot;NAOLFD&quot;, &quot;EXTEND ASCII&quot;, &quot;LOGOUT&quot;,</span>
+<span class="fc" id="L126">                &quot;BYTE MACRO&quot;, &quot;DATA ENTRY TERMINAL&quot;, &quot;SUPDUP&quot;, &quot;SUPDUP OUTPUT&quot;,</span>
+<span class="fc" id="L127">                &quot;SEND LOCATION&quot;, &quot;TERMINAL TYPE&quot;, &quot;END OF RECORD&quot;, &quot;TACACS UID&quot;,</span>
+<span class="fc" id="L128">                &quot;OUTPUT MARKING&quot;, &quot;TTYLOC&quot;, &quot;3270 REGIME&quot;, &quot;X.3 PAD&quot;, &quot;NAWS&quot;, &quot;TSPEED&quot;,</span>
+<span class="fc" id="L129">                &quot;LFLOW&quot;, &quot;LINEMODE&quot;, &quot;XDISPLOC&quot;, &quot;OLD-ENVIRON&quot;, &quot;AUTHENTICATION&quot;,</span>
+<span class="fc" id="L130">                &quot;ENCRYPT&quot;, &quot;NEW-ENVIRON&quot;, &quot;TN3270E&quot;, &quot;XAUTH&quot;, &quot;CHARSET&quot;, &quot;RSP&quot;,</span>
+<span class="fc" id="L131">                &quot;Com Port Control&quot;, &quot;Suppress Local Echo&quot;, &quot;Start TLS&quot;,</span>
+<span class="fc" id="L132">                &quot;KERMIT&quot;, &quot;SEND-URL&quot;, &quot;FORWARD_X&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L133">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L134">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L135">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L136">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L137">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L138">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L139">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L140">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L141">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;TELOPT PRAGMA LOGON&quot;, &quot;TELOPT SSPI LOGON&quot;,</span>
+<span class="fc" id="L142">                &quot;TELOPT PRAGMA HEARTBEAT&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L143">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L144">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L145">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L146">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L147">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L148">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L149">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L150">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L151">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L152">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L153">                &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;,</span>
+<span class="fc" id="L154">                &quot;Extended-Options-List&quot;</span>
+<span class="fc" id="L155">            };</span>
+
+
+    /***
+     * Returns the string representation of the telnet protocol option
+     * corresponding to the given option code.
+     *
+     * @param code The option code of the telnet protocol option
+     * @return The string representation of the telnet protocol option.
+     ***/
+    public static final String getOption(int code)
+    {
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if(__optionString[code].length() == 0)</span>
+        {
+<span class="fc" id="L169">            return &quot;UNASSIGNED&quot;;</span>
+        }
+        else
+        {
+<span class="fc" id="L173">            return __optionString[code];</span>
+        }
+    }
+
+
+    /***
+     * Determines if a given option code is valid.  Returns true if valid,
+     * false if not.
+     *
+     * @param code  The option code to test.
+     * @return True if the option code is valid, false if not.
+     **/
+    public static final boolean isValidOption(int code)
+    {
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        return (code &lt;= __LAST_OPTION);</span>
+    }
+
+    // Cannot be instantiated
+    private TelnetOption()
+    { }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VMSFTPEntryParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp.parser</a> &gt; <span class="el_source">VMSFTPEntryParser.java</span></div><h1>VMSFTPEntryParser.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp.parser;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.StringTokenizer;
+
+import org.apache.commons.net.ftp.FTPClientConfig;
+import org.apache.commons.net.ftp.FTPFile;
+
+/**
+ * Implementation FTPFileEntryParser and FTPFileListParser for VMS Systems.
+ * This is a sample of VMS LIST output
+ *
+ *  &quot;1-JUN.LIS;1              9/9           2-JUN-1998 07:32:04  [GROUP,OWNER]    (RWED,RWED,RWED,RE)&quot;,
+ *  &quot;1-JUN.LIS;2              9/9           2-JUN-1998 07:32:04  [GROUP,OWNER]    (RWED,RWED,RWED,RE)&quot;,
+ *  &quot;DATA.DIR;1               1/9           2-JUN-1998 07:32:04  [GROUP,OWNER]    (RWED,RWED,RWED,RE)&quot;,
+ * &lt;P&gt;&lt;B&gt;
+ * Note: VMSFTPEntryParser can only be instantiated through the
+ * DefaultFTPParserFactory by classname.  It will not be chosen
+ * by the autodetection scheme.
+ * &lt;/B&gt;
+ * &lt;P&gt;
+ *
+ * @version $Id$
+ *
+ * @see org.apache.commons.net.ftp.FTPFileEntryParser FTPFileEntryParser (for usage instructions)
+ * @see org.apache.commons.net.ftp.parser.DefaultFTPFileEntryParserFactory
+ */
+public class VMSFTPEntryParser extends ConfigurableFTPFileEntryParserImpl
+{
+
+    private static final String DEFAULT_DATE_FORMAT
+        = &quot;d-MMM-yyyy HH:mm:ss&quot;; //9-NOV-2001 12:30:24
+
+    /**
+     * this is the regular expression used by this parser.
+     */
+    private static final String REGEX =
+        &quot;(.*?;[0-9]+)\\s*&quot;                                                  //1  file and version
+        + &quot;(\\d+)/\\d+\\s*&quot;                                                 //2  size/allocated
+        +&quot;(\\S+)\\s+(\\S+)\\s+&quot;                                             //3+4 date and time
+        + &quot;\\[(([0-9$A-Za-z_]+)|([0-9$A-Za-z_]+),([0-9$a-zA-Z_]+))\\]?\\s*&quot; //5(6,7,8) owner
+        + &quot;\\([a-zA-Z]*,([a-zA-Z]*),([a-zA-Z]*),([a-zA-Z]*)\\)&quot;;            //9,10,11 Permissions (O,G,W)
+    // TODO - perhaps restrict permissions to [RWED]* ?
+
+
+
+    /**
+     * Constructor for a VMSFTPEntryParser object.
+     *
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen
+     * under normal conditions.  It it is seen, this is a sign that
+     * &lt;code&gt;REGEX&lt;/code&gt; is  not a valid regular expression.
+     */
+    public VMSFTPEntryParser()
+    {
+<span class="fc" id="L75">        this(null);</span>
+<span class="fc" id="L76">    }</span>
+
+    /**
+     * This constructor allows the creation of a VMSFTPEntryParser object with
+     * something other than the default configuration.
+     *
+     * @param config The {@link FTPClientConfig configuration} object used to
+     * configure this parser.
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen
+     * under normal conditions.  It it is seen, this is a sign that
+     * &lt;code&gt;REGEX&lt;/code&gt; is  not a valid regular expression.
+     * @since 1.4
+     */
+    public VMSFTPEntryParser(FTPClientConfig config)
+    {
+<span class="fc" id="L92">        super(REGEX);</span>
+<span class="fc" id="L93">        configure(config);</span>
+<span class="fc" id="L94">    }</span>
+
+    /**
+     * Parses a line of a VMS FTP server file listing and converts it into a
+     * usable format in the form of an &lt;code&gt; FTPFile &lt;/code&gt; instance.  If the
+     * file listing line doesn't describe a file, &lt;code&gt; null &lt;/code&gt; is
+     * returned, otherwise a &lt;code&gt; FTPFile &lt;/code&gt; instance representing the
+     * files in the directory is returned.
+     *
+     * @param entry A line of text from the file listing
+     * @return An FTPFile instance corresponding to the supplied entry
+     */
+    @Override
+    public FTPFile parseFTPEntry(String entry)
+    {
+        //one block in VMS equals 512 bytes
+<span class="fc" id="L110">        long longBlock = 512;</span>
+
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (matches(entry))</span>
+        {
+<span class="fc" id="L114">            FTPFile f = new FTPFile();</span>
+<span class="fc" id="L115">            f.setRawListing(entry);</span>
+<span class="fc" id="L116">            String name = group(1);</span>
+<span class="fc" id="L117">            String size = group(2);</span>
+<span class="fc" id="L118">            String datestr = group(3)+&quot; &quot;+group(4);</span>
+<span class="fc" id="L119">            String owner = group(5);</span>
+<span class="fc" id="L120">            String permissions[] = new String[3];</span>
+<span class="fc" id="L121">            permissions[0]= group(9);</span>
+<span class="fc" id="L122">            permissions[1]= group(10);</span>
+<span class="fc" id="L123">            permissions[2]= group(11);</span>
+            try
+            {
+<span class="fc" id="L126">                f.setTimestamp(super.parseTimestamp(datestr));</span>
+<span class="fc" id="L127">            }</span>
+<span class="fc" id="L128">            catch (ParseException e)</span>
+            {
+                 // intentionally do nothing
+            }
+
+
+            String grp;
+            String user;
+<span class="fc" id="L136">            StringTokenizer t = new StringTokenizer(owner, &quot;,&quot;);</span>
+<span class="pc bpc" id="L137" title="1 of 3 branches missed.">            switch (t.countTokens()) {</span>
+                case 1:
+<span class="fc" id="L139">                    grp  = null;</span>
+<span class="fc" id="L140">                    user = t.nextToken();</span>
+<span class="fc" id="L141">                    break;</span>
+                case 2:
+<span class="fc" id="L143">                    grp  = t.nextToken();</span>
+<span class="fc" id="L144">                    user = t.nextToken();</span>
+<span class="fc" id="L145">                    break;</span>
+                default:
+<span class="nc" id="L147">                    grp  = null;</span>
+<span class="nc" id="L148">                    user = null;</span>
+            }
+
+<span class="fc bfc" id="L151" title="All 2 branches covered.">            if (name.lastIndexOf(&quot;.DIR&quot;) != -1)</span>
+            {
+<span class="fc" id="L153">                f.setType(FTPFile.DIRECTORY_TYPE);</span>
+<span class="fc" id="L154">            }</span>
+            else
+            {
+<span class="fc" id="L157">                f.setType(FTPFile.FILE_TYPE);</span>
+            }
+            //set FTPFile name
+            //Check also for versions to be returned or not
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            if (isVersioning())</span>
+            {
+<span class="fc" id="L163">                f.setName(name);</span>
+<span class="fc" id="L164">            }</span>
+            else
+            {
+<span class="fc" id="L167">                name = name.substring(0, name.lastIndexOf(&quot;;&quot;));</span>
+<span class="fc" id="L168">                f.setName(name);</span>
+            }
+            //size is retreived in blocks and needs to be put in bytes
+            //for us humans and added to the FTPFile array
+<span class="fc" id="L172">            long sizeInBytes = Long.parseLong(size) * longBlock;</span>
+<span class="fc" id="L173">            f.setSize(sizeInBytes);</span>
+
+<span class="fc" id="L175">            f.setGroup(grp);</span>
+<span class="fc" id="L176">            f.setUser(user);</span>
+            //set group and owner
+
+            //Set file permission.
+            //VMS has (SYSTEM,OWNER,GROUP,WORLD) users that can contain
+            //R (read) W (write) E (execute) D (delete)
+
+            //iterate for OWNER GROUP WORLD permissions
+<span class="fc bfc" id="L184" title="All 2 branches covered.">            for (int access = 0; access &lt; 3; access++)</span>
+            {
+<span class="fc" id="L186">                String permission = permissions[access];</span>
+
+<span class="fc bfc" id="L188" title="All 2 branches covered.">                f.setPermission(access, FTPFile.READ_PERMISSION, permission.indexOf('R')&gt;=0);</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">                f.setPermission(access, FTPFile.WRITE_PERMISSION, permission.indexOf('W')&gt;=0);</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">                f.setPermission(access, FTPFile.EXECUTE_PERMISSION, permission.indexOf('E')&gt;=0);</span>
+            }
+
+<span class="fc" id="L193">            return f;</span>
+        }
+<span class="fc" id="L195">        return null;</span>
+    }
+
+
+    /**
+     * Reads the next entry using the supplied BufferedReader object up to
+     * whatever delemits one entry from the next.   This parser cannot use
+     * the default implementation of simply calling BufferedReader.readLine(),
+     * because one entry may span multiple lines.
+     *
+     * @param reader The BufferedReader object from which entries are to be
+     * read.
+     *
+     * @return A string representing the next ftp entry or null if none found.
+     * @throws IOException thrown on any IO Error reading from the reader.
+     */
+    @Override
+    public String readNextEntry(BufferedReader reader) throws IOException
+    {
+<span class="fc" id="L214">        String line = reader.readLine();</span>
+<span class="fc" id="L215">        StringBuilder entry = new StringBuilder();</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        while (line != null)</span>
+        {
+<span class="fc bfc" id="L218" title="All 4 branches covered.">            if (line.startsWith(&quot;Directory&quot;) || line.startsWith(&quot;Total&quot;)) {</span>
+<span class="fc" id="L219">                line = reader.readLine();</span>
+<span class="fc" id="L220">                continue;</span>
+            }
+
+<span class="fc" id="L223">            entry.append(line);</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            if (line.trim().endsWith(&quot;)&quot;))</span>
+            {
+<span class="fc" id="L226">                break;</span>
+            }
+<span class="fc" id="L228">            line = reader.readLine();</span>
+        }
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        return (entry.length() == 0 ? null : entry.toString());</span>
+    }
+
+    protected boolean isVersioning() {
+<span class="fc" id="L234">        return false;</span>
+    }
+
+    /**
+     * Defines a default configuration to be used when this class is
+     * instantiated without a {@link  FTPClientConfig  FTPClientConfig}
+     * parameter being specified.
+     * @return the default configuration for this parser.
+     */
+    @Override
+    protected FTPClientConfig getDefaultConfiguration() {
+<span class="fc" id="L245">        return new FTPClientConfig(</span>
+<span class="fc" id="L246">                FTPClientConfig.SYST_VMS,</span>
+<span class="fc" id="L247">                DEFAULT_DATE_FORMAT,</span>
+<span class="fc" id="L248">                null);</span>
+    }
+
+    // DEPRECATED METHODS - for API compatibility only - DO NOT USE
+
+    /**
+     * DO NOT USE
+     * @param listStream the stream
+     * @return the array of files
+     * @throws IOException on error
+     * @deprecated (2.2) No other FTPFileEntryParser implementations have this method.
+     */
+    @Deprecated
+    public FTPFile[] parseFileList(java.io.InputStream listStream) throws IOException {
+<span class="nc" id="L262">        org.apache.commons.net.ftp.FTPListParseEngine engine = new org.apache.commons.net.ftp.FTPListParseEngine(this);</span>
+<span class="nc" id="L263">        engine.readServerList(listStream, null);</span>
+<span class="nc" id="L264">        return engine.getFiles();</span>
+    }
+
+}
+
+/* Emacs configuration
+ * Local variables:        **
+ * mode:             java  **
+ * c-basic-offset:   4     **
+ * indent-tabs-mode: nil   **
+ * End:                    **
+ */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

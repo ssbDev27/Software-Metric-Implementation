@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Threader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.nntp</a> &gt; <span class="el_source">Threader.java</span></div><h1>Threader.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+package org.apache.commons.net.nntp;
+
+/**
+ * This is an implementation of a message threading algorithm, as originally devised by Zamie Zawinski.
+ * See &lt;a href=&quot;http://www.jwz.org/doc/threading.html&quot;&gt;http://www.jwz.org/doc/threading.html&lt;/a&gt; for details.
+ * For his Java implementation, see
+ * &lt;a href=&quot;http://lxr.mozilla.org/mozilla/source/grendel/sources/grendel/view/Threader.java&quot;&gt;
+ * http://lxr.mozilla.org/mozilla/source/grendel/sources/grendel/view/Threader.java&lt;/a&gt;
+ */
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+<span class="fc" id="L35">public class Threader {</span>
+
+    /**
+     * The client passes in a list of Threadable objects, and
+     * the Threader constructs a connected 'graph' of messages
+     * @param messages list of messages to thread, must not be empty
+     * @return null if messages == null or root.child == null or messages list is empty
+     * @since 2.2
+     */
+    public Threadable thread(List&lt;? extends Threadable&gt; messages) {
+<span class="fc" id="L45">        return thread((Iterable&lt;? extends Threadable&gt;)messages);</span>
+    }
+
+    /**
+     * The client passes in a list of Iterable objects, and
+     * the Threader constructs a connected 'graph' of messages
+     * @param messages iterable of messages to thread, must not be empty
+     * @return null if messages == null or root.child == null or messages list is empty
+     * @since 3.0
+     */
+    public Threadable thread(Iterable&lt;? extends Threadable&gt; messages) {
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (messages == null) {</span>
+<span class="fc" id="L57">            return null;</span>
+        }
+
+<span class="fc" id="L60">        HashMap&lt;String,ThreadContainer&gt; idTable = new HashMap&lt;String,ThreadContainer&gt;();</span>
+
+        // walk through each Threadable element
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        for (Threadable t : messages) {</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">            if (!t.isDummy()) {</span>
+<span class="nc" id="L65">                buildContainer(t, idTable);</span>
+            }
+        }
+
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (idTable.isEmpty()) {</span>
+<span class="fc" id="L70">            return null;</span>
+        }
+
+<span class="nc" id="L73">        ThreadContainer root = findRootSet(idTable);</span>
+<span class="nc" id="L74">        idTable.clear();</span>
+<span class="nc" id="L75">        idTable = null;</span>
+
+<span class="nc" id="L77">        pruneEmptyContainers(root);</span>
+
+<span class="nc" id="L79">        root.reverseChildren();</span>
+<span class="nc" id="L80">        gatherSubjects(root);</span>
+
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        if (root.next != null) {</span>
+<span class="nc" id="L83">            throw new RuntimeException(&quot;root node has a next:&quot; + root);</span>
+        }
+
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        for (ThreadContainer r = root.child; r != null; r = r.next) {</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">            if (r.threadable == null) {</span>
+<span class="nc" id="L88">                r.threadable = r.child.threadable.makeDummy();</span>
+            }
+        }
+
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        Threadable result = (root.child == null ? null : root.child.threadable);</span>
+<span class="nc" id="L93">        root.flush();</span>
+
+<span class="nc" id="L95">        return result;</span>
+    }
+
+    /**
+     *
+     * @param threadable
+     * @param idTable
+     */
+    private void buildContainer(Threadable threadable, HashMap&lt;String,ThreadContainer&gt; idTable) {
+<span class="nc" id="L104">        String id = threadable.messageThreadId();</span>
+<span class="nc" id="L105">        ThreadContainer container = idTable.get(id);</span>
+<span class="nc" id="L106">        int bogusIdCount = 0;</span>
+
+        // A ThreadContainer exists for this id already. This should be a forward reference, but may
+        // be a duplicate id, in which case we will need to generate a bogus placeholder id
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        if (container != null) {</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (container.threadable != null) { // oops! duplicate ids...</span>
+<span class="nc" id="L112">                bogusIdCount++ ; // Avoid dead local store warning</span>
+<span class="nc" id="L113">                id = &quot;&lt;Bogus-id:&quot; + (bogusIdCount) + &quot;&gt;&quot;;</span>
+<span class="nc" id="L114">                container = null;</span>
+<span class="nc" id="L115">            } else {</span>
+                // The container just contained a forward reference to this message, so let's
+                // fill in the threadable field of the container with this message
+<span class="nc" id="L118">                container.threadable = threadable;</span>
+            }
+        }
+
+        // No container exists for that message Id. Create one and insert it into the hash table.
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (container == null) {</span>
+<span class="nc" id="L124">            container = new ThreadContainer();</span>
+<span class="nc" id="L125">            container.threadable = threadable;</span>
+<span class="nc" id="L126">            idTable.put(id, container);</span>
+        }
+
+        // Iterate through all of the references and create ThreadContainers for any references that
+        // don't have them.
+<span class="nc" id="L131">        ThreadContainer parentRef = null;</span>
+        {
+<span class="nc" id="L133">            String[] references = threadable.messageThreadReferences();</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            for (String refString : references)</span>
+            {
+<span class="nc" id="L136">                ThreadContainer ref = idTable.get(refString);</span>
+
+                // if this id doesnt have a container, create one
+<span class="nc bnc" id="L139" title="All 2 branches missed.">                if (ref == null) {</span>
+<span class="nc" id="L140">                    ref = new ThreadContainer();</span>
+<span class="nc" id="L141">                    idTable.put(refString, ref);</span>
+                }
+
+                // Link references together in the order they appear in the References: header,
+                // IF they dont have a have a parent already &amp;&amp;
+                // IF it will not cause a circular reference
+<span class="nc bnc" id="L147" title="All 2 branches missed.">                if ((parentRef != null)</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                    &amp;&amp; (ref.parent == null)</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                    &amp;&amp; (parentRef != ref)</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                    &amp;&amp; !(ref.findChild(parentRef))) {</span>
+                    // Link ref into the parent's child list
+<span class="nc" id="L152">                    ref.parent = parentRef;</span>
+<span class="nc" id="L153">                    ref.next = parentRef.child;</span>
+<span class="nc" id="L154">                    parentRef.child = ref;</span>
+                }
+<span class="nc" id="L156">                parentRef = ref;</span>
+            }
+        }
+
+        // parentRef is now set to the container of the last element in the references field. make that
+        // be the parent of this container, unless doing so causes a circular reference
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (parentRef != null</span>
+<span class="nc bnc" id="L163" title="All 4 branches missed.">            &amp;&amp; (parentRef == container || container.findChild(parentRef)))</span>
+        {
+<span class="nc" id="L165">            parentRef = null;</span>
+        }
+
+        // if it has a parent already, its because we saw this message in a References: field, and presumed
+        // a parent based on the other entries in that field. Now that we have the actual message, we can
+        // throw away the old parent and use this new one
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (container.parent != null) {</span>
+            ThreadContainer rest, prev;
+
+<span class="nc" id="L174">            for (prev = null, rest = container.parent.child;</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">                rest != null;</span>
+<span class="nc" id="L176">                prev = rest, rest = rest.next) {</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                if (rest == container) {</span>
+<span class="nc" id="L178">                    break;</span>
+                }
+            }
+
+<span class="nc bnc" id="L182" title="All 2 branches missed.">            if (rest == null) {</span>
+<span class="nc" id="L183">                throw new RuntimeException(</span>
+<span class="nc" id="L184">                    &quot;Didnt find &quot;</span>
+<span class="nc" id="L185">                        + container</span>
+<span class="nc" id="L186">                        + &quot; in parent&quot;</span>
+<span class="nc" id="L187">                        + container.parent);</span>
+            }
+
+            // Unlink this container from the parent's child list
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            if (prev == null) {</span>
+<span class="nc" id="L192">                container.parent.child = container.next;</span>
+<span class="nc" id="L193">            } else {</span>
+<span class="nc" id="L194">                prev.next = container.next;</span>
+            }
+
+<span class="nc" id="L197">            container.next = null;</span>
+<span class="nc" id="L198">            container.parent = null;</span>
+        }
+
+        // If we have a parent, link container into the parents child list
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        if (parentRef != null) {</span>
+<span class="nc" id="L203">            container.parent = parentRef;</span>
+<span class="nc" id="L204">            container.next = parentRef.child;</span>
+<span class="nc" id="L205">            parentRef.child = container;</span>
+        }
+<span class="nc" id="L207">    }</span>
+
+    /**
+     * Find the root set of all existing ThreadContainers
+     * @param idTable
+     * @return root the ThreadContainer representing the root node
+     */
+    private ThreadContainer findRootSet(HashMap&lt;String, ThreadContainer&gt; idTable) {
+<span class="nc" id="L215">        ThreadContainer root = new ThreadContainer();</span>
+<span class="nc" id="L216">        Iterator&lt;Map.Entry&lt;String, ThreadContainer&gt;&gt; iter = idTable.entrySet().iterator();</span>
+
+<span class="nc bnc" id="L218" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L219">            Map.Entry&lt;String, ThreadContainer&gt; entry = iter.next();</span>
+<span class="nc" id="L220">            ThreadContainer c = entry.getValue();</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            if (c.parent == null) {</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">                if (c.next != null) {</span>
+<span class="nc" id="L223">                    throw new RuntimeException(</span>
+<span class="nc" id="L224">                            &quot;c.next is &quot; + c.next.toString());</span>
+                }
+<span class="nc" id="L226">                c.next = root.child;</span>
+<span class="nc" id="L227">                root.child = c;</span>
+            }
+        }
+<span class="nc" id="L230">        return root;</span>
+    }
+
+    /**
+     * Delete any empty or dummy ThreadContainers
+     * @param parent
+     */
+    private void pruneEmptyContainers(ThreadContainer parent) {
+        ThreadContainer container, prev, next;
+<span class="nc" id="L239">        for (prev = null, container = parent.child, next = container.next;</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            container != null;</span>
+<span class="nc" id="L241">            prev = container,</span>
+<span class="nc" id="L242">                container = next,</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">                next = (container == null ? null : container.next)) {</span>
+
+            // Is it empty and without any children? If so,delete it
+<span class="nc bnc" id="L246" title="All 4 branches missed.">            if (container.threadable == null &amp;&amp; container.child == null) {</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">                if (prev == null) {</span>
+<span class="nc" id="L248">                    parent.child = container.next;</span>
+<span class="nc" id="L249">                } else {</span>
+<span class="nc" id="L250">                    prev.next = container.next;</span>
+                }
+
+                // Set container to prev so that prev keeps its same value the next time through the loop
+<span class="nc" id="L254">                container = prev;</span>
+<span class="nc" id="L255">            }</span>
+
+            // Else if empty, with kids, and (not at root or only one kid)
+            else if (
+<span class="nc bnc" id="L259" title="All 2 branches missed.">                container.threadable == null</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">                    &amp;&amp; container.child != null</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">                    &amp;&amp; (container.parent != null</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">                        || container.child.next == null)) {</span>
+                // We have an invalid/expired message with kids. Promote the kids to this level.
+                ThreadContainer tail;
+<span class="nc" id="L265">                ThreadContainer kids = container.child;</span>
+
+                // Remove this container and replace with 'kids'.
+<span class="nc bnc" id="L268" title="All 2 branches missed.">                if (prev == null) {</span>
+<span class="nc" id="L269">                    parent.child = kids;</span>
+<span class="nc" id="L270">                } else {</span>
+<span class="nc" id="L271">                    prev.next = kids;</span>
+                }
+
+                // Make each child's parent be this level's parent -&gt; i.e. promote the children.
+                // Make the last child's next point to this container's next
+                // i.e. splice kids into the list in place of container
+<span class="nc bnc" id="L277" title="All 2 branches missed.">                for (tail = kids; tail.next != null; tail = tail.next) {</span>
+<span class="nc" id="L278">                    tail.parent = container.parent;</span>
+                }
+
+<span class="nc" id="L281">                tail.parent = container.parent;</span>
+<span class="nc" id="L282">                tail.next = container.next;</span>
+
+                // next currently points to the item after the inserted items in the chain - reset that so we process the newly
+                // promoted items next time round
+<span class="nc" id="L286">                next = kids;</span>
+
+                // Set container to prev so that prev keeps its same value the next time through the loop
+<span class="nc" id="L289">                container = prev;</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">            } else if (container.child != null) {</span>
+                // A real message , with kids
+                // Iterate over the children
+<span class="nc" id="L293">                pruneEmptyContainers(container);</span>
+            }
+        }
+<span class="nc" id="L296">    }</span>
+
+    /**
+     *  If any two members of the root set have the same subject, merge them.
+     *  This is to attempt to accomodate messages without References: headers.
+     * @param root
+     */
+    private void gatherSubjects(ThreadContainer root) {
+
+<span class="nc" id="L305">        int count = 0;</span>
+
+<span class="nc bnc" id="L307" title="All 2 branches missed.">        for (ThreadContainer c = root.child; c != null; c = c.next) {</span>
+<span class="nc" id="L308">            count++;</span>
+        }
+
+        // TODO verify this will avoid rehashing
+<span class="nc" id="L312">        HashMap&lt;String, ThreadContainer&gt; subjectTable = new HashMap&lt;String, ThreadContainer&gt;((int) (count * 1.2), (float) 0.9);</span>
+<span class="nc" id="L313">        count = 0;</span>
+
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        for (ThreadContainer c = root.child; c != null; c = c.next) {</span>
+<span class="nc" id="L316">            Threadable threadable = c.threadable;</span>
+
+            // No threadable? If so, it is a dummy node in the root set.
+            // Only root set members may be dummies, and they alway have at least 2 kids
+            // Take the first kid as representative of the subject
+<span class="nc bnc" id="L321" title="All 2 branches missed.">            if (threadable == null) {</span>
+<span class="nc" id="L322">                threadable = c.child.threadable;</span>
+            }
+
+<span class="nc" id="L325">            String subj = threadable.simplifiedSubject();</span>
+
+<span class="nc bnc" id="L327" title="All 4 branches missed.">            if (subj == null || subj.length() == 0) {</span>
+<span class="nc" id="L328">                continue;</span>
+            }
+
+<span class="nc" id="L331">            ThreadContainer old = subjectTable.get(subj);</span>
+
+            // Add this container to the table iff:
+            // - There exists no container with this subject
+            // - or this is a dummy container and the old one is not - the dummy one is
+            // more interesting as a root, so put it in the table instead
+            // - The container in the table has a &quot;Re:&quot; version of this subject, and
+            // this container has a non-&quot;Re:&quot; version of this subject. The non-&quot;Re:&quot; version
+            // is the more interesting of the two.
+<span class="nc bnc" id="L340" title="All 2 branches missed.">            if (old == null</span>
+<span class="nc bnc" id="L341" title="All 4 branches missed.">                || (c.threadable == null &amp;&amp; old.threadable != null)</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">                || (old.threadable != null</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">                    &amp;&amp; old.threadable.subjectIsReply()</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">                    &amp;&amp; c.threadable != null</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">                    &amp;&amp; !c.threadable.subjectIsReply())) {</span>
+<span class="nc" id="L346">                subjectTable.put(subj, c);</span>
+<span class="nc" id="L347">                count++;</span>
+            }
+        }
+
+        // If the table is empty, we're done
+<span class="nc bnc" id="L352" title="All 2 branches missed.">        if (count == 0) {</span>
+<span class="nc" id="L353">            return;</span>
+        }
+
+        // subjectTable is now populated with one entry for each subject which occurs in the
+        // root set. Iterate over the root set, and gather together the difference.
+        ThreadContainer prev, c, rest;
+<span class="nc" id="L359">        for (prev = null, c = root.child, rest = c.next;</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">            c != null;</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            prev = c, c = rest, rest = (rest == null ? null : rest.next)) {</span>
+<span class="nc" id="L362">            Threadable threadable = c.threadable;</span>
+
+            // is it a dummy node?
+<span class="nc bnc" id="L365" title="All 2 branches missed.">            if (threadable == null) {</span>
+<span class="nc" id="L366">                threadable = c.child.threadable;</span>
+            }
+
+<span class="nc" id="L369">            String subj = threadable.simplifiedSubject();</span>
+
+            // Dont thread together all subjectless messages
+<span class="nc bnc" id="L372" title="All 4 branches missed.">            if (subj == null || subj.length() == 0) {</span>
+<span class="nc" id="L373">                continue;</span>
+            }
+
+<span class="nc" id="L376">            ThreadContainer old = subjectTable.get(subj);</span>
+
+<span class="nc bnc" id="L378" title="All 2 branches missed.">            if (old == c) { // That's us</span>
+<span class="nc" id="L379">                continue;</span>
+            }
+
+            // We have now found another container in the root set with the same subject
+            // Remove the &quot;second&quot; message from the root set
+<span class="nc bnc" id="L384" title="All 2 branches missed.">            if (prev == null) {</span>
+<span class="nc" id="L385">                root.child = c.next;</span>
+<span class="nc" id="L386">            } else {</span>
+<span class="nc" id="L387">                prev.next = c.next;</span>
+            }
+<span class="nc" id="L389">            c.next = null;</span>
+
+<span class="nc bnc" id="L391" title="All 4 branches missed.">            if (old.threadable == null &amp;&amp; c.threadable == null) {</span>
+                // both dummies - merge them
+                ThreadContainer tail;
+<span class="nc" id="L394">                for (tail = old.child;</span>
+<span class="nc bnc" id="L395" title="All 4 branches missed.">                    tail != null &amp;&amp; tail.next != null;</span>
+<span class="nc" id="L396">                    tail = tail.next) {</span>
+                    // do nothing
+                }
+
+<span class="nc bnc" id="L400" title="All 2 branches missed.">                if (tail != null) { // protect against possible NPE</span>
+<span class="nc" id="L401">                    tail.next = c.child;</span>
+                }
+
+<span class="nc bnc" id="L404" title="All 2 branches missed.">                for (tail = c.child; tail != null; tail = tail.next) {</span>
+<span class="nc" id="L405">                    tail.parent = old;</span>
+                }
+
+<span class="nc" id="L408">                c.child = null;</span>
+<span class="nc" id="L409">            } else if (</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">                old.threadable == null</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">                    || (c.threadable != null</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">                        &amp;&amp; c.threadable.subjectIsReply()</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">                        &amp;&amp; !old.threadable.subjectIsReply())) {</span>
+                // Else if old is empty, or c has &quot;Re:&quot; and old does not  ==&gt; make this message a child of old
+<span class="nc" id="L415">                c.parent = old;</span>
+<span class="nc" id="L416">                c.next = old.child;</span>
+<span class="nc" id="L417">                old.child = c;</span>
+<span class="nc" id="L418">            } else {</span>
+                // else make the old and new messages be children of a new dummy container.
+                // We create a new container object for old.msg and empty the old container
+<span class="nc" id="L421">                ThreadContainer newc = new ThreadContainer();</span>
+<span class="nc" id="L422">                newc.threadable = old.threadable;</span>
+<span class="nc" id="L423">                newc.child = old.child;</span>
+
+<span class="nc" id="L425">                for (ThreadContainer tail = newc.child;</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                    tail != null;</span>
+<span class="nc" id="L427">                    tail = tail.next)</span>
+                {
+<span class="nc" id="L429">                    tail.parent = newc;</span>
+                }
+
+<span class="nc" id="L432">                old.threadable = null;</span>
+<span class="nc" id="L433">                old.child = null;</span>
+
+<span class="nc" id="L435">                c.parent = old;</span>
+<span class="nc" id="L436">                newc.parent = old;</span>
+
+                // Old is now a dummy- give it 2 kids , c and newc
+<span class="nc" id="L439">                old.child = c;</span>
+<span class="nc" id="L440">                c.next = newc;</span>
+            }
+            // We've done a merge, so keep the same prev
+<span class="nc" id="L443">            c = prev;</span>
+        }
+
+<span class="nc" id="L446">        subjectTable.clear();</span>
+<span class="nc" id="L447">        subjectTable = null;</span>
+
+<span class="nc" id="L449">    }</span>
+
+
+    // DEPRECATED METHODS - for API compatibility only - DO NOT USE
+
+    /**
+     * The client passes in an array of Threadable objects, and
+     * the Threader constructs a connected 'graph' of messages
+     * @param messages array of messages to thread, must not be empty
+     * @return null if messages == null or root.child == null or messages array is empty
+     * @deprecated (2.2) prefer {@link #thread(List)}
+     */
+    @Deprecated
+    public Threadable thread(Threadable[] messages) {
+<span class="fc bfc" id="L463" title="All 2 branches covered.">        if (messages == null) {</span>
+<span class="fc" id="L464">            return null;</span>
+        }
+<span class="fc" id="L466">        return thread(Arrays.asList(messages));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

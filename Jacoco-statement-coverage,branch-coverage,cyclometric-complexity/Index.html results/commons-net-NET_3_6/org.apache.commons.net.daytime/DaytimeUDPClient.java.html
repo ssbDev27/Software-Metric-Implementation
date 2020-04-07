@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DaytimeUDPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.daytime</a> &gt; <span class="el_source">DaytimeUDPClient.java</span></div><h1>DaytimeUDPClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.daytime;
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+
+import org.apache.commons.net.DatagramSocketClient;
+
+/**
+ * The DaytimeUDPClient class is a UDP implementation of a client for the
+ * Daytime protocol described in RFC 867.  To use the class, merely
+ * open a local datagram socket with
+ * {@link org.apache.commons.net.DatagramSocketClient#open  open }
+ * and call {@link #getTime  getTime } to retrieve the daytime
+ * string, then
+ * call {@link org.apache.commons.net.DatagramSocketClient#close  close }
+ * to close the connection properly.  Unlike
+ * {@link org.apache.commons.net.daytime.DaytimeTCPClient},
+ * successive calls to {@link #getTime  getTime } are permitted
+ * without re-establishing a connection.  That is because UDP is a
+ * connectionless protocol and the Daytime protocol is stateless.
+ * @see DaytimeTCPClient
+ */
+<span class="nc" id="L41">public final class DaytimeUDPClient extends DatagramSocketClient</span>
+{
+    /** The default daytime port.  It is set to 13 according to RFC 867. */
+    public static final int DEFAULT_PORT = 13;
+
+<span class="nc" id="L46">    private final byte[] __dummyData = new byte[1];</span>
+    // Received dates should be less than 256 bytes
+<span class="nc" id="L48">    private final byte[] __timeData = new byte[256];</span>
+
+    /**
+     * Retrieves the time string from the specified server and port and
+     * returns it.
+     *
+     * @param host The address of the server.
+     * @param port The port of the service.
+     * @return The time string.
+     * @throws IOException If an error occurs while retrieving the time.
+     */
+    public String getTime(InetAddress host, int port) throws IOException
+    {
+        DatagramPacket sendPacket, receivePacket;
+
+<span class="nc" id="L63">        sendPacket =</span>
+<span class="nc" id="L64">            new DatagramPacket(__dummyData, __dummyData.length, host, port);</span>
+<span class="nc" id="L65">        receivePacket = new DatagramPacket(__timeData, __timeData.length);</span>
+
+<span class="nc" id="L67">        _socket_.send(sendPacket);</span>
+<span class="nc" id="L68">        _socket_.receive(receivePacket);</span>
+
+<span class="nc" id="L70">        return new String(receivePacket.getData(), 0, receivePacket.getLength(), getCharsetName()); // Java 1.6 can use getCharset()</span>
+    }
+
+    /** Same as &lt;code&gt;getTime(host, DaytimeUDPClient.DEFAULT_PORT);&lt;/code&gt;
+     * @param host the host
+     * @return  the time
+     * @throws IOException on error
+     */
+    public String getTime(InetAddress host) throws IOException
+    {
+<span class="nc" id="L80">        return getTime(host, DEFAULT_PORT);</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

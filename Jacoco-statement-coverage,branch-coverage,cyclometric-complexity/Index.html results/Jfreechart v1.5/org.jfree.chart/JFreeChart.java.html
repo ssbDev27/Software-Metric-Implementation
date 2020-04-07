@@ -1,0 +1,1771 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JFreeChart.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JFreeChart</a> &gt; <a href="index.source.html" class="el_package">org.jfree.chart</a> &gt; <span class="el_source">JFreeChart.java</span></div><h1>JFreeChart.java</h1><pre class="source lang-java linenums">/* ===========================================================
+ * JFreeChart : a free chart library for the Java(tm) platform
+ * ===========================================================
+ *
+ * (C) Copyright 2000-2017, by Object Refinery Limited and Contributors.
+ *
+ * Project Info:  http://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ---------------
+ * JFreeChart.java
+ * ---------------
+ * (C) Copyright 2000-2016, by Object Refinery Limited and Contributors.
+ *
+ * Original Author:  David Gilbert (for Object Refinery Limited);
+ * Contributor(s):   Andrzej Porebski;
+ *                   David Li;
+ *                   Wolfgang Irler;
+ *                   Christian W. Zuckschwerdt;
+ *                   Klaus Rheinwald;
+ *                   Nicolas Brodu;
+ *                   Peter Kolb (patch 2603321);
+ *
+ * NOTE: The above list of contributors lists only the people that have
+ * contributed to this source file (JFreeChart.java) - for a list of ALL
+ * contributors to the project, please see the README.txt file.
+ *
+ * Changes (from 20-Jun-2001)
+ * --------------------------
+ * 20-Jun-2001 : Modifications submitted by Andrzej Porebski for legend
+ *               placement;
+ * 21-Jun-2001 : Removed JFreeChart parameter from Plot constructors (DG);
+ * 22-Jun-2001 : Multiple titles added (original code by David Berry, with
+ *               reworkings by DG);
+ * 18-Sep-2001 : Updated header (DG);
+ * 15-Oct-2001 : Moved data source classes into new package
+ *               com.jrefinery.data.* (DG);
+ * 18-Oct-2001 : New factory method for creating VerticalXYBarChart (DG);
+ * 19-Oct-2001 : Moved series paint and stroke methods to the Plot class (DG);
+ *               Moved static chart creation methods to new ChartFactory
+ *               class (DG);
+ * 22-Oct-2001 : Renamed DataSource.java --&gt; Dataset.java etc. (DG);
+ *               Fixed bug where chart isn't registered with the dataset (DG);
+ * 07-Nov-2001 : Fixed bug where null title in constructor causes
+ *               exception (DG);
+ *               Tidied up event notification code (DG);
+ * 17-Nov-2001 : Added getLegendItemCount() method (DG);
+ * 21-Nov-2001 : Set clipping in draw method to ensure that nothing gets drawn
+ *               outside the chart area (DG);
+ * 11-Dec-2001 : Added the createBufferedImage() method, taken from the
+ *               JFreeChartServletDemo class (DG);
+ * 13-Dec-2001 : Added tooltips (DG);
+ * 16-Jan-2002 : Added handleClick() method (DG);
+ * 22-Jan-2002 : Fixed bug correlating legend labels with pie data (DG);
+ * 05-Feb-2002 : Removed redundant tooltips code (DG);
+ * 19-Feb-2002 : Added accessor methods for the backgroundImage and
+ *               backgroundImageAlpha attributes (DG);
+ * 21-Feb-2002 : Added static fields for INFO, COPYRIGHT, LICENCE, CONTRIBUTORS
+ *               and LIBRARIES.  These can be used to display information about
+ *               JFreeChart (DG);
+ * 06-Mar-2002 : Moved constants to JFreeChartConstants interface (DG);
+ * 18-Apr-2002 : PieDataset is no longer sorted (oldman);
+ * 23-Apr-2002 : Moved dataset to the Plot class (DG);
+ * 13-Jun-2002 : Added an extra draw() method (DG);
+ * 25-Jun-2002 : Implemented the Drawable interface and removed redundant
+ *               imports (DG);
+ * 26-Jun-2002 : Added another createBufferedImage() method (DG);
+ * 18-Sep-2002 : Fixed issues reported by Checkstyle (DG);
+ * 23-Sep-2002 : Added new contributor (DG);
+ * 28-Oct-2002 : Created main title and subtitle list to replace existing title
+ *               list (DG);
+ * 08-Jan-2003 : Added contributor (DG);
+ * 17-Jan-2003 : Added new constructor (DG);
+ * 22-Jan-2003 : Added ChartColor class by Cameron Riley, and background image
+ *               alignment code by Christian W. Zuckschwerdt (DG);
+ * 11-Feb-2003 : Added flag to allow suppression of chart change events, based
+ *               on a suggestion by Klaus Rheinwald (DG);
+ * 04-Mar-2003 : Added small fix for suppressed chart change events (see bug id
+ *               690865) (DG);
+ * 10-Mar-2003 : Added Benoit Xhenseval to contributors (DG);
+ * 26-Mar-2003 : Implemented Serializable (DG);
+ * 15-Jul-2003 : Added an optional border for the chart (DG);
+ * 11-Sep-2003 : Took care of listeners while cloning (NB);
+ * 16-Sep-2003 : Changed ChartRenderingInfo --&gt; PlotRenderingInfo (DG);
+ * 22-Sep-2003 : Added nullpointer checks.
+ * 25-Sep-2003 : Added nullpointer checks too (NB).
+ * 03-Dec-2003 : Legends are now registered by this class instead of using the
+ *               old constructor way (TM);
+ * 03-Dec-2003 : Added anchorPoint to draw() method (DG);
+ * 08-Jan-2004 : Reworked title code, introducing line wrapping (DG);
+ * 09-Feb-2004 : Created additional createBufferedImage() method (DG);
+ * 05-Apr-2004 : Added new createBufferedImage() method (DG);
+ * 27-May-2004 : Moved constants from JFreeChartConstants.java back to this
+ *               class (DG);
+ * 25-Nov-2004 : Updates for changes to Title class (DG);
+ * 06-Jan-2005 : Change lookup for default background color (DG);
+ * 31-Jan-2005 : Added Don Elliott to contributors (DG);
+ * 02-Feb-2005 : Added clearSubtitles() method (DG);
+ * 03-Feb-2005 : Added Mofeed Shahin to contributors (DG);
+ * 08-Feb-2005 : Updated for RectangleConstraint changes (DG);
+ * 28-Mar-2005 : Renamed Legend --&gt; OldLegend (DG);
+ * 12-Apr-2005 : Added methods to access legend(s) in subtitle list (DG);
+ * 13-Apr-2005 : Added removeLegend() and removeSubtitle() methods (DG);
+ * 20-Apr-2005 : Modified to collect chart entities from titles and
+ *               subtitles (DG);
+ * 26-Apr-2005 : Removed LOGGER (DG);
+ * 06-Jun-2005 : Added addLegend() method and padding attribute, fixed equals()
+ *               method (DG);
+ * 24-Nov-2005 : Removed OldLegend and related code - don't want to support
+ *               this in 1.0.0 final (DG);
+ * ------------- JFREECHART 1.0.x ---------------------------------------------
+ * 27-Jan-2006 : Updated version number (DG);
+ * 07-Dec-2006 : Added some missing credits (DG);
+ * 17-Jan-2007 : Added Darren Jung to contributor list (DG);
+ * 05-Mar-2007 : Added Sergei Ivanov to the contributor list (DG);
+ * 16-Mar-2007 : Modified initial legend border (DG);
+ * 22-Mar-2007 : New methods for text anti-aliasing (DG);
+ * 16-May-2007 : Fixed argument check in getSubtitle(), copy list in
+ *               get/setSubtitles(), and added new addSubtitle(int, Title)
+ *               method (DG);
+ * 05-Jun-2007 : Add change listener to default legend (DG);
+ * 04-Dec-2007 : In createBufferedImage() methods, make the default image type
+ *               BufferedImage.TYPE_INT_ARGB (thanks to Klaus Rheinwald) (DG);
+ * 05-Dec-2007 : Fixed bug 1749124 (not registering as listener with
+ *               TextTitle) (DG);
+ * 23-Apr-2008 : Added new contributor (Diego Pierangeli) (DG);
+ * 16-May-2008 : Added new contributor (Michael Siemer) (DG);
+ * 19-Sep-2008 : Check for title visibility (DG);
+ * 18-Dec-2008 : Use ResourceBundleWrapper - see patch 1607918 by
+ *               Jess Thrysoee (DG);
+ * 19-Mar-2009 : Added entity support - see patch 2603321 by Peter Kolb (DG);
+ * 19-May-2009 : Fixed FindBugs warnings, patch by Michal Wozniak (DG);
+ * 29-Jun-2009 : Check visibility flag in main title (DG);
+ * 02-Jul-2013 : Use ParamChecks class (DG);
+ * 21-Jun-2014 : Set default hint value for stroke control (DG);
+ *
+ */
+
+package org.jfree.chart;
+
+import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Composite;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Paint;
+import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.Stroke;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import javax.swing.UIManager;
+import javax.swing.event.EventListenerList;
+
+import org.jfree.chart.block.BlockParams;
+import org.jfree.chart.block.EntityBlockResult;
+import org.jfree.chart.block.LengthConstraintType;
+import org.jfree.chart.block.LineBorder;
+import org.jfree.chart.block.RectangleConstraint;
+import org.jfree.chart.entity.EntityCollection;
+import org.jfree.chart.entity.JFreeChartEntity;
+import org.jfree.chart.event.ChartChangeEvent;
+import org.jfree.chart.event.ChartChangeListener;
+import org.jfree.chart.event.ChartProgressEvent;
+import org.jfree.chart.event.ChartProgressListener;
+import org.jfree.chart.event.PlotChangeEvent;
+import org.jfree.chart.event.PlotChangeListener;
+import org.jfree.chart.event.TitleChangeEvent;
+import org.jfree.chart.event.TitleChangeListener;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.Plot;
+import org.jfree.chart.plot.PlotRenderingInfo;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.title.LegendTitle;
+import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.title.Title;
+import org.jfree.chart.ui.Align;
+import org.jfree.chart.ui.Drawable;
+import org.jfree.chart.ui.HorizontalAlignment;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.RectangleInsets;
+import org.jfree.chart.ui.Size2D;
+import org.jfree.chart.ui.VerticalAlignment;
+import org.jfree.chart.util.ObjectUtils;
+import org.jfree.chart.util.PaintUtils;
+import org.jfree.chart.util.Args;
+import org.jfree.chart.util.SerialUtils;
+import org.jfree.data.Range;
+
+/**
+ * A chart class implemented using the Java 2D APIs.  The current version
+ * supports bar charts, line charts, pie charts and xy plots (including time
+ * series data).
+ * &lt;P&gt;
+ * JFreeChart coordinates several objects to achieve its aim of being able to
+ * draw a chart on a Java 2D graphics device: a list of {@link Title} objects
+ * (which often includes the chart's legend), a {@link Plot} and a
+ * {@link org.jfree.data.general.Dataset} (the plot in turn manages a
+ * domain axis and a range axis).
+ * &lt;P&gt;
+ * You should use a {@link ChartPanel} to display a chart in a GUI.
+ * &lt;P&gt;
+ * The {@link ChartFactory} class contains static methods for creating
+ * 'ready-made' charts.
+ *
+ * @see ChartPanel
+ * @see ChartFactory
+ * @see Title
+ * @see Plot
+ */
+public class JFreeChart implements Drawable, TitleChangeListener,
+        PlotChangeListener, Serializable, Cloneable {
+
+    /** For serialization. */
+    private static final long serialVersionUID = -3470703747817429120L;
+
+    /** The default font for titles. */
+<span class="fc" id="L248">    public static final Font DEFAULT_TITLE_FONT</span>
+<span class="fc" id="L249">            = new Font(&quot;SansSerif&quot;, Font.BOLD, 18);</span>
+
+    /** The default background color. */
+<span class="fc" id="L252">    public static final Paint DEFAULT_BACKGROUND_PAINT</span>
+<span class="fc" id="L253">            = UIManager.getColor(&quot;Panel.background&quot;);</span>
+
+    /** The default background image. */
+<span class="fc" id="L256">    public static final Image DEFAULT_BACKGROUND_IMAGE = null;</span>
+
+    /** The default background image alignment. */
+    public static final int DEFAULT_BACKGROUND_IMAGE_ALIGNMENT = Align.FIT;
+
+    /** The default background image alpha. */
+    public static final float DEFAULT_BACKGROUND_IMAGE_ALPHA = 0.5f;
+
+    /**
+     * The key for a rendering hint that can suppress the generation of a 
+     * shadow effect when drawing the chart.  The hint value must be a 
+     * Boolean.
+     * 
+     * @since 1.0.16
+     */
+<span class="fc" id="L271">    public static final RenderingHints.Key KEY_SUPPRESS_SHADOW_GENERATION</span>
+<span class="fc" id="L272">            = new RenderingHints.Key(0) {</span>
+        @Override
+        public boolean isCompatibleValue(Object val) {
+<span class="nc" id="L275">            return val instanceof Boolean;</span>
+        }
+<span class="fc" id="L277">    };</span>
+    
+    /**
+     * Rendering hints that will be used for chart drawing.  This should never
+     * be {@code null}.
+     */
+    private transient RenderingHints renderingHints;
+
+    /** The chart id (optional, will be used by JFreeSVG export). */
+    private String id;
+    
+    /** A flag that controls whether or not the chart border is drawn. */
+    private boolean borderVisible;
+
+    /** The stroke used to draw the chart border (if visible). */
+    private transient Stroke borderStroke;
+
+    /** The paint used to draw the chart border (if visible). */
+    private transient Paint borderPaint;
+
+    /** The padding between the chart border and the chart drawing area. */
+    private RectangleInsets padding;
+
+    /** The chart title (optional). */
+    private TextTitle title;
+
+    /**
+     * The chart subtitles (zero, one or many).  This field should never be
+     * {@code null}.
+     */
+    private List subtitles;
+
+    /** Draws the visual representation of the data. */
+    private Plot plot;
+
+    /** Paint used to draw the background of the chart. */
+    private transient Paint backgroundPaint;
+
+    /** An optional background image for the chart. */
+    private transient Image backgroundImage;  // todo: not serialized yet
+
+    /** The alignment for the background image. */
+<span class="fc" id="L319">    private int backgroundImageAlignment = Align.FIT;</span>
+
+    /** The alpha transparency for the background image. */
+<span class="fc" id="L322">    private float backgroundImageAlpha = 0.5f;</span>
+
+    /** Storage for registered change listeners. */
+    private transient EventListenerList changeListeners;
+
+    /** Storage for registered progress listeners. */
+    private transient EventListenerList progressListeners;
+
+    /**
+     * A flag that can be used to enable/disable notification of chart change
+     * events.
+     */
+    private boolean notify;
+
+    /** 
+     * A flag that controls whether or not rendering hints that identify
+     * chart element should be added during rendering.  This defaults to false
+     * and it should only be enabled if the output target will use the hints.
+     * JFreeSVG is one output target that supports these hints.
+     */
+    private boolean elementHinting;
+    
+    /**
+     * Creates a new chart based on the supplied plot.  The chart will have
+     * a legend added automatically, but no title (although you can easily add
+     * one later).
+     * &lt;br&gt;&lt;br&gt;
+     * Note that the  {@link ChartFactory} class contains a range
+     * of static methods that will return ready-made charts, and often this
+     * is a more convenient way to create charts than using this constructor.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    public JFreeChart(Plot plot) {
+<span class="fc" id="L356">        this(null, null, plot, true);</span>
+<span class="fc" id="L357">    }</span>
+
+    /**
+     * Creates a new chart with the given title and plot.  A default font
+     * ({@link #DEFAULT_TITLE_FONT}) is used for the title, and the chart will
+     * have a legend added automatically.
+     * &lt;br&gt;&lt;br&gt;
+     * Note that the {@link ChartFactory} class contains a range
+     * of static methods that will return ready-made charts, and often this
+     * is a more convenient way to create charts than using this constructor.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    public JFreeChart(String title, Plot plot) {
+<span class="nc" id="L372">        this(title, JFreeChart.DEFAULT_TITLE_FONT, plot, true);</span>
+<span class="nc" id="L373">    }</span>
+
+    /**
+     * Creates a new chart with the given title and plot.  The
+     * {@code createLegend} argument specifies whether or not a legend
+     * should be added to the chart.
+     * &lt;br&gt;&lt;br&gt;
+     * Note that the  {@link ChartFactory} class contains a range
+     * of static methods that will return ready-made charts, and often this
+     * is a more convenient way to create charts than using this constructor.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param titleFont  the font for displaying the chart title
+     *                   ({@code null} permitted).
+     * @param plot  controller of the visual representation of the data
+     *              ({@code null} not permitted).
+     * @param createLegend  a flag indicating whether or not a legend should
+     *                      be created for the chart.
+     */
+<span class="fc" id="L392">    public JFreeChart(String title, Font titleFont, Plot plot,</span>
+                      boolean createLegend) {
+
+<span class="fc" id="L395">        Args.nullNotPermitted(plot, &quot;plot&quot;);</span>
+<span class="fc" id="L396">        this.id = null;</span>
+<span class="fc" id="L397">        plot.setChart(this);</span>
+        
+        // create storage for listeners...
+<span class="fc" id="L400">        this.progressListeners = new EventListenerList();</span>
+<span class="fc" id="L401">        this.changeListeners = new EventListenerList();</span>
+<span class="fc" id="L402">        this.notify = true;  // default is to notify listeners when the</span>
+                             // chart changes
+
+<span class="fc" id="L405">        this.renderingHints = new RenderingHints(</span>
+<span class="fc" id="L406">                RenderingHints.KEY_ANTIALIASING,</span>
+<span class="fc" id="L407">                RenderingHints.VALUE_ANTIALIAS_ON);</span>
+        // added the following hint because of 
+        // http://stackoverflow.com/questions/7785082/
+<span class="fc" id="L410">        this.renderingHints.put(RenderingHints.KEY_STROKE_CONTROL,</span>
+<span class="fc" id="L411">                RenderingHints.VALUE_STROKE_PURE);</span>
+        
+<span class="fc" id="L413">        this.borderVisible = false;</span>
+<span class="fc" id="L414">        this.borderStroke = new BasicStroke(1.0f);</span>
+<span class="fc" id="L415">        this.borderPaint = Color.BLACK;</span>
+
+<span class="fc" id="L417">        this.padding = RectangleInsets.ZERO_INSETS;</span>
+
+<span class="fc" id="L419">        this.plot = plot;</span>
+<span class="fc" id="L420">        plot.addChangeListener(this);</span>
+
+<span class="fc" id="L422">        this.subtitles = new ArrayList();</span>
+
+        // create a legend, if requested...
+<span class="fc bfc" id="L425" title="All 2 branches covered.">        if (createLegend) {</span>
+<span class="fc" id="L426">            LegendTitle legend = new LegendTitle(this.plot);</span>
+<span class="fc" id="L427">            legend.setMargin(new RectangleInsets(1.0, 1.0, 1.0, 1.0));</span>
+<span class="fc" id="L428">            legend.setBackgroundPaint(Color.WHITE);</span>
+<span class="fc" id="L429">            legend.setPosition(RectangleEdge.BOTTOM);</span>
+<span class="fc" id="L430">            this.subtitles.add(legend);</span>
+<span class="fc" id="L431">            legend.addChangeListener(this);</span>
+        }
+
+        // add the chart title, if one has been specified...
+<span class="fc bfc" id="L435" title="All 2 branches covered.">        if (title != null) {</span>
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">            if (titleFont == null) {</span>
+<span class="nc" id="L437">                titleFont = DEFAULT_TITLE_FONT;</span>
+            }
+<span class="fc" id="L439">            this.title = new TextTitle(title, titleFont);</span>
+<span class="fc" id="L440">            this.title.addChangeListener(this);</span>
+        }
+
+<span class="fc" id="L443">        this.backgroundPaint = DEFAULT_BACKGROUND_PAINT;</span>
+
+<span class="fc" id="L445">        this.backgroundImage = DEFAULT_BACKGROUND_IMAGE;</span>
+<span class="fc" id="L446">        this.backgroundImageAlignment = DEFAULT_BACKGROUND_IMAGE_ALIGNMENT;</span>
+<span class="fc" id="L447">        this.backgroundImageAlpha = DEFAULT_BACKGROUND_IMAGE_ALPHA;</span>
+<span class="fc" id="L448">    }</span>
+
+    /**
+     * Returns the ID for the chart.
+     * 
+     * @return The ID for the chart (possibly {@code null}).
+     * 
+     * @since 1.0.20
+     */
+    public String getID() {
+<span class="nc" id="L458">        return this.id;</span>
+    }
+    
+    /**
+     * Sets the ID for the chart.
+     * 
+     * @param id  the id ({@code null} permitted). 
+     * 
+     * @since 1.0.20
+     */
+    public void setID(String id) {
+<span class="nc" id="L469">        this.id = id;</span>
+<span class="nc" id="L470">    }</span>
+    
+    /**
+     * Returns the flag that controls whether or not rendering hints 
+     * ({@link ChartHints#KEY_BEGIN_ELEMENT} and 
+     * {@link ChartHints#KEY_END_ELEMENT}) that identify chart elements are 
+     * added during rendering.  The default value is {@code false}.
+     * 
+     * @return A boolean.
+     * 
+     * @see #setElementHinting(boolean) 
+     * @since 1.0.20
+     */
+    public boolean getElementHinting() {
+<span class="fc" id="L484">        return this.elementHinting;</span>
+    }
+    
+    /**
+     * Sets the flag that controls whether or not rendering hints 
+     * ({@link ChartHints#KEY_BEGIN_ELEMENT} and 
+     * {@link ChartHints#KEY_END_ELEMENT}) that identify chart elements are 
+     * added during rendering.
+     * 
+     * @param hinting  the new flag value.
+     * 
+     * @see #getElementHinting() 
+     * @since 1.0.20
+     */
+    public void setElementHinting(boolean hinting) {
+<span class="nc" id="L499">        this.elementHinting = hinting;</span>
+<span class="nc" id="L500">    }</span>
+    
+    /**
+     * Returns the collection of rendering hints for the chart.
+     *
+     * @return The rendering hints for the chart (never {@code null}).
+     *
+     * @see #setRenderingHints(RenderingHints)
+     */
+    public RenderingHints getRenderingHints() {
+<span class="nc" id="L510">        return this.renderingHints;</span>
+    }
+
+    /**
+     * Sets the rendering hints for the chart.  These will be added (using the
+     * {@code Graphics2D.addRenderingHints()} method) near the start of the
+     * {@code JFreeChart.draw()} method.
+     *
+     * @param renderingHints  the rendering hints ({@code null} not permitted).
+     *
+     * @see #getRenderingHints()
+     */
+    public void setRenderingHints(RenderingHints renderingHints) {
+<span class="fc" id="L523">        Args.nullNotPermitted(renderingHints, &quot;renderingHints&quot;);</span>
+<span class="fc" id="L524">        this.renderingHints = renderingHints;</span>
+<span class="fc" id="L525">        fireChartChanged();</span>
+<span class="fc" id="L526">    }</span>
+
+    /**
+     * Returns a flag that controls whether or not a border is drawn around the
+     * outside of the chart.
+     *
+     * @return A boolean.
+     *
+     * @see #setBorderVisible(boolean)
+     */
+    public boolean isBorderVisible() {
+<span class="fc" id="L537">        return this.borderVisible;</span>
+    }
+
+    /**
+     * Sets a flag that controls whether or not a border is drawn around the
+     * outside of the chart.
+     *
+     * @param visible  the flag.
+     *
+     * @see #isBorderVisible()
+     */
+    public void setBorderVisible(boolean visible) {
+<span class="fc" id="L549">        this.borderVisible = visible;</span>
+<span class="fc" id="L550">        fireChartChanged();</span>
+<span class="fc" id="L551">    }</span>
+
+    /**
+     * Returns the stroke used to draw the chart border (if visible).
+     *
+     * @return The border stroke.
+     *
+     * @see #setBorderStroke(Stroke)
+     */
+    public Stroke getBorderStroke() {
+<span class="nc" id="L561">        return this.borderStroke;</span>
+    }
+
+    /**
+     * Sets the stroke used to draw the chart border (if visible).
+     *
+     * @param stroke  the stroke.
+     *
+     * @see #getBorderStroke()
+     */
+    public void setBorderStroke(Stroke stroke) {
+<span class="fc" id="L572">        this.borderStroke = stroke;</span>
+<span class="fc" id="L573">        fireChartChanged();</span>
+<span class="fc" id="L574">    }</span>
+
+    /**
+     * Returns the paint used to draw the chart border (if visible).
+     *
+     * @return The border paint.
+     *
+     * @see #setBorderPaint(Paint)
+     */
+    public Paint getBorderPaint() {
+<span class="nc" id="L584">        return this.borderPaint;</span>
+    }
+
+    /**
+     * Sets the paint used to draw the chart border (if visible).
+     *
+     * @param paint  the paint.
+     *
+     * @see #getBorderPaint()
+     */
+    public void setBorderPaint(Paint paint) {
+<span class="fc" id="L595">        this.borderPaint = paint;</span>
+<span class="fc" id="L596">        fireChartChanged();</span>
+<span class="fc" id="L597">    }</span>
+
+    /**
+     * Returns the padding between the chart border and the chart drawing area.
+     *
+     * @return The padding (never {@code null}).
+     *
+     * @see #setPadding(RectangleInsets)
+     */
+    public RectangleInsets getPadding() {
+<span class="nc" id="L607">        return this.padding;</span>
+    }
+
+    /**
+     * Sets the padding between the chart border and the chart drawing area,
+     * and sends a {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param padding  the padding ({@code null} not permitted).
+     *
+     * @see #getPadding()
+     */
+    public void setPadding(RectangleInsets padding) {
+<span class="fc" id="L619">        Args.nullNotPermitted(padding, &quot;padding&quot;);</span>
+<span class="fc" id="L620">        this.padding = padding;</span>
+<span class="fc" id="L621">        notifyListeners(new ChartChangeEvent(this));</span>
+<span class="fc" id="L622">    }</span>
+
+    /**
+     * Returns the main chart title.  Very often a chart will have just one
+     * title, so we make this case simple by providing accessor methods for
+     * the main title.  However, multiple titles are supported - see the
+     * {@link #addSubtitle(Title)} method.
+     *
+     * @return The chart title (possibly {@code null}).
+     *
+     * @see #setTitle(TextTitle)
+     */
+    public TextTitle getTitle() {
+<span class="fc" id="L635">        return this.title;</span>
+    }
+
+    /**
+     * Sets the main title for the chart and sends a {@link ChartChangeEvent}
+     * to all registered listeners.  If you do not want a title for the
+     * chart, set it to {@code null}.  If you want more than one title on
+     * a chart, use the {@link #addSubtitle(Title)} method.
+     *
+     * @param title  the title ({@code null} permitted).
+     *
+     * @see #getTitle()
+     */
+    public void setTitle(TextTitle title) {
+<span class="fc bfc" id="L649" title="All 2 branches covered.">        if (this.title != null) {</span>
+<span class="fc" id="L650">            this.title.removeChangeListener(this);</span>
+        }
+<span class="fc" id="L652">        this.title = title;</span>
+<span class="pc bpc" id="L653" title="1 of 2 branches missed.">        if (title != null) {</span>
+<span class="fc" id="L654">            title.addChangeListener(this);</span>
+        }
+<span class="fc" id="L656">        fireChartChanged();</span>
+<span class="fc" id="L657">    }</span>
+
+    /**
+     * Sets the chart title and sends a {@link ChartChangeEvent} to all
+     * registered listeners.  This is a convenience method that ends up calling
+     * the {@link #setTitle(TextTitle)} method.  If there is an existing title,
+     * its text is updated, otherwise a new title using the default font is
+     * added to the chart.  If {@code text} is {@code null} the chart
+     * title is set to {@code null}.
+     *
+     * @param text  the title text ({@code null} permitted).
+     *
+     * @see #getTitle()
+     */
+    public void setTitle(String text) {
+<span class="pc bpc" id="L672" title="1 of 2 branches missed.">        if (text != null) {</span>
+<span class="pc bpc" id="L673" title="1 of 2 branches missed.">            if (this.title == null) {</span>
+<span class="nc" id="L674">                setTitle(new TextTitle(text, JFreeChart.DEFAULT_TITLE_FONT));</span>
+<span class="nc" id="L675">            } else {</span>
+<span class="fc" id="L676">                this.title.setText(text);</span>
+            }
+<span class="fc" id="L678">        }</span>
+        else {
+<span class="nc" id="L680">            setTitle((TextTitle) null);</span>
+        }
+<span class="fc" id="L682">    }</span>
+
+    /**
+     * Adds a legend to the plot and sends a {@link ChartChangeEvent} to all
+     * registered listeners.
+     *
+     * @param legend  the legend ({@code null} not permitted).
+     *
+     * @see #removeLegend()
+     */
+    public void addLegend(LegendTitle legend) {
+<span class="nc" id="L693">        addSubtitle(legend);</span>
+<span class="nc" id="L694">    }</span>
+
+    /**
+     * Returns the legend for the chart, if there is one.  Note that a chart
+     * can have more than one legend - this method returns the first.
+     *
+     * @return The legend (possibly {@code null}).
+     *
+     * @see #getLegend(int)
+     */
+    public LegendTitle getLegend() {
+<span class="fc" id="L705">        return getLegend(0);</span>
+    }
+
+    /**
+     * Returns the nth legend for a chart, or {@code null}.
+     *
+     * @param index  the legend index (zero-based).
+     *
+     * @return The legend (possibly {@code null}).
+     *
+     * @see #addLegend(LegendTitle)
+     */
+    public LegendTitle getLegend(int index) {
+<span class="fc" id="L718">        int seen = 0;</span>
+<span class="fc" id="L719">        Iterator iterator = this.subtitles.iterator();</span>
+<span class="pc bpc" id="L720" title="1 of 2 branches missed.">        while (iterator.hasNext()) {</span>
+<span class="fc" id="L721">            Title subtitle = (Title) iterator.next();</span>
+<span class="pc bpc" id="L722" title="1 of 2 branches missed.">            if (subtitle instanceof LegendTitle) {</span>
+<span class="pc bpc" id="L723" title="1 of 2 branches missed.">                if (seen == index) {</span>
+<span class="fc" id="L724">                    return (LegendTitle) subtitle;</span>
+                }
+                else {
+<span class="nc" id="L727">                    seen++;</span>
+                }
+            }
+        }
+<span class="nc" id="L731">        return null;</span>
+    }
+
+    /**
+     * Removes the first legend in the chart and sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @see #getLegend()
+     */
+    public void removeLegend() {
+<span class="fc" id="L741">        removeSubtitle(getLegend());</span>
+<span class="fc" id="L742">    }</span>
+
+    /**
+     * Returns the list of subtitles for the chart.
+     *
+     * @return The subtitle list (possibly empty, but never {@code null}).
+     *
+     * @see #setSubtitles(List)
+     */
+    public List getSubtitles() {
+<span class="fc" id="L752">        return new ArrayList(this.subtitles);</span>
+    }
+
+    /**
+     * Sets the title list for the chart (completely replaces any existing
+     * titles) and sends a {@link ChartChangeEvent} to all registered
+     * listeners.
+     *
+     * @param subtitles  the new list of subtitles ({@code null} not
+     *                   permitted).
+     *
+     * @see #getSubtitles()
+     */
+    public void setSubtitles(List subtitles) {
+<span class="nc bnc" id="L766" title="All 2 branches missed.">        if (subtitles == null) {</span>
+<span class="nc" id="L767">            throw new NullPointerException(&quot;Null 'subtitles' argument.&quot;);</span>
+        }
+<span class="nc" id="L769">        setNotify(false);</span>
+<span class="nc" id="L770">        clearSubtitles();</span>
+<span class="nc" id="L771">        Iterator iterator = subtitles.iterator();</span>
+<span class="nc bnc" id="L772" title="All 2 branches missed.">        while (iterator.hasNext()) {</span>
+<span class="nc" id="L773">            Title t = (Title) iterator.next();</span>
+<span class="nc bnc" id="L774" title="All 2 branches missed.">            if (t != null) {</span>
+<span class="nc" id="L775">                addSubtitle(t);</span>
+            }
+        }
+<span class="nc" id="L778">        setNotify(true);  // this fires a ChartChangeEvent</span>
+<span class="nc" id="L779">    }</span>
+
+    /**
+     * Returns the number of titles for the chart.
+     *
+     * @return The number of titles for the chart.
+     *
+     * @see #getSubtitles()
+     */
+    public int getSubtitleCount() {
+<span class="fc" id="L789">        return this.subtitles.size();</span>
+    }
+
+    /**
+     * Returns a chart subtitle.
+     *
+     * @param index  the index of the chart subtitle (zero based).
+     *
+     * @return A chart subtitle.
+     *
+     * @see #addSubtitle(Title)
+     */
+    public Title getSubtitle(int index) {
+<span class="fc bfc" id="L802" title="All 4 branches covered.">        if ((index &lt; 0) || (index &gt;= getSubtitleCount())) {</span>
+<span class="fc" id="L803">            throw new IllegalArgumentException(&quot;Index out of range.&quot;);</span>
+        }
+<span class="fc" id="L805">        return (Title) this.subtitles.get(index);</span>
+    }
+
+    /**
+     * Adds a chart subtitle, and notifies registered listeners that the chart
+     * has been modified.
+     *
+     * @param subtitle  the subtitle ({@code null} not permitted).
+     *
+     * @see #getSubtitle(int)
+     */
+    public void addSubtitle(Title subtitle) {
+<span class="fc" id="L817">        Args.nullNotPermitted(subtitle, &quot;subtitle&quot;);</span>
+<span class="fc" id="L818">        this.subtitles.add(subtitle);</span>
+<span class="fc" id="L819">        subtitle.addChangeListener(this);</span>
+<span class="fc" id="L820">        fireChartChanged();</span>
+<span class="fc" id="L821">    }</span>
+
+    /**
+     * Adds a subtitle at a particular position in the subtitle list, and sends
+     * a {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param index  the index (in the range 0 to {@link #getSubtitleCount()}).
+     * @param subtitle  the subtitle to add ({@code null} not permitted).
+     *
+     * @since 1.0.6
+     */
+    public void addSubtitle(int index, Title subtitle) {
+<span class="fc bfc" id="L833" title="All 4 branches covered.">        if (index &lt; 0 || index &gt; getSubtitleCount()) {</span>
+<span class="fc" id="L834">            throw new IllegalArgumentException(</span>
+<span class="fc" id="L835">                    &quot;The 'index' argument is out of range.&quot;);</span>
+        }
+<span class="fc" id="L837">        Args.nullNotPermitted(subtitle, &quot;subtitle&quot;);</span>
+<span class="fc" id="L838">        this.subtitles.add(index, subtitle);</span>
+<span class="fc" id="L839">        subtitle.addChangeListener(this);</span>
+<span class="fc" id="L840">        fireChartChanged();</span>
+<span class="fc" id="L841">    }</span>
+
+    /**
+     * Clears all subtitles from the chart and sends a {@link ChartChangeEvent}
+     * to all registered listeners.
+     *
+     * @see #addSubtitle(Title)
+     */
+    public void clearSubtitles() {
+<span class="nc" id="L850">        Iterator iterator = this.subtitles.iterator();</span>
+<span class="nc bnc" id="L851" title="All 2 branches missed.">        while (iterator.hasNext()) {</span>
+<span class="nc" id="L852">            Title t = (Title) iterator.next();</span>
+<span class="nc" id="L853">            t.removeChangeListener(this);</span>
+        }
+<span class="nc" id="L855">        this.subtitles.clear();</span>
+<span class="nc" id="L856">        fireChartChanged();</span>
+<span class="nc" id="L857">    }</span>
+
+    /**
+     * Removes the specified subtitle and sends a {@link ChartChangeEvent} to
+     * all registered listeners.
+     *
+     * @param title  the title.
+     *
+     * @see #addSubtitle(Title)
+     */
+    public void removeSubtitle(Title title) {
+<span class="fc" id="L868">        this.subtitles.remove(title);</span>
+<span class="fc" id="L869">        fireChartChanged();</span>
+<span class="fc" id="L870">    }</span>
+
+    /**
+     * Returns the plot for the chart.  The plot is a class responsible for
+     * coordinating the visual representation of the data, including the axes
+     * (if any).
+     *
+     * @return The plot.
+     */
+    public Plot getPlot() {
+<span class="fc" id="L880">        return this.plot;</span>
+    }
+
+    /**
+     * Returns the plot cast as a {@link CategoryPlot}.
+     * &lt;p&gt;
+     * NOTE: if the plot is not an instance of {@link CategoryPlot}, then a
+     * {@code ClassCastException} is thrown.
+     *
+     * @return The plot.
+     *
+     * @see #getPlot()
+     */
+    public CategoryPlot getCategoryPlot() {
+<span class="nc" id="L894">        return (CategoryPlot) this.plot;</span>
+    }
+
+    /**
+     * Returns the plot cast as an {@link XYPlot}.
+     * &lt;p&gt;
+     * NOTE: if the plot is not an instance of {@link XYPlot}, then a
+     * {@code ClassCastException} is thrown.
+     *
+     * @return The plot.
+     *
+     * @see #getPlot()
+     */
+    public XYPlot getXYPlot() {
+<span class="nc" id="L908">        return (XYPlot) this.plot;</span>
+    }
+
+    /**
+     * Returns a flag that indicates whether or not anti-aliasing is used when
+     * the chart is drawn.
+     *
+     * @return The flag.
+     *
+     * @see #setAntiAlias(boolean)
+     */
+    public boolean getAntiAlias() {
+<span class="nc" id="L920">        Object val = this.renderingHints.get(RenderingHints.KEY_ANTIALIASING);</span>
+<span class="nc" id="L921">        return RenderingHints.VALUE_ANTIALIAS_ON.equals(val);</span>
+    }
+
+    /**
+     * Sets a flag that indicates whether or not anti-aliasing is used when the
+     * chart is drawn.
+     * &lt;P&gt;
+     * Anti-aliasing usually improves the appearance of charts, but is slower.
+     *
+     * @param flag  the new value of the flag.
+     *
+     * @see #getAntiAlias()
+     */
+    public void setAntiAlias(boolean flag) {
+<span class="nc bnc" id="L935" title="All 2 branches missed.">        Object hint = flag ? RenderingHints.VALUE_ANTIALIAS_ON </span>
+<span class="nc" id="L936">                : RenderingHints.VALUE_ANTIALIAS_OFF;</span>
+<span class="nc" id="L937">        this.renderingHints.put(RenderingHints.KEY_ANTIALIASING, hint);</span>
+<span class="nc" id="L938">        fireChartChanged();</span>
+<span class="nc" id="L939">    }</span>
+
+    /**
+     * Returns the current value stored in the rendering hints table for
+     * {@link RenderingHints#KEY_TEXT_ANTIALIASING}.
+     *
+     * @return The hint value (possibly {@code null}).
+     *
+     * @since 1.0.5
+     *
+     * @see #setTextAntiAlias(Object)
+     */
+    public Object getTextAntiAlias() {
+<span class="nc" id="L952">        return this.renderingHints.get(RenderingHints.KEY_TEXT_ANTIALIASING);</span>
+    }
+
+    /**
+     * Sets the value in the rendering hints table for
+     * {@link RenderingHints#KEY_TEXT_ANTIALIASING} to either
+     * {@link RenderingHints#VALUE_TEXT_ANTIALIAS_ON} or
+     * {@link RenderingHints#VALUE_TEXT_ANTIALIAS_OFF}, then sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param flag  the new value of the flag.
+     *
+     * @since 1.0.5
+     *
+     * @see #getTextAntiAlias()
+     * @see #setTextAntiAlias(Object)
+     */
+    public void setTextAntiAlias(boolean flag) {
+<span class="nc bnc" id="L970" title="All 2 branches missed.">        if (flag) {</span>
+<span class="nc" id="L971">            setTextAntiAlias(RenderingHints.VALUE_TEXT_ANTIALIAS_ON);</span>
+<span class="nc" id="L972">        }</span>
+        else {
+<span class="nc" id="L974">            setTextAntiAlias(RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);</span>
+        }
+<span class="nc" id="L976">    }</span>
+
+    /**
+     * Sets the value in the rendering hints table for
+     * {@link RenderingHints#KEY_TEXT_ANTIALIASING} and sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param val  the new value ({@code null} permitted).
+     *
+     * @since 1.0.5
+     *
+     * @see #getTextAntiAlias()
+     * @see #setTextAntiAlias(boolean)
+     */
+    public void setTextAntiAlias(Object val) {
+<span class="nc" id="L991">        this.renderingHints.put(RenderingHints.KEY_TEXT_ANTIALIASING, val);</span>
+<span class="nc" id="L992">        notifyListeners(new ChartChangeEvent(this));</span>
+<span class="nc" id="L993">    }</span>
+
+    /**
+     * Returns the paint used for the chart background.
+     *
+     * @return The paint (possibly {@code null}).
+     *
+     * @see #setBackgroundPaint(Paint)
+     */
+    public Paint getBackgroundPaint() {
+<span class="nc" id="L1003">        return this.backgroundPaint;</span>
+    }
+
+    /**
+     * Sets the paint used to fill the chart background and sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getBackgroundPaint()
+     */
+    public void setBackgroundPaint(Paint paint) {
+
+<span class="pc bpc" id="L1016" title="1 of 2 branches missed.">        if (this.backgroundPaint != null) {</span>
+<span class="pc bpc" id="L1017" title="1 of 2 branches missed.">            if (!this.backgroundPaint.equals(paint)) {</span>
+<span class="fc" id="L1018">                this.backgroundPaint = paint;</span>
+<span class="fc" id="L1019">                fireChartChanged();</span>
+            }
+<span class="fc" id="L1021">        }</span>
+        else {
+<span class="nc bnc" id="L1023" title="All 2 branches missed.">            if (paint != null) {</span>
+<span class="nc" id="L1024">                this.backgroundPaint = paint;</span>
+<span class="nc" id="L1025">                fireChartChanged();</span>
+            }
+        }
+
+<span class="fc" id="L1029">    }</span>
+
+    /**
+     * Returns the background image for the chart, or {@code null} if
+     * there is no image.
+     *
+     * @return The image (possibly {@code null}).
+     *
+     * @see #setBackgroundImage(Image)
+     */
+    public Image getBackgroundImage() {
+<span class="nc" id="L1040">        return this.backgroundImage;</span>
+    }
+
+    /**
+     * Sets the background image for the chart and sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param image  the image ({@code null} permitted).
+     *
+     * @see #getBackgroundImage()
+     */
+    public void setBackgroundImage(Image image) {
+
+<span class="nc bnc" id="L1053" title="All 2 branches missed.">        if (this.backgroundImage != null) {</span>
+<span class="nc bnc" id="L1054" title="All 2 branches missed.">            if (!this.backgroundImage.equals(image)) {</span>
+<span class="nc" id="L1055">                this.backgroundImage = image;</span>
+<span class="nc" id="L1056">                fireChartChanged();</span>
+            }
+<span class="nc" id="L1058">        }</span>
+        else {
+<span class="nc bnc" id="L1060" title="All 2 branches missed.">            if (image != null) {</span>
+<span class="nc" id="L1061">                this.backgroundImage = image;</span>
+<span class="nc" id="L1062">                fireChartChanged();</span>
+            }
+        }
+
+<span class="nc" id="L1066">    }</span>
+
+    /**
+     * Returns the background image alignment. Alignment constants are defined
+     * in the {@link Align} class.
+     *
+     * @return The alignment.
+     *
+     * @see #setBackgroundImageAlignment(int)
+     */
+    public int getBackgroundImageAlignment() {
+<span class="nc" id="L1077">        return this.backgroundImageAlignment;</span>
+    }
+
+    /**
+     * Sets the background alignment.  Alignment options are defined by the
+     * {@link org.jfree.chart.ui.Align} class.
+     *
+     * @param alignment  the alignment.
+     *
+     * @see #getBackgroundImageAlignment()
+     */
+    public void setBackgroundImageAlignment(int alignment) {
+<span class="pc bpc" id="L1089" title="1 of 2 branches missed.">        if (this.backgroundImageAlignment != alignment) {</span>
+<span class="fc" id="L1090">            this.backgroundImageAlignment = alignment;</span>
+<span class="fc" id="L1091">            fireChartChanged();</span>
+        }
+<span class="fc" id="L1093">    }</span>
+
+    /**
+     * Returns the alpha-transparency for the chart's background image.
+     *
+     * @return The alpha-transparency.
+     *
+     * @see #setBackgroundImageAlpha(float)
+     */
+    public float getBackgroundImageAlpha() {
+<span class="nc" id="L1103">        return this.backgroundImageAlpha;</span>
+    }
+
+    /**
+     * Sets the alpha-transparency for the chart's background image.
+     * Registered listeners are notified that the chart has been changed.
+     *
+     * @param alpha  the alpha value.
+     *
+     * @see #getBackgroundImageAlpha()
+     */
+    public void setBackgroundImageAlpha(float alpha) {
+<span class="pc bpc" id="L1115" title="1 of 2 branches missed.">        if (this.backgroundImageAlpha != alpha) {</span>
+<span class="fc" id="L1116">            this.backgroundImageAlpha = alpha;</span>
+<span class="fc" id="L1117">            fireChartChanged();</span>
+        }
+<span class="fc" id="L1119">    }</span>
+
+    /**
+     * Returns a flag that controls whether or not change events are sent to
+     * registered listeners.
+     *
+     * @return A boolean.
+     *
+     * @see #setNotify(boolean)
+     */
+    public boolean isNotify() {
+<span class="nc" id="L1130">        return this.notify;</span>
+    }
+
+    /**
+     * Sets a flag that controls whether or not listeners receive
+     * {@link ChartChangeEvent} notifications.
+     *
+     * @param notify  a boolean.
+     *
+     * @see #isNotify()
+     */
+    public void setNotify(boolean notify) {
+<span class="nc" id="L1142">        this.notify = notify;</span>
+        // if the flag is being set to true, there may be queued up changes...
+<span class="nc bnc" id="L1144" title="All 2 branches missed.">        if (notify) {</span>
+<span class="nc" id="L1145">            notifyListeners(new ChartChangeEvent(this));</span>
+        }
+<span class="nc" id="L1147">    }</span>
+
+    /**
+     * Draws the chart on a Java 2D graphics device (such as the screen or a
+     * printer).
+     * &lt;P&gt;
+     * This method is the focus of the entire JFreeChart library.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area within which the chart should be drawn.
+     */
+    @Override
+    public void draw(Graphics2D g2, Rectangle2D area) {
+<span class="fc" id="L1160">        draw(g2, area, null, null);</span>
+<span class="fc" id="L1161">    }</span>
+
+    /**
+     * Draws the chart on a Java 2D graphics device (such as the screen or a
+     * printer).  This method is the focus of the entire JFreeChart library.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area within which the chart should be drawn.
+     * @param info  records info about the drawing (null means collect no info).
+     */
+    public void draw(Graphics2D g2, Rectangle2D area, ChartRenderingInfo info) {
+<span class="fc" id="L1172">        draw(g2, area, null, info);</span>
+<span class="fc" id="L1173">    }</span>
+
+    /**
+     * Draws the chart on a Java 2D graphics device (such as the screen or a
+     * printer).
+     * &lt;P&gt;
+     * This method is the focus of the entire JFreeChart library.
+     *
+     * @param g2  the graphics device.
+     * @param chartArea  the area within which the chart should be drawn.
+     * @param anchor  the anchor point (in Java2D space) for the chart
+     *                ({@code null} permitted).
+     * @param info  records info about the drawing (null means collect no info).
+     */
+    public void draw(Graphics2D g2, Rectangle2D chartArea, Point2D anchor,
+             ChartRenderingInfo info) {
+
+<span class="fc" id="L1190">        notifyListeners(new ChartProgressEvent(this, this,</span>
+<span class="fc" id="L1191">                ChartProgressEvent.DRAWING_STARTED, 0));</span>
+        
+<span class="pc bpc" id="L1193" title="1 of 2 branches missed.">        if (this.elementHinting) {</span>
+<span class="nc" id="L1194">            Map m = new HashMap&lt;String, String&gt;();</span>
+<span class="nc bnc" id="L1195" title="All 2 branches missed.">            if (this.id != null) {</span>
+<span class="nc" id="L1196">                m.put(&quot;id&quot;, this.id);</span>
+            }
+<span class="nc" id="L1198">            m.put(&quot;ref&quot;, &quot;JFREECHART_TOP_LEVEL&quot;);            </span>
+<span class="nc" id="L1199">            g2.setRenderingHint(ChartHints.KEY_BEGIN_ELEMENT, m);            </span>
+        }
+        
+<span class="fc" id="L1202">        EntityCollection entities = null;</span>
+        // record the chart area, if info is requested...
+<span class="fc bfc" id="L1204" title="All 2 branches covered.">        if (info != null) {</span>
+<span class="fc" id="L1205">            info.clear();</span>
+<span class="fc" id="L1206">            info.setChartArea(chartArea);</span>
+<span class="fc" id="L1207">            entities = info.getEntityCollection();</span>
+        }
+<span class="fc bfc" id="L1209" title="All 2 branches covered.">        if (entities != null) {</span>
+<span class="fc" id="L1210">            entities.add(new JFreeChartEntity((Rectangle2D) chartArea.clone(),</span>
+<span class="fc" id="L1211">                    this));</span>
+        }
+
+        // ensure no drawing occurs outside chart area...
+<span class="fc" id="L1215">        Shape savedClip = g2.getClip();</span>
+<span class="fc" id="L1216">        g2.clip(chartArea);</span>
+
+<span class="fc" id="L1218">        g2.addRenderingHints(this.renderingHints);</span>
+
+        // draw the chart background...
+<span class="pc bpc" id="L1221" title="1 of 2 branches missed.">        if (this.backgroundPaint != null) {</span>
+<span class="fc" id="L1222">            g2.setPaint(this.backgroundPaint);</span>
+<span class="fc" id="L1223">            g2.fill(chartArea);</span>
+        }
+
+<span class="pc bpc" id="L1226" title="1 of 2 branches missed.">        if (this.backgroundImage != null) {</span>
+<span class="nc" id="L1227">            Composite originalComposite = g2.getComposite();</span>
+<span class="nc" id="L1228">            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,</span>
+<span class="nc" id="L1229">                    this.backgroundImageAlpha));</span>
+<span class="nc" id="L1230">            Rectangle2D dest = new Rectangle2D.Double(0.0, 0.0,</span>
+<span class="nc" id="L1231">                    this.backgroundImage.getWidth(null),</span>
+<span class="nc" id="L1232">                    this.backgroundImage.getHeight(null));</span>
+<span class="nc" id="L1233">            Align.align(dest, chartArea, this.backgroundImageAlignment);</span>
+<span class="nc" id="L1234">            g2.drawImage(this.backgroundImage, (int) dest.getX(),</span>
+<span class="nc" id="L1235">                    (int) dest.getY(), (int) dest.getWidth(),</span>
+<span class="nc" id="L1236">                    (int) dest.getHeight(), null);</span>
+<span class="nc" id="L1237">            g2.setComposite(originalComposite);</span>
+        }
+
+<span class="pc bpc" id="L1240" title="1 of 2 branches missed.">        if (isBorderVisible()) {</span>
+<span class="nc" id="L1241">            Paint paint = getBorderPaint();</span>
+<span class="nc" id="L1242">            Stroke stroke = getBorderStroke();</span>
+<span class="nc bnc" id="L1243" title="All 4 branches missed.">            if (paint != null &amp;&amp; stroke != null) {</span>
+<span class="nc" id="L1244">                Rectangle2D borderArea = new Rectangle2D.Double(</span>
+<span class="nc" id="L1245">                        chartArea.getX(), chartArea.getY(),</span>
+<span class="nc" id="L1246">                        chartArea.getWidth() - 1.0, chartArea.getHeight()</span>
+<span class="nc" id="L1247">                        - 1.0);</span>
+<span class="nc" id="L1248">                g2.setPaint(paint);</span>
+<span class="nc" id="L1249">                g2.setStroke(stroke);</span>
+<span class="nc" id="L1250">                g2.draw(borderArea);</span>
+            }
+        }
+
+        // draw the title and subtitles...
+<span class="fc" id="L1255">        Rectangle2D nonTitleArea = new Rectangle2D.Double();</span>
+<span class="fc" id="L1256">        nonTitleArea.setRect(chartArea);</span>
+<span class="fc" id="L1257">        this.padding.trim(nonTitleArea);</span>
+
+<span class="pc bpc" id="L1259" title="1 of 4 branches missed.">        if (this.title != null &amp;&amp; this.title.isVisible()) {</span>
+<span class="fc" id="L1260">            EntityCollection e = drawTitle(this.title, g2, nonTitleArea,</span>
+<span class="fc bfc" id="L1261" title="All 2 branches covered.">                    (entities != null));</span>
+<span class="pc bpc" id="L1262" title="1 of 4 branches missed.">            if (e != null &amp;&amp; entities != null) {</span>
+<span class="fc" id="L1263">                entities.addAll(e);</span>
+            }
+        }
+
+<span class="fc" id="L1267">        Iterator iterator = this.subtitles.iterator();</span>
+<span class="fc bfc" id="L1268" title="All 2 branches covered.">        while (iterator.hasNext()) {</span>
+<span class="fc" id="L1269">            Title currentTitle = (Title) iterator.next();</span>
+<span class="pc bpc" id="L1270" title="1 of 2 branches missed.">            if (currentTitle.isVisible()) {</span>
+<span class="fc" id="L1271">                EntityCollection e = drawTitle(currentTitle, g2, nonTitleArea,</span>
+<span class="fc bfc" id="L1272" title="All 2 branches covered.">                        (entities != null));</span>
+<span class="pc bpc" id="L1273" title="1 of 4 branches missed.">                if (e != null &amp;&amp; entities != null) {</span>
+<span class="fc" id="L1274">                    entities.addAll(e);</span>
+                }
+            }
+        }
+
+<span class="fc" id="L1279">        Rectangle2D plotArea = nonTitleArea;</span>
+
+        // draw the plot (axes and data visualisation)
+<span class="fc" id="L1282">        PlotRenderingInfo plotInfo = null;</span>
+<span class="fc bfc" id="L1283" title="All 2 branches covered.">        if (info != null) {</span>
+<span class="fc" id="L1284">            plotInfo = info.getPlotInfo();</span>
+        }
+<span class="fc" id="L1286">        this.plot.draw(g2, plotArea, anchor, null, plotInfo);</span>
+<span class="fc" id="L1287">        g2.setClip(savedClip);</span>
+<span class="pc bpc" id="L1288" title="1 of 2 branches missed.">        if (this.elementHinting) {         </span>
+<span class="nc" id="L1289">            g2.setRenderingHint(ChartHints.KEY_END_ELEMENT, Boolean.TRUE);            </span>
+        }
+
+<span class="fc" id="L1292">        notifyListeners(new ChartProgressEvent(this, this,</span>
+<span class="fc" id="L1293">                ChartProgressEvent.DRAWING_FINISHED, 100));</span>
+<span class="fc" id="L1294">    }</span>
+
+    /**
+     * Creates a rectangle that is aligned to the frame.
+     *
+     * @param dimensions  the dimensions for the rectangle.
+     * @param frame  the frame to align to.
+     * @param hAlign  the horizontal alignment.
+     * @param vAlign  the vertical alignment.
+     *
+     * @return A rectangle.
+     */
+    private Rectangle2D createAlignedRectangle2D(Size2D dimensions,
+            Rectangle2D frame, HorizontalAlignment hAlign,
+            VerticalAlignment vAlign) {
+<span class="fc" id="L1309">        double x = Double.NaN;</span>
+<span class="fc" id="L1310">        double y = Double.NaN;</span>
+<span class="pc bpc" id="L1311" title="1 of 2 branches missed.">        if (hAlign == HorizontalAlignment.LEFT) {</span>
+<span class="nc" id="L1312">            x = frame.getX();</span>
+<span class="nc" id="L1313">        }</span>
+<span class="pc bpc" id="L1314" title="1 of 2 branches missed.">        else if (hAlign == HorizontalAlignment.CENTER) {</span>
+<span class="fc" id="L1315">            x = frame.getCenterX() - (dimensions.width / 2.0);</span>
+<span class="fc" id="L1316">        }</span>
+<span class="nc bnc" id="L1317" title="All 2 branches missed.">        else if (hAlign == HorizontalAlignment.RIGHT) {</span>
+<span class="nc" id="L1318">            x = frame.getMaxX() - dimensions.width;</span>
+        }
+<span class="fc bfc" id="L1320" title="All 2 branches covered.">        if (vAlign == VerticalAlignment.TOP) {</span>
+<span class="fc" id="L1321">            y = frame.getY();</span>
+<span class="fc" id="L1322">        }</span>
+<span class="pc bpc" id="L1323" title="1 of 2 branches missed.">        else if (vAlign == VerticalAlignment.CENTER) {</span>
+<span class="nc" id="L1324">            y = frame.getCenterY() - (dimensions.height / 2.0);</span>
+<span class="nc" id="L1325">        }</span>
+<span class="pc bpc" id="L1326" title="1 of 2 branches missed.">        else if (vAlign == VerticalAlignment.BOTTOM) {</span>
+<span class="fc" id="L1327">            y = frame.getMaxY() - dimensions.height;</span>
+        }
+
+<span class="fc" id="L1330">        return new Rectangle2D.Double(x, y, dimensions.width,</span>
+<span class="fc" id="L1331">                dimensions.height);</span>
+    }
+
+    /**
+     * Draws a title.  The title should be drawn at the top, bottom, left or
+     * right of the specified area, and the area should be updated to reflect
+     * the amount of space used by the title.
+     *
+     * @param t  the title ({@code null} not permitted).
+     * @param g2  the graphics device ({@code null} not permitted).
+     * @param area  the chart area, excluding any existing titles
+     *              ({@code null} not permitted).
+     * @param entities  a flag that controls whether or not an entity
+     *                  collection is returned for the title.
+     *
+     * @return An entity collection for the title (possibly {@code null}).
+     */
+    protected EntityCollection drawTitle(Title t, Graphics2D g2,
+                                         Rectangle2D area, boolean entities) {
+
+<span class="fc" id="L1351">        Args.nullNotPermitted(t, &quot;t&quot;);</span>
+<span class="fc" id="L1352">        Args.nullNotPermitted(area, &quot;area&quot;);</span>
+        Rectangle2D titleArea;
+<span class="fc" id="L1354">        RectangleEdge position = t.getPosition();</span>
+<span class="fc" id="L1355">        double ww = area.getWidth();</span>
+<span class="pc bpc" id="L1356" title="1 of 2 branches missed.">        if (ww &lt;= 0.0) {</span>
+<span class="nc" id="L1357">            return null;</span>
+        }
+<span class="fc" id="L1359">        double hh = area.getHeight();</span>
+<span class="pc bpc" id="L1360" title="1 of 2 branches missed.">        if (hh &lt;= 0.0) {</span>
+<span class="nc" id="L1361">            return null;</span>
+        }
+<span class="fc" id="L1363">        RectangleConstraint constraint = new RectangleConstraint(ww,</span>
+<span class="fc" id="L1364">                new Range(0.0, ww), LengthConstraintType.RANGE, hh,</span>
+<span class="fc" id="L1365">                new Range(0.0, hh), LengthConstraintType.RANGE);</span>
+<span class="fc" id="L1366">        Object retValue = null;</span>
+<span class="fc" id="L1367">        BlockParams p = new BlockParams();</span>
+<span class="fc" id="L1368">        p.setGenerateEntities(entities);</span>
+<span class="fc bfc" id="L1369" title="All 2 branches covered.">        if (position == RectangleEdge.TOP) {</span>
+<span class="fc" id="L1370">            Size2D size = t.arrange(g2, constraint);</span>
+<span class="fc" id="L1371">            titleArea = createAlignedRectangle2D(size, area,</span>
+<span class="fc" id="L1372">                    t.getHorizontalAlignment(), VerticalAlignment.TOP);</span>
+<span class="fc" id="L1373">            retValue = t.draw(g2, titleArea, p);</span>
+<span class="fc" id="L1374">            area.setRect(area.getX(), Math.min(area.getY() + size.height,</span>
+<span class="fc" id="L1375">                    area.getMaxY()), area.getWidth(), Math.max(area.getHeight()</span>
+<span class="fc" id="L1376">                    - size.height, 0));</span>
+<span class="pc bpc" id="L1377" title="1 of 2 branches missed.">        } else if (position == RectangleEdge.BOTTOM) {</span>
+<span class="fc" id="L1378">            Size2D size = t.arrange(g2, constraint);</span>
+<span class="fc" id="L1379">            titleArea = createAlignedRectangle2D(size, area,</span>
+<span class="fc" id="L1380">                    t.getHorizontalAlignment(), VerticalAlignment.BOTTOM);</span>
+<span class="fc" id="L1381">            retValue = t.draw(g2, titleArea, p);</span>
+<span class="fc" id="L1382">            area.setRect(area.getX(), area.getY(), area.getWidth(),</span>
+<span class="fc" id="L1383">                    area.getHeight() - size.height);</span>
+<span class="pc bnc" id="L1384" title="All 2 branches missed.">        } else if (position == RectangleEdge.RIGHT) {</span>
+<span class="nc" id="L1385">            Size2D size = t.arrange(g2, constraint);</span>
+<span class="nc" id="L1386">            titleArea = createAlignedRectangle2D(size, area,</span>
+<span class="nc" id="L1387">                    HorizontalAlignment.RIGHT, t.getVerticalAlignment());</span>
+<span class="nc" id="L1388">            retValue = t.draw(g2, titleArea, p);</span>
+<span class="nc" id="L1389">            area.setRect(area.getX(), area.getY(), area.getWidth()</span>
+<span class="nc" id="L1390">                    - size.width, area.getHeight());</span>
+<span class="nc bnc" id="L1391" title="All 2 branches missed.">        } else if (position == RectangleEdge.LEFT) {</span>
+<span class="nc" id="L1392">            Size2D size = t.arrange(g2, constraint);</span>
+<span class="nc" id="L1393">            titleArea = createAlignedRectangle2D(size, area,</span>
+<span class="nc" id="L1394">                    HorizontalAlignment.LEFT, t.getVerticalAlignment());</span>
+<span class="nc" id="L1395">            retValue = t.draw(g2, titleArea, p);</span>
+<span class="nc" id="L1396">            area.setRect(area.getX() + size.width, area.getY(), area.getWidth()</span>
+<span class="nc" id="L1397">                    - size.width, area.getHeight());</span>
+<span class="nc" id="L1398">        }</span>
+        else {
+<span class="nc" id="L1400">            throw new RuntimeException(&quot;Unrecognised title position.&quot;);</span>
+        }
+<span class="fc" id="L1402">        EntityCollection result = null;</span>
+<span class="fc bfc" id="L1403" title="All 2 branches covered.">        if (retValue instanceof EntityBlockResult) {</span>
+<span class="fc" id="L1404">            EntityBlockResult ebr = (EntityBlockResult) retValue;</span>
+<span class="fc" id="L1405">            result = ebr.getEntityCollection();</span>
+        }
+<span class="fc" id="L1407">        return result;</span>
+    }
+
+    /**
+     * Creates and returns a buffered image into which the chart has been drawn.
+     *
+     * @param width  the width.
+     * @param height  the height.
+     *
+     * @return A buffered image.
+     */
+    public BufferedImage createBufferedImage(int width, int height) {
+<span class="fc" id="L1419">        return createBufferedImage(width, height, null);</span>
+    }
+
+    /**
+     * Creates and returns a buffered image into which the chart has been drawn.
+     *
+     * @param width  the width.
+     * @param height  the height.
+     * @param info  carries back chart state information ({@code null}
+     *              permitted).
+     *
+     * @return A buffered image.
+     */
+    public BufferedImage createBufferedImage(int width, int height,
+                                             ChartRenderingInfo info) {
+<span class="fc" id="L1434">        return createBufferedImage(width, height, BufferedImage.TYPE_INT_ARGB,</span>
+<span class="fc" id="L1435">                info);</span>
+    }
+
+    /**
+     * Creates and returns a buffered image into which the chart has been drawn.
+     *
+     * @param width  the width.
+     * @param height  the height.
+     * @param imageType  the image type.
+     * @param info  carries back chart state information ({@code null}
+     *              permitted).
+     *
+     * @return A buffered image.
+     */
+    public BufferedImage createBufferedImage(int width, int height,
+            int imageType, ChartRenderingInfo info) {
+<span class="fc" id="L1451">        BufferedImage image = new BufferedImage(width, height, imageType);</span>
+<span class="fc" id="L1452">        Graphics2D g2 = image.createGraphics();</span>
+<span class="fc" id="L1453">        draw(g2, new Rectangle2D.Double(0, 0, width, height), null, info);</span>
+<span class="fc" id="L1454">        g2.dispose();</span>
+<span class="fc" id="L1455">        return image;</span>
+    }
+
+    /**
+     * Creates and returns a buffered image into which the chart has been drawn.
+     *
+     * @param imageWidth  the image width.
+     * @param imageHeight  the image height.
+     * @param drawWidth  the width for drawing the chart (will be scaled to
+     *                   fit image).
+     * @param drawHeight  the height for drawing the chart (will be scaled to
+     *                    fit image).
+     * @param info  optional object for collection chart dimension and entity
+     *              information.
+     *
+     * @return A buffered image.
+     */
+    public BufferedImage createBufferedImage(int imageWidth,
+                                             int imageHeight,
+                                             double drawWidth,
+                                             double drawHeight,
+                                             ChartRenderingInfo info) {
+
+<span class="nc" id="L1478">        BufferedImage image = new BufferedImage(imageWidth, imageHeight,</span>
+<span class="nc" id="L1479">                BufferedImage.TYPE_INT_ARGB);</span>
+<span class="nc" id="L1480">        Graphics2D g2 = image.createGraphics();</span>
+<span class="nc" id="L1481">        double scaleX = imageWidth / drawWidth;</span>
+<span class="nc" id="L1482">        double scaleY = imageHeight / drawHeight;</span>
+<span class="nc" id="L1483">        AffineTransform st = AffineTransform.getScaleInstance(scaleX, scaleY);</span>
+<span class="nc" id="L1484">        g2.transform(st);</span>
+<span class="nc" id="L1485">        draw(g2, new Rectangle2D.Double(0, 0, drawWidth, drawHeight), null,</span>
+<span class="nc" id="L1486">                info);</span>
+<span class="nc" id="L1487">        g2.dispose();</span>
+<span class="nc" id="L1488">        return image;</span>
+    }
+
+    /**
+     * Handles a 'click' on the chart.  JFreeChart is not a UI component, so
+     * some other object (for example, {@link ChartPanel}) needs to capture
+     * the click event and pass it onto the JFreeChart object.
+     * If you are not using JFreeChart in a client application, then this
+     * method is not required.
+     *
+     * @param x  x-coordinate of the click (in Java2D space).
+     * @param y  y-coordinate of the click (in Java2D space).
+     * @param info  contains chart dimension and entity information
+     *              ({@code null} not permitted).
+     */
+    public void handleClick(int x, int y, ChartRenderingInfo info) {
+        // pass the click on to the plot...
+        // rely on the plot to post a plot change event and redraw the chart...
+<span class="nc" id="L1506">        this.plot.handleClick(x, y, info.getPlotInfo());</span>
+<span class="nc" id="L1507">    }</span>
+
+    /**
+     * Registers an object for notification of changes to the chart.
+     *
+     * @param listener  the listener ({@code null} not permitted).
+     *
+     * @see #removeChangeListener(ChartChangeListener)
+     */
+    public void addChangeListener(ChartChangeListener listener) {
+<span class="fc" id="L1517">        Args.nullNotPermitted(listener, &quot;listener&quot;);</span>
+<span class="fc" id="L1518">        this.changeListeners.add(ChartChangeListener.class, listener);</span>
+<span class="fc" id="L1519">    }</span>
+
+    /**
+     * Deregisters an object for notification of changes to the chart.
+     *
+     * @param listener  the listener ({@code null} not permitted)
+     *
+     * @see #addChangeListener(ChartChangeListener)
+     */
+    public void removeChangeListener(ChartChangeListener listener) {
+<span class="fc" id="L1529">        Args.nullNotPermitted(listener, &quot;listener&quot;);</span>
+<span class="fc" id="L1530">        this.changeListeners.remove(ChartChangeListener.class, listener);</span>
+<span class="fc" id="L1531">    }</span>
+
+    /**
+     * Sends a default {@link ChartChangeEvent} to all registered listeners.
+     * &lt;P&gt;
+     * This method is for convenience only.
+     */
+    public void fireChartChanged() {
+<span class="fc" id="L1539">        ChartChangeEvent event = new ChartChangeEvent(this);</span>
+<span class="fc" id="L1540">        notifyListeners(event);</span>
+<span class="fc" id="L1541">    }</span>
+
+    /**
+     * Sends a {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param event  information about the event that triggered the
+     *               notification.
+     */
+    protected void notifyListeners(ChartChangeEvent event) {
+<span class="pc bpc" id="L1550" title="1 of 2 branches missed.">        if (this.notify) {</span>
+<span class="fc" id="L1551">            Object[] listeners = this.changeListeners.getListenerList();</span>
+<span class="fc bfc" id="L1552" title="All 2 branches covered.">            for (int i = listeners.length - 2; i &gt;= 0; i -= 2) {</span>
+<span class="pc bpc" id="L1553" title="1 of 2 branches missed.">                if (listeners[i] == ChartChangeListener.class) {</span>
+<span class="fc" id="L1554">                    ((ChartChangeListener) listeners[i + 1]).chartChanged(</span>
+<span class="fc" id="L1555">                            event);</span>
+                }
+            }
+        }
+<span class="fc" id="L1559">    }</span>
+
+    /**
+     * Registers an object for notification of progress events relating to the
+     * chart.
+     *
+     * @param listener  the object being registered.
+     *
+     * @see #removeProgressListener(ChartProgressListener)
+     */
+    public void addProgressListener(ChartProgressListener listener) {
+<span class="fc" id="L1570">        this.progressListeners.add(ChartProgressListener.class, listener);</span>
+<span class="fc" id="L1571">    }</span>
+
+    /**
+     * Deregisters an object for notification of changes to the chart.
+     *
+     * @param listener  the object being deregistered.
+     *
+     * @see #addProgressListener(ChartProgressListener)
+     */
+    public void removeProgressListener(ChartProgressListener listener) {
+<span class="fc" id="L1581">        this.progressListeners.remove(ChartProgressListener.class, listener);</span>
+<span class="fc" id="L1582">    }</span>
+
+    /**
+     * Sends a {@link ChartProgressEvent} to all registered listeners.
+     *
+     * @param event  information about the event that triggered the
+     *               notification.
+     */
+    protected void notifyListeners(ChartProgressEvent event) {
+<span class="fc" id="L1591">        Object[] listeners = this.progressListeners.getListenerList();</span>
+<span class="pc bpc" id="L1592" title="1 of 2 branches missed.">        for (int i = listeners.length - 2; i &gt;= 0; i -= 2) {</span>
+<span class="nc bnc" id="L1593" title="All 2 branches missed.">            if (listeners[i] == ChartProgressListener.class) {</span>
+<span class="nc" id="L1594">                ((ChartProgressListener) listeners[i + 1]).chartProgress(event);</span>
+            }
+        }
+<span class="fc" id="L1597">    }</span>
+
+    /**
+     * Receives notification that a chart title has changed, and passes this
+     * on to registered listeners.
+     *
+     * @param event  information about the chart title change.
+     */
+    @Override
+    public void titleChanged(TitleChangeEvent event) {
+<span class="fc" id="L1607">        event.setChart(this);</span>
+<span class="fc" id="L1608">        notifyListeners(event);</span>
+<span class="fc" id="L1609">    }</span>
+
+    /**
+     * Receives notification that the plot has changed, and passes this on to
+     * registered listeners.
+     *
+     * @param event  information about the plot change.
+     */
+    @Override
+    public void plotChanged(PlotChangeEvent event) {
+<span class="fc" id="L1619">        event.setChart(this);</span>
+<span class="fc" id="L1620">        notifyListeners(event);</span>
+<span class="fc" id="L1621">    }</span>
+
+    /**
+     * Tests this chart for equality with another object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L1632" title="All 2 branches covered.">        if (obj == this) {</span>
+<span class="fc" id="L1633">            return true;</span>
+        }
+<span class="pc bpc" id="L1635" title="1 of 2 branches missed.">        if (!(obj instanceof JFreeChart)) {</span>
+<span class="nc" id="L1636">            return false;</span>
+        }
+<span class="fc" id="L1638">        JFreeChart that = (JFreeChart) obj;</span>
+<span class="fc bfc" id="L1639" title="All 2 branches covered.">        if (!this.renderingHints.equals(that.renderingHints)) {</span>
+<span class="fc" id="L1640">            return false;</span>
+        }
+<span class="fc bfc" id="L1642" title="All 2 branches covered.">        if (this.borderVisible != that.borderVisible) {</span>
+<span class="fc" id="L1643">            return false;</span>
+        }
+<span class="fc bfc" id="L1645" title="All 2 branches covered.">        if (!ObjectUtils.equal(this.borderStroke, that.borderStroke)) {</span>
+<span class="fc" id="L1646">            return false;</span>
+        }
+<span class="fc bfc" id="L1648" title="All 2 branches covered.">        if (!PaintUtils.equal(this.borderPaint, that.borderPaint)) {</span>
+<span class="fc" id="L1649">            return false;</span>
+        }
+<span class="fc bfc" id="L1651" title="All 2 branches covered.">        if (!this.padding.equals(that.padding)) {</span>
+<span class="fc" id="L1652">            return false;</span>
+        }
+<span class="fc bfc" id="L1654" title="All 2 branches covered.">        if (!ObjectUtils.equal(this.title, that.title)) {</span>
+<span class="fc" id="L1655">            return false;</span>
+        }
+<span class="fc bfc" id="L1657" title="All 2 branches covered.">        if (!ObjectUtils.equal(this.subtitles, that.subtitles)) {</span>
+<span class="fc" id="L1658">            return false;</span>
+        }
+<span class="fc bfc" id="L1660" title="All 2 branches covered.">        if (!ObjectUtils.equal(this.plot, that.plot)) {</span>
+<span class="fc" id="L1661">            return false;</span>
+        }
+<span class="fc" id="L1663">        if (!PaintUtils.equal(</span>
+<span class="fc" id="L1664">            this.backgroundPaint, that.backgroundPaint</span>
+<span class="fc bfc" id="L1665" title="All 2 branches covered.">        )) {</span>
+<span class="fc" id="L1666">            return false;</span>
+        }
+<span class="fc" id="L1668">        if (!ObjectUtils.equal(this.backgroundImage,</span>
+<span class="pc bpc" id="L1669" title="1 of 2 branches missed.">                that.backgroundImage)) {</span>
+<span class="nc" id="L1670">            return false;</span>
+        }
+<span class="fc bfc" id="L1672" title="All 2 branches covered.">        if (this.backgroundImageAlignment != that.backgroundImageAlignment) {</span>
+<span class="fc" id="L1673">            return false;</span>
+        }
+<span class="fc bfc" id="L1675" title="All 2 branches covered.">        if (this.backgroundImageAlpha != that.backgroundImageAlpha) {</span>
+<span class="fc" id="L1676">            return false;</span>
+        }
+<span class="pc bpc" id="L1678" title="1 of 2 branches missed.">        if (this.notify != that.notify) {</span>
+<span class="nc" id="L1679">            return false;</span>
+        }
+<span class="fc" id="L1681">        return true;</span>
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+<span class="fc" id="L1692">        stream.defaultWriteObject();</span>
+<span class="fc" id="L1693">        SerialUtils.writeStroke(this.borderStroke, stream);</span>
+<span class="fc" id="L1694">        SerialUtils.writePaint(this.borderPaint, stream);</span>
+<span class="fc" id="L1695">        SerialUtils.writePaint(this.backgroundPaint, stream);</span>
+<span class="fc" id="L1696">    }</span>
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream)
+        throws IOException, ClassNotFoundException {
+<span class="fc" id="L1708">        stream.defaultReadObject();</span>
+<span class="fc" id="L1709">        this.borderStroke = SerialUtils.readStroke(stream);</span>
+<span class="fc" id="L1710">        this.borderPaint = SerialUtils.readPaint(stream);</span>
+<span class="fc" id="L1711">        this.backgroundPaint = SerialUtils.readPaint(stream);</span>
+<span class="fc" id="L1712">        this.progressListeners = new EventListenerList();</span>
+<span class="fc" id="L1713">        this.changeListeners = new EventListenerList();</span>
+<span class="fc" id="L1714">        this.renderingHints = new RenderingHints(</span>
+<span class="fc" id="L1715">                RenderingHints.KEY_ANTIALIASING,</span>
+<span class="fc" id="L1716">                RenderingHints.VALUE_ANTIALIAS_ON);</span>
+<span class="fc" id="L1717">        this.renderingHints.put(RenderingHints.KEY_STROKE_CONTROL,</span>
+<span class="fc" id="L1718">                RenderingHints.VALUE_STROKE_PURE);</span>
+        
+        // register as a listener with sub-components...
+<span class="pc bpc" id="L1721" title="1 of 2 branches missed.">        if (this.title != null) {</span>
+<span class="fc" id="L1722">            this.title.addChangeListener(this);</span>
+        }
+
+<span class="fc bfc" id="L1725" title="All 2 branches covered.">        for (int i = 0; i &lt; getSubtitleCount(); i++) {</span>
+<span class="fc" id="L1726">            getSubtitle(i).addChangeListener(this);</span>
+        }
+<span class="fc" id="L1728">        this.plot.addChangeListener(this);</span>
+<span class="fc" id="L1729">    }</span>
+
+    /**
+     * Clones the object, and takes care of listeners.
+     * Note: caller shall register its own listeners on cloned graph.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if the chart is not cloneable.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+<span class="fc" id="L1741">        JFreeChart chart = (JFreeChart) super.clone();</span>
+
+<span class="fc" id="L1743">        chart.renderingHints = (RenderingHints) this.renderingHints.clone();</span>
+        // private boolean borderVisible;
+        // private transient Stroke borderStroke;
+        // private transient Paint borderPaint;
+
+<span class="pc bpc" id="L1748" title="1 of 2 branches missed.">        if (this.title != null) {</span>
+<span class="fc" id="L1749">            chart.title = (TextTitle) this.title.clone();</span>
+<span class="fc" id="L1750">            chart.title.addChangeListener(chart);</span>
+        }
+
+<span class="fc" id="L1753">        chart.subtitles = new ArrayList();</span>
+<span class="pc bpc" id="L1754" title="1 of 2 branches missed.">        for (int i = 0; i &lt; getSubtitleCount(); i++) {</span>
+<span class="nc" id="L1755">            Title subtitle = (Title) getSubtitle(i).clone();</span>
+<span class="nc" id="L1756">            chart.subtitles.add(subtitle);</span>
+<span class="nc" id="L1757">            subtitle.addChangeListener(chart);</span>
+        }
+
+<span class="pc bpc" id="L1760" title="1 of 2 branches missed.">        if (this.plot != null) {</span>
+<span class="fc" id="L1761">            chart.plot = (Plot) this.plot.clone();</span>
+<span class="fc" id="L1762">            chart.plot.addChangeListener(chart);</span>
+        }
+
+<span class="fc" id="L1765">        chart.progressListeners = new EventListenerList();</span>
+<span class="fc" id="L1766">        chart.changeListeners = new EventListenerList();</span>
+<span class="fc" id="L1767">        return chart;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

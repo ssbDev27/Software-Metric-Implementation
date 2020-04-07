@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthenticatingSMTPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.smtp</a> &gt; <span class="el_source">AuthenticatingSMTPClient.java</span></div><h1>AuthenticatingSMTPClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.smtp;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.net.ssl.SSLContext;
+
+import org.apache.commons.net.util.Base64;
+
+
+/**
+ * An SMTP Client class with authentication support (RFC4954).
+ *
+ * @see SMTPClient
+ * @since 3.0
+ */
+public class AuthenticatingSMTPClient extends SMTPSClient
+{
+    /**
+     * The default AuthenticatingSMTPClient constructor.
+     * Creates a new Authenticating SMTP Client.
+     */
+    public AuthenticatingSMTPClient()
+    {
+<span class="nc" id="L46">        super();</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Overloaded constructor that takes a protocol specification
+     * @param protocol The protocol to use
+     */
+    public AuthenticatingSMTPClient(String protocol) {
+<span class="nc" id="L54">        super(protocol);</span>
+<span class="nc" id="L55">    }</span>
+
+    /**
+     * Overloaded constructor that takes a protocol specification and the implicit argument
+     * @param proto the protocol.
+     * @param implicit The security mode, {@code true} for implicit, {@code false} for explicit
+     * @since 3.3
+     */
+    public AuthenticatingSMTPClient(String proto, boolean implicit)
+    {
+<span class="nc" id="L65">      super(proto, implicit);</span>
+<span class="nc" id="L66">    }</span>
+
+    /**
+     * Overloaded constructor that takes the protocol specification, the implicit argument and encoding
+     * @param proto the protocol.
+     * @param implicit The security mode, {@code true} for implicit, {@code false} for explicit
+     * @param encoding the encoding
+     * @since 3.3
+     */
+    public AuthenticatingSMTPClient(String proto, boolean implicit, String encoding)
+    {
+<span class="nc" id="L77">      super(proto, implicit, encoding);</span>
+<span class="nc" id="L78">    }</span>
+
+    /**
+     * Overloaded constructor that takes the implicit argument, and using {@link #DEFAULT_PROTOCOL} i.e. TLS
+     * @param implicit The security mode, {@code true} for implicit, {@code false} for explicit
+     * @param ctx A pre-configured SSL Context.
+     * @since 3.3
+     */
+    public AuthenticatingSMTPClient(boolean implicit, SSLContext ctx)
+    {
+<span class="nc" id="L88">      super(implicit, ctx);</span>
+<span class="nc" id="L89">    }</span>
+
+    /**
+     * Overloaded constructor that takes a protocol specification and encoding
+     * @param protocol The protocol to use
+     * @param encoding The encoding to use
+     * @since 3.3
+     */
+    public AuthenticatingSMTPClient(String protocol, String encoding) {
+<span class="nc" id="L98">        super(protocol, false, encoding);</span>
+<span class="nc" id="L99">    }</span>
+
+    /***
+     * A convenience method to send the ESMTP EHLO command to the server,
+     * receive the reply, and return the reply code.
+     * &lt;p&gt;
+     * @param hostname The hostname of the sender.
+     * @return The reply code received from the server.
+     * @throws SMTPConnectionClosedException
+     *      If the SMTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send SMTP reply code 421.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending the
+     *      command or receiving the server reply.
+     ***/
+    public int ehlo(String hostname) throws IOException
+    {
+<span class="nc" id="L117">        return sendCommand(SMTPCommand.EHLO, hostname);</span>
+    }
+
+    /***
+     * Login to the ESMTP server by sending the EHLO command with the
+     * given hostname as an argument.  Before performing any mail commands,
+     * you must first login.
+     * &lt;p&gt;
+     * @param hostname  The hostname with which to greet the SMTP server.
+     * @return True if successfully completed, false if not.
+     * @throws SMTPConnectionClosedException
+     *      If the SMTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send SMTP reply code 421.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public boolean elogin(String hostname) throws IOException
+    {
+<span class="nc" id="L137">        return SMTPReply.isPositiveCompletion(ehlo(hostname));</span>
+    }
+
+
+    /***
+     * Login to the ESMTP server by sending the EHLO command with the
+     * client hostname as an argument.  Before performing any mail commands,
+     * you must first login.
+     * &lt;p&gt;
+     * @return True if successfully completed, false if not.
+     * @throws SMTPConnectionClosedException
+     *      If the SMTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send SMTP reply code 421.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public boolean elogin() throws IOException
+    {
+        String name;
+        InetAddress host;
+
+<span class="nc" id="L160">        host = getLocalAddress();</span>
+<span class="nc" id="L161">        name = host.getHostName();</span>
+
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        if (name == null) {</span>
+<span class="nc" id="L164">            return false;</span>
+        }
+
+<span class="nc" id="L167">        return SMTPReply.isPositiveCompletion(ehlo(name));</span>
+    }
+
+    /***
+     * Returns the integer values of the enhanced reply code of the last SMTP reply.
+     * @return The integer values of the enhanced reply code of the last SMTP reply.
+     *  First digit is in the first array element.
+     ***/
+    public int[] getEnhancedReplyCode()
+    {
+<span class="nc" id="L177">        String reply = getReplyString().substring(4);</span>
+<span class="nc" id="L178">        String[] parts = reply.substring(0, reply.indexOf(' ')).split (&quot;\\.&quot;);</span>
+<span class="nc" id="L179">        int[] res = new int[parts.length];</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        for (int i = 0; i &lt; parts.length; i++)</span>
+        {
+<span class="nc" id="L182">            res[i] = Integer.parseInt (parts[i]);</span>
+        }
+<span class="nc" id="L184">        return res;</span>
+    }
+
+    /***
+     * Authenticate to the SMTP server by sending the AUTH command with the
+     * selected mechanism, using the given username and the given password.
+     *
+     * @param method the method to use, one of the {@link AuthenticatingSMTPClient.AUTH_METHOD} enum values
+     * @param username the user name.
+     *        If the method is XOAUTH, then this is used as the plain text oauth protocol parameter string
+     *        which is Base64-encoded for transmission.
+     * @param password the password for the username.
+     *        Ignored for XOAUTH.
+     *
+     * @return True if successfully completed, false if not.
+     * @throws SMTPConnectionClosedException
+     *      If the SMTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send SMTP reply code 421.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @throws NoSuchAlgorithmException If the CRAM hash algorithm
+     *      cannot be instantiated by the Java runtime system.
+     * @throws InvalidKeyException If the CRAM hash algorithm
+     *      failed to use the given password.
+     * @throws InvalidKeySpecException If the CRAM hash algorithm
+     *      failed to use the given password.
+     ***/
+    public boolean auth(AuthenticatingSMTPClient.AUTH_METHOD method,
+                        String username, String password)
+                        throws IOException, NoSuchAlgorithmException,
+                        InvalidKeyException, InvalidKeySpecException
+    {
+<span class="nc" id="L218">        if (!SMTPReply.isPositiveIntermediate(sendCommand(SMTPCommand.AUTH,</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">                AUTH_METHOD.getAuthName(method)))) {</span>
+<span class="nc" id="L220">            return false;</span>
+        }
+
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (method.equals(AUTH_METHOD.PLAIN))</span>
+        {
+            // the server sends an empty response (&quot;334 &quot;), so we don't have to read it.
+<span class="nc" id="L226">            return SMTPReply.isPositiveCompletion(sendCommand(</span>
+<span class="nc" id="L227">                    Base64.encodeBase64StringUnChunked((&quot;\000&quot; + username + &quot;\000&quot; + password).getBytes(getCharset()))</span>
+                ));
+        }
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        else if (method.equals(AUTH_METHOD.CRAM_MD5))</span>
+        {
+            // get the CRAM challenge
+<span class="nc" id="L233">            byte[] serverChallenge = Base64.decodeBase64(getReplyString().substring(4).trim());</span>
+            // get the Mac instance
+<span class="nc" id="L235">            Mac hmac_md5 = Mac.getInstance(&quot;HmacMD5&quot;);</span>
+<span class="nc" id="L236">            hmac_md5.init(new SecretKeySpec(password.getBytes(getCharset()), &quot;HmacMD5&quot;));</span>
+            // compute the result:
+<span class="nc" id="L238">            byte[] hmacResult = _convertToHexString(hmac_md5.doFinal(serverChallenge)).getBytes(getCharset());</span>
+            // join the byte arrays to form the reply
+<span class="nc" id="L240">            byte[] usernameBytes = username.getBytes(getCharset());</span>
+<span class="nc" id="L241">            byte[] toEncode = new byte[usernameBytes.length + 1 /* the space */ + hmacResult.length];</span>
+<span class="nc" id="L242">            System.arraycopy(usernameBytes, 0, toEncode, 0, usernameBytes.length);</span>
+<span class="nc" id="L243">            toEncode[usernameBytes.length] = ' ';</span>
+<span class="nc" id="L244">            System.arraycopy(hmacResult, 0, toEncode, usernameBytes.length + 1, hmacResult.length);</span>
+            // send the reply and read the server code:
+<span class="nc" id="L246">            return SMTPReply.isPositiveCompletion(sendCommand(</span>
+<span class="nc" id="L247">                Base64.encodeBase64StringUnChunked(toEncode)));</span>
+        }
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        else if (method.equals(AUTH_METHOD.LOGIN))</span>
+        {
+            // the server sends fixed responses (base64(&quot;Username&quot;) and
+            // base64(&quot;Password&quot;)), so we don't have to read them.
+<span class="nc" id="L253">            if (!SMTPReply.isPositiveIntermediate(sendCommand(</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">                Base64.encodeBase64StringUnChunked(username.getBytes(getCharset()))))) {</span>
+<span class="nc" id="L255">                return false;</span>
+            }
+<span class="nc" id="L257">            return SMTPReply.isPositiveCompletion(sendCommand(</span>
+<span class="nc" id="L258">                Base64.encodeBase64StringUnChunked(password.getBytes(getCharset()))));</span>
+        }
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        else if (method.equals(AUTH_METHOD.XOAUTH))</span>
+        {
+<span class="nc" id="L262">            return SMTPReply.isPositiveIntermediate(sendCommand(</span>
+<span class="nc" id="L263">                    Base64.encodeBase64StringUnChunked(username.getBytes(getCharset()))</span>
+            ));
+        } else {
+<span class="nc" id="L266">            return false; // safety check</span>
+        }
+    }
+
+    /**
+     * Converts the given byte array to a String containing the hex values of the bytes.
+     * For example, the byte 'A' will be converted to '41', because this is the ASCII code
+     * (and the byte value) of the capital letter 'A'.
+     * @param a The byte array to convert.
+     * @return The resulting String of hex codes.
+     */
+    private String _convertToHexString(byte[] a)
+    {
+<span class="nc" id="L279">        StringBuilder result = new StringBuilder(a.length*2);</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">        for (byte element : a)</span>
+        {
+<span class="nc bnc" id="L282" title="All 2 branches missed.">            if ( (element &amp; 0x0FF) &lt;= 15 ) {</span>
+<span class="nc" id="L283">                result.append(&quot;0&quot;);</span>
+            }
+<span class="nc" id="L285">            result.append(Integer.toHexString(element &amp; 0x0FF));</span>
+        }
+<span class="nc" id="L287">        return result.toString();</span>
+    }
+
+    /**
+     * The enumeration of currently-supported authentication methods.
+     */
+<span class="nc" id="L293">    public static enum AUTH_METHOD</span>
+    {
+<span class="nc" id="L295">        /** The standarised (RFC4616) PLAIN method, which sends the password unencrypted (insecure). */</span>
+<span class="nc" id="L296">        PLAIN,</span>
+<span class="nc" id="L297">        /** The standarised (RFC2195) CRAM-MD5 method, which doesn't send the password (secure). */</span>
+<span class="nc" id="L298">        CRAM_MD5,</span>
+<span class="nc" id="L299">        /** The unstandarised Microsoft LOGIN method, which sends the password unencrypted (insecure). */</span>
+<span class="nc" id="L300">        LOGIN,</span>
+<span class="nc" id="L301">        /** XOAuth method which accepts a signed and base64ed OAuth URL. */</span>
+<span class="nc" id="L302">        XOAUTH;</span>
+
+        /**
+         * Gets the name of the given authentication method suitable for the server.
+         * @param method The authentication method to get the name for.
+         * @return The name of the given authentication method suitable for the server.
+         */
+        public static final String getAuthName(AUTH_METHOD method)
+        {
+<span class="nc bnc" id="L311" title="All 2 branches missed.">            if (method.equals(AUTH_METHOD.PLAIN)) {</span>
+<span class="nc" id="L312">                return &quot;PLAIN&quot;;</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">            } else if (method.equals(AUTH_METHOD.CRAM_MD5)) {</span>
+<span class="nc" id="L314">                return &quot;CRAM-MD5&quot;;</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">            } else if (method.equals(AUTH_METHOD.LOGIN)) {</span>
+<span class="nc" id="L316">                return &quot;LOGIN&quot;;</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">            } else if (method.equals(AUTH_METHOD.XOAUTH)) {</span>
+<span class="nc" id="L318">                return &quot;XOAUTH&quot;;</span>
+            } else {
+<span class="nc" id="L320">                return null;</span>
+            }
+        }
+    }
+}
+
+/* kate: indent-width 4; replace-tabs on; */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

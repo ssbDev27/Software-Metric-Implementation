@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IMAPCommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.imap</a> &gt; <span class="el_source">IMAPCommand.java</span></div><h1>IMAPCommand.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.imap;
+
+/**
+ * IMAPCommand stores IMAP command codes.
+ */
+<span class="nc" id="L23">public enum IMAPCommand</span>
+{
+<span class="nc" id="L25">    // These enums must either use the same name as the IMAP command</span>
+    // or must provide the correct string as the parameter.
+
+    // Commands valid in any state:
+
+<span class="nc" id="L30">    CAPABILITY(0),</span>
+<span class="nc" id="L31">    NOOP(0),</span>
+<span class="nc" id="L32">    LOGOUT(0),</span>
+
+<span class="nc" id="L34">    // Commands valid in Not Authenticated state</span>
+<span class="nc" id="L35">    STARTTLS(0),</span>
+<span class="nc" id="L36">    AUTHENTICATE(1),</span>
+<span class="nc" id="L37">    LOGIN(2),</span>
+
+<span class="nc" id="L39">    XOAUTH(1),</span>
+
+<span class="nc" id="L41">    // commands valid in authenticated state</span>
+<span class="nc" id="L42">    SELECT(1),</span>
+<span class="nc" id="L43">    EXAMINE(1),</span>
+<span class="nc" id="L44">    CREATE(1),</span>
+<span class="nc" id="L45">    DELETE(1),</span>
+<span class="nc" id="L46">    RENAME(2),</span>
+<span class="nc" id="L47">    SUBSCRIBE(1),</span>
+<span class="nc" id="L48">    UNSUBSCRIBE(1),</span>
+<span class="nc" id="L49">    LIST(2),</span>
+<span class="nc" id="L50">    LSUB(2),</span>
+<span class="nc" id="L51">    STATUS(2), // P2 = list in ()</span>
+<span class="nc" id="L52">    APPEND(2,4), // mbox [(flags)] [date-time] literal</span>
+
+    // commands valid in selected state (substate of authenticated)
+<span class="nc" id="L55">    CHECK(0),</span>
+<span class="nc" id="L56">    CLOSE(0),</span>
+<span class="nc" id="L57">    EXPUNGE(0),</span>
+<span class="nc" id="L58">    SEARCH(1, Integer.MAX_VALUE),</span>
+<span class="nc" id="L59">    FETCH(2),</span>
+<span class="nc" id="L60">    STORE(3),</span>
+<span class="nc" id="L61">    COPY(2),</span>
+<span class="nc" id="L62">    UID(2, Integer.MAX_VALUE),</span>
+    ;
+
+    private final String imapCommand;
+
+    @SuppressWarnings(&quot;unused&quot;) // not yet used
+    private final int minParamCount;
+    @SuppressWarnings(&quot;unused&quot;) // not yet used
+    private final int maxParamCount;
+
+    IMAPCommand(){
+<span class="nc" id="L73">        this(null);</span>
+<span class="nc" id="L74">    }</span>
+
+    IMAPCommand(String name){
+<span class="nc" id="L77">        this(name, 0);</span>
+<span class="nc" id="L78">    }</span>
+
+    IMAPCommand(int paramCount){
+<span class="nc" id="L81">        this(null, paramCount, paramCount);</span>
+<span class="nc" id="L82">   }</span>
+
+    IMAPCommand(int minCount, int maxCount){
+<span class="nc" id="L85">        this(null, minCount, maxCount);</span>
+<span class="nc" id="L86">   }</span>
+
+    IMAPCommand(String name, int paramCount){
+<span class="nc" id="L89">        this(name, paramCount, paramCount);</span>
+<span class="nc" id="L90">    }</span>
+
+<span class="nc" id="L92">    IMAPCommand(String name, int minCount, int maxCount){</span>
+<span class="nc" id="L93">        this.imapCommand = name;</span>
+<span class="nc" id="L94">        this.minParamCount = minCount;</span>
+<span class="nc" id="L95">        this.maxParamCount = maxCount;</span>
+<span class="nc" id="L96">    }</span>
+
+    /**
+     * Get the IMAP protocol string command corresponding to a command code.
+     *
+     * @param command the IMAPCommand whose command string is required.
+     * @return The IMAP protocol string command corresponding to a command code.
+     */
+    public static final String getCommand(IMAPCommand command) {
+<span class="nc" id="L105">        return command.getIMAPCommand();</span>
+    }
+
+    /**
+     * Get the IMAP protocol string command for this command
+     *
+     * @return The IMAP protocol string command corresponding to this command
+     */
+    public String getIMAPCommand() {
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        return imapCommand != null ? imapCommand : name();</span>
+    }
+
+}
+
+/* kate: indent-width 4; replace-tabs on; */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

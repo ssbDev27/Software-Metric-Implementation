@@ -1,0 +1,710 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FTPClientConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp</a> &gt; <span class="el_source">FTPClientConfig.java</span></div><h1>FTPClientConfig.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp;
+
+import java.text.DateFormatSymbols;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Map;
+import java.util.StringTokenizer;
+import java.util.TreeMap;
+
+/**
+ * &lt;p&gt;
+ * This class implements an alternate means of configuring the
+ * {@link  org.apache.commons.net.ftp.FTPClient  FTPClient} object and
+ * also subordinate objects which it uses.  Any class implementing the
+ * {@link  org.apache.commons.net.ftp.Configurable  Configurable }
+ * interface can be configured by this object.
+ * &lt;/p&gt;&lt;p&gt;
+ * In particular this class was designed primarily to support configuration
+ * of FTP servers which express file timestamps in formats and languages
+ * other than those for the US locale, which although it is the most common
+ * is not universal.  Unfortunately, nothing in the FTP spec allows this to
+ * be determined in an automated way, so manual configuration such as this
+ * is necessary.
+ * &lt;/p&gt;&lt;p&gt;
+ * This functionality was designed to allow existing clients to work exactly
+ * as before without requiring use of this component.  This component should
+ * only need to be explicitly invoked by the user of this package for problem
+ * cases that previous implementations could not solve.
+ * &lt;/p&gt;
+ * &lt;h3&gt;Examples of use of FTPClientConfig&lt;/h3&gt;
+ * Use cases:
+ * You are trying to access a server that
+ * &lt;ul&gt;
+ * &lt;li&gt;lists files with timestamps that use month names in languages other
+ * than English&lt;/li&gt;
+ * &lt;li&gt;lists files with timestamps that use date formats other
+ * than the American English &quot;standard&quot; &lt;code&gt;MM dd yyyy&lt;/code&gt;&lt;/li&gt;
+ * &lt;li&gt;is in different timezone and you need accurate timestamps for
+ * dependency checking as in Ant&lt;/li&gt;
+ * &lt;/ul&gt;
+ * &lt;p&gt;
+ * Unpaged (whole list) access on a UNIX server that uses French month names
+ * but uses the &quot;standard&quot; &lt;code&gt;MMM d yyyy&lt;/code&gt; date formatting
+ * &lt;pre&gt;
+ *    FTPClient f=FTPClient();
+ *    FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_UNIX);
+ *    conf.setServerLanguageCode(&quot;fr&quot;);
+ *    f.configure(conf);
+ *    f.connect(server);
+ *    f.login(username, password);
+ *    FTPFile[] files = listFiles(directory);
+ * &lt;/pre&gt;
+ * &lt;p&gt;
+ * Paged access on a UNIX server that uses Danish month names
+ * and &quot;European&quot; date formatting in Denmark's time zone, when you
+ * are in some other time zone.
+ * &lt;pre&gt;
+ *    FTPClient f=FTPClient();
+ *    FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_UNIX);
+ *    conf.setServerLanguageCode(&quot;da&quot;);
+ *    conf.setDefaultDateFormat(&quot;d MMM yyyy&quot;);
+ *    conf.setRecentDateFormat(&quot;d MMM HH:mm&quot;);
+ *    conf.setTimeZoneId(&quot;Europe/Copenhagen&quot;);
+ *    f.configure(conf);
+ *    f.connect(server);
+ *    f.login(username, password);
+ *    FTPListParseEngine engine =
+ *       f.initiateListParsing(&quot;com.whatever.YourOwnParser&quot;, directory);
+ *
+ *    while (engine.hasNext()) {
+ *       FTPFile[] files = engine.getNext(25);  // &quot;page size&quot; you want
+ *       //do whatever you want with these files, display them, etc.
+ *       //expensive FTPFile objects not created until needed.
+ *    }
+ * &lt;/pre&gt;
+ * &lt;p&gt;
+ * Unpaged (whole list) access on a VMS server that uses month names
+ * in a language not {@link #getSupportedLanguageCodes() supported} by the system.
+ * but uses the &quot;standard&quot; &lt;code&gt;MMM d yyyy&lt;/code&gt; date formatting
+ * &lt;pre&gt;
+ *    FTPClient f=FTPClient();
+ *    FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_VMS);
+ *    conf.setShortMonthNames(
+ *        &quot;jan|feb|mar|apr|ma\u00ED|j\u00FAn|j\u00FAl|\u00e1g\u00FA|sep|okt|n\u00F3v|des&quot;);
+ *    f.configure(conf);
+ *    f.connect(server);
+ *    f.login(username, password);
+ *    FTPFile[] files = listFiles(directory);
+ * &lt;/pre&gt;
+ * &lt;p&gt;
+ * Unpaged (whole list) access on a Windows-NT server in a different time zone.
+ * (Note, since the NT Format uses numeric date formatting, language issues
+ * are irrelevant here).
+ * &lt;pre&gt;
+ *    FTPClient f=FTPClient();
+ *    FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_NT);
+ *    conf.setTimeZoneId(&quot;America/Denver&quot;);
+ *    f.configure(conf);
+ *    f.connect(server);
+ *    f.login(username, password);
+ *    FTPFile[] files = listFiles(directory);
+ * &lt;/pre&gt;
+ * Unpaged (whole list) access on a Windows-NT server in a different time zone
+ * but which has been configured to use a unix-style listing format.
+ * &lt;pre&gt;
+ *    FTPClient f=FTPClient();
+ *    FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_UNIX);
+ *    conf.setTimeZoneId(&quot;America/Denver&quot;);
+ *    f.configure(conf);
+ *    f.connect(server);
+ *    f.login(username, password);
+ *    FTPFile[] files = listFiles(directory);
+ * &lt;/pre&gt;
+ *
+ * @since 1.4
+ * @see org.apache.commons.net.ftp.Configurable
+ * @see org.apache.commons.net.ftp.FTPClient
+ * @see org.apache.commons.net.ftp.parser.FTPTimestampParserImpl#configure(FTPClientConfig)
+ * @see org.apache.commons.net.ftp.parser.ConfigurableFTPFileEntryParserImpl
+ */
+public class FTPClientConfig
+{
+
+    /**
+     * Identifier by which a unix-based ftp server is known throughout
+     * the commons-net ftp system.
+     */
+    public static final String SYST_UNIX  = &quot;UNIX&quot;;
+
+    /**
+     * Identifier for alternate UNIX parser; same as {@link #SYST_UNIX} but leading spaces are
+     * trimmed from file names. This is to maintain backwards compatibility with
+     * the original behaviour of the parser which ignored multiple spaces between the date
+     * and the start of the file name.
+     * @since 3.4
+     */
+    public static final String SYST_UNIX_TRIM_LEADING  = &quot;UNIX_LTRIM&quot;;
+
+    /**
+     * Identifier by which a vms-based ftp server is known throughout
+     * the commons-net ftp system.
+     */
+    public static final String SYST_VMS   = &quot;VMS&quot;;
+
+    /**
+     * Identifier by which a WindowsNT-based ftp server is known throughout
+     * the commons-net ftp system.
+     */
+    public static final String SYST_NT    = &quot;WINDOWS&quot;;
+
+    /**
+     * Identifier by which an OS/2-based ftp server is known throughout
+     * the commons-net ftp system.
+     */
+    public static final String SYST_OS2   = &quot;OS/2&quot;;
+
+    /**
+     * Identifier by which an OS/400-based ftp server is known throughout
+     * the commons-net ftp system.
+     */
+    public static final String SYST_OS400 = &quot;OS/400&quot;;
+
+    /**
+     * Identifier by which an AS/400-based ftp server is known throughout
+     * the commons-net ftp system.
+     */
+    public static final String SYST_AS400 = &quot;AS/400&quot;;
+
+    /**
+     * Identifier by which an MVS-based ftp server is known throughout
+     * the commons-net ftp system.
+     */
+    public static final String SYST_MVS = &quot;MVS&quot;;
+
+    /**
+     * Some servers return an &quot;UNKNOWN Type: L8&quot; message
+     * in response to the SYST command. We set these to be a Unix-type system.
+     * This may happen if the ftpd in question was compiled without system
+     * information.
+     *
+     * NET-230 - Updated to be UPPERCASE so that the check done in
+     * createFileEntryParser will succeed.
+     *
+     * @since 1.5
+     */
+    public static final String SYST_L8 = &quot;TYPE: L8&quot;;
+
+    /**
+     * Identifier by which an Netware-based ftp server is known throughout
+     * the commons-net ftp system.
+     *
+     * @since 1.5
+     */
+    public static final String SYST_NETWARE = &quot;NETWARE&quot;;
+
+    /**
+     * Identifier by which a Mac pre OS-X -based ftp server is known throughout
+     * the commons-net ftp system.
+     *
+     * @since 3.1
+     */
+    // Full string is &quot;MACOS Peter's Server&quot;; the substring below should be enough
+    public static final String SYST_MACOS_PETER  = &quot;MACOS PETER&quot;; // NET-436
+
+    private final String serverSystemKey;
+<span class="pc" id="L223">    private String defaultDateFormatStr = null;</span>
+<span class="pc" id="L224">    private String recentDateFormatStr = null;</span>
+<span class="pc" id="L225">    private boolean lenientFutureDates = true; // NET-407</span>
+<span class="pc" id="L226">    private String serverLanguageCode = null;</span>
+<span class="pc" id="L227">    private String shortMonthNames = null;</span>
+<span class="pc" id="L228">    private String serverTimeZoneId = null;</span>
+<span class="pc" id="L229">    private boolean saveUnparseableEntries = false;</span>
+
+
+    /**
+     * The main constructor for an FTPClientConfig object
+     * @param systemKey key representing system type of the  server being
+     * connected to. See {@link #getServerSystemKey() serverSystemKey}
+     * If set to the empty string, then FTPClient uses the system type returned by the server.
+     * However this is not recommended for general use;
+     * the correct system type should be set if it is known.
+     */
+<span class="fc" id="L240">    public FTPClientConfig(String systemKey) {</span>
+<span class="fc" id="L241">        this.serverSystemKey = systemKey;</span>
+<span class="fc" id="L242">    }</span>
+
+    /**
+     * Convenience constructor mainly for use in testing.
+     * Constructs a UNIX configuration.
+     */
+    public FTPClientConfig() {
+<span class="fc" id="L249">        this(SYST_UNIX);</span>
+<span class="fc" id="L250">    }</span>
+
+    /**
+     * Constructor which allows setting of the format string member fields
+     * @param systemKey key representing system type of the  server being
+     * connected to. See
+     *  {@link #getServerSystemKey() serverSystemKey}
+     * @param defaultDateFormatStr See
+     *  {@link  #setDefaultDateFormatStr(String)  defaultDateFormatStr}
+     * @param recentDateFormatStr See
+     *  {@link  #setRecentDateFormatStr(String)  recentDateFormatStr}
+     *  @since 3.6
+     */
+    public FTPClientConfig(String systemKey,
+                           String defaultDateFormatStr,
+                           String recentDateFormatStr)
+    {
+<span class="fc" id="L267">        this(systemKey);</span>
+<span class="fc" id="L268">        this.defaultDateFormatStr = defaultDateFormatStr;</span>
+<span class="fc" id="L269">        this.recentDateFormatStr = recentDateFormatStr;</span>
+<span class="fc" id="L270">    }</span>
+
+    /**
+     * Constructor which allows setting of most member fields
+     * @param systemKey key representing system type of the  server being
+     * connected to. See
+     *  {@link #getServerSystemKey() serverSystemKey}
+     * @param defaultDateFormatStr See
+     *  {@link  #setDefaultDateFormatStr(String)  defaultDateFormatStr}
+     * @param recentDateFormatStr See
+     *  {@link  #setRecentDateFormatStr(String)  recentDateFormatStr}
+     * @param serverLanguageCode See
+     *  {@link  #setServerLanguageCode(String)  serverLanguageCode}
+     * @param shortMonthNames See
+     *  {@link  #setShortMonthNames(String)  shortMonthNames}
+     * @param serverTimeZoneId See
+     *  {@link  #setServerTimeZoneId(String)  serverTimeZoneId}
+     */
+    public FTPClientConfig(String systemKey,
+                           String defaultDateFormatStr,
+                           String recentDateFormatStr,
+                           String serverLanguageCode,
+                           String shortMonthNames,
+                           String serverTimeZoneId)
+    {
+<span class="fc" id="L295">        this(systemKey);</span>
+<span class="fc" id="L296">        this.defaultDateFormatStr = defaultDateFormatStr;</span>
+<span class="fc" id="L297">        this.recentDateFormatStr = recentDateFormatStr;</span>
+<span class="fc" id="L298">        this.serverLanguageCode = serverLanguageCode;</span>
+<span class="fc" id="L299">        this.shortMonthNames = shortMonthNames;</span>
+<span class="fc" id="L300">        this.serverTimeZoneId = serverTimeZoneId;</span>
+<span class="fc" id="L301">    }</span>
+
+    /**
+     * Constructor which allows setting of all member fields
+     * @param systemKey key representing system type of the  server being
+     * connected to. See
+     *  {@link #getServerSystemKey() serverSystemKey}
+     * @param defaultDateFormatStr See
+     *  {@link  #setDefaultDateFormatStr(String)  defaultDateFormatStr}
+     * @param recentDateFormatStr See
+     *  {@link  #setRecentDateFormatStr(String)  recentDateFormatStr}
+     * @param serverLanguageCode See
+     *  {@link  #setServerLanguageCode(String)  serverLanguageCode}
+     * @param shortMonthNames See
+     *  {@link  #setShortMonthNames(String)  shortMonthNames}
+     * @param serverTimeZoneId See
+     *  {@link  #setServerTimeZoneId(String)  serverTimeZoneId}
+     * @param lenientFutureDates See
+     * {@link  #setLenientFutureDates(boolean)  lenientFutureDates}
+     * @param saveUnparseableEntries See
+     * {@link  #setUnparseableEntries(boolean)  saveUnparseableEntries}
+     */
+    public FTPClientConfig(String systemKey,
+                           String defaultDateFormatStr,
+                           String recentDateFormatStr,
+                           String serverLanguageCode,
+                           String shortMonthNames,
+                           String serverTimeZoneId,
+                           boolean lenientFutureDates,
+                           boolean saveUnparseableEntries)
+    {
+<span class="nc" id="L332">        this(systemKey);</span>
+<span class="nc" id="L333">        this.defaultDateFormatStr = defaultDateFormatStr;</span>
+<span class="nc" id="L334">        this.lenientFutureDates = lenientFutureDates;</span>
+<span class="nc" id="L335">        this.recentDateFormatStr = recentDateFormatStr;</span>
+<span class="nc" id="L336">        this.saveUnparseableEntries = saveUnparseableEntries;</span>
+<span class="nc" id="L337">        this.serverLanguageCode = serverLanguageCode;</span>
+<span class="nc" id="L338">        this.shortMonthNames = shortMonthNames;</span>
+<span class="nc" id="L339">        this.serverTimeZoneId = serverTimeZoneId;</span>
+<span class="nc" id="L340">    }</span>
+
+    // Copy constructor, intended for use by FTPClient only
+<span class="nc" id="L343">    FTPClientConfig(String systemKey, FTPClientConfig config) {</span>
+<span class="nc" id="L344">        this.serverSystemKey = systemKey;</span>
+<span class="nc" id="L345">        this.defaultDateFormatStr = config.defaultDateFormatStr;</span>
+<span class="nc" id="L346">        this.lenientFutureDates = config.lenientFutureDates;</span>
+<span class="nc" id="L347">        this.recentDateFormatStr = config.recentDateFormatStr;</span>
+<span class="nc" id="L348">        this.saveUnparseableEntries = config.saveUnparseableEntries;</span>
+<span class="nc" id="L349">        this.serverLanguageCode = config.serverLanguageCode;</span>
+<span class="nc" id="L350">        this.serverTimeZoneId = config.serverTimeZoneId;</span>
+<span class="nc" id="L351">        this.shortMonthNames = config.shortMonthNames;</span>
+<span class="nc" id="L352">    }</span>
+
+    /**
+     * Copy constructor
+     * @param config source
+     * @since 3.6
+     */
+<span class="fc" id="L359">    public FTPClientConfig(FTPClientConfig config) {</span>
+<span class="fc" id="L360">        this.serverSystemKey = config.serverSystemKey;</span>
+<span class="fc" id="L361">        this.defaultDateFormatStr = config.defaultDateFormatStr;</span>
+<span class="fc" id="L362">        this.lenientFutureDates = config.lenientFutureDates;</span>
+<span class="fc" id="L363">        this.recentDateFormatStr = config.recentDateFormatStr;</span>
+<span class="fc" id="L364">        this.saveUnparseableEntries = config.saveUnparseableEntries;</span>
+<span class="fc" id="L365">        this.serverLanguageCode = config.serverLanguageCode;</span>
+<span class="fc" id="L366">        this.serverTimeZoneId = config.serverTimeZoneId;</span>
+<span class="fc" id="L367">        this.shortMonthNames = config.shortMonthNames;</span>
+<span class="fc" id="L368">    }</span>
+
+<span class="fc" id="L370">    private static final Map&lt;String, Object&gt; LANGUAGE_CODE_MAP = new TreeMap&lt;String, Object&gt;();</span>
+    static {
+
+        // if there are other commonly used month name encodings which
+        // correspond to particular locales, please add them here.
+
+
+
+        // many locales code short names for months as all three letters
+        // these we handle simply.
+<span class="fc" id="L380">        LANGUAGE_CODE_MAP.put(&quot;en&quot;, Locale.ENGLISH);</span>
+<span class="fc" id="L381">        LANGUAGE_CODE_MAP.put(&quot;de&quot;,Locale.GERMAN);</span>
+<span class="fc" id="L382">        LANGUAGE_CODE_MAP.put(&quot;it&quot;,Locale.ITALIAN);</span>
+<span class="fc" id="L383">        LANGUAGE_CODE_MAP.put(&quot;es&quot;, new Locale(&quot;es&quot;, &quot;&quot;, &quot;&quot;)); // spanish</span>
+<span class="fc" id="L384">        LANGUAGE_CODE_MAP.put(&quot;pt&quot;, new Locale(&quot;pt&quot;, &quot;&quot;, &quot;&quot;)); // portuguese</span>
+<span class="fc" id="L385">        LANGUAGE_CODE_MAP.put(&quot;da&quot;, new Locale(&quot;da&quot;, &quot;&quot;, &quot;&quot;)); // danish</span>
+<span class="fc" id="L386">        LANGUAGE_CODE_MAP.put(&quot;sv&quot;, new Locale(&quot;sv&quot;, &quot;&quot;, &quot;&quot;)); // swedish</span>
+<span class="fc" id="L387">        LANGUAGE_CODE_MAP.put(&quot;no&quot;, new Locale(&quot;no&quot;, &quot;&quot;, &quot;&quot;)); // norwegian</span>
+<span class="fc" id="L388">        LANGUAGE_CODE_MAP.put(&quot;nl&quot;, new Locale(&quot;nl&quot;, &quot;&quot;, &quot;&quot;)); // dutch</span>
+<span class="fc" id="L389">        LANGUAGE_CODE_MAP.put(&quot;ro&quot;, new Locale(&quot;ro&quot;, &quot;&quot;, &quot;&quot;)); // romanian</span>
+<span class="fc" id="L390">        LANGUAGE_CODE_MAP.put(&quot;sq&quot;, new Locale(&quot;sq&quot;, &quot;&quot;, &quot;&quot;)); // albanian</span>
+<span class="fc" id="L391">        LANGUAGE_CODE_MAP.put(&quot;sh&quot;, new Locale(&quot;sh&quot;, &quot;&quot;, &quot;&quot;)); // serbo-croatian</span>
+<span class="fc" id="L392">        LANGUAGE_CODE_MAP.put(&quot;sk&quot;, new Locale(&quot;sk&quot;, &quot;&quot;, &quot;&quot;)); // slovak</span>
+<span class="fc" id="L393">        LANGUAGE_CODE_MAP.put(&quot;sl&quot;, new Locale(&quot;sl&quot;, &quot;&quot;, &quot;&quot;)); // slovenian</span>
+
+
+        // some don't
+<span class="fc" id="L397">        LANGUAGE_CODE_MAP.put(&quot;fr&quot;,</span>
+<span class="fc" id="L398">                &quot;jan|f\u00e9v|mar|avr|mai|jun|jui|ao\u00fb|sep|oct|nov|d\u00e9c&quot;);  //french</span>
+
+<span class="fc" id="L400">    }</span>
+
+    /**
+     * Getter for the serverSystemKey property.  This property
+     * specifies the general type of server to which the client connects.
+     * Should be either one of the &lt;code&gt;FTPClientConfig.SYST_*&lt;/code&gt; codes
+     * or else the fully qualified class name of a parser implementing both
+     * the &lt;code&gt;FTPFileEntryParser&lt;/code&gt; and &lt;code&gt;Configurable&lt;/code&gt;
+     * interfaces.
+     * @return Returns the serverSystemKey property.
+     */
+    public String getServerSystemKey() {
+<span class="fc" id="L412">        return serverSystemKey;</span>
+    }
+
+    /**
+     * getter for the {@link  #setDefaultDateFormatStr(String)  defaultDateFormatStr}
+     * property.
+     * @return Returns the defaultDateFormatStr property.
+     */
+    public String getDefaultDateFormatStr() {
+<span class="fc" id="L421">        return defaultDateFormatStr;</span>
+    }
+
+    /**
+     * getter for the {@link  #setRecentDateFormatStr(String)  recentDateFormatStr} property.
+     * @return Returns the recentDateFormatStr property.
+     */
+
+    public String getRecentDateFormatStr() {
+<span class="fc" id="L430">        return recentDateFormatStr;</span>
+    }
+
+    /**
+     * getter for the {@link  #setServerTimeZoneId(String)  serverTimeZoneId} property.
+     * @return Returns the serverTimeZoneId property.
+     */
+    public String getServerTimeZoneId() {
+<span class="fc" id="L438">        return serverTimeZoneId;</span>
+    }
+
+    /**
+     * &lt;p&gt;
+     * getter for the {@link  #setShortMonthNames(String)  shortMonthNames}
+     * property.
+     * &lt;/p&gt;
+     * @return Returns the shortMonthNames.
+     */
+    public String getShortMonthNames() {
+<span class="fc" id="L449">        return shortMonthNames;</span>
+    }
+
+    /**
+     * &lt;p&gt;
+     * getter for the {@link  #setServerLanguageCode(String)  serverLanguageCode} property.
+     * &lt;/p&gt;
+     * @return Returns the serverLanguageCode property.
+     */
+    public String getServerLanguageCode() {
+<span class="fc" id="L459">        return serverLanguageCode;</span>
+    }
+
+    /**
+     * &lt;p&gt;
+     * getter for the {@link  #setLenientFutureDates(boolean)  lenientFutureDates} property.
+     * &lt;/p&gt;
+     * @return Returns the lenientFutureDates.
+     * @since 1.5
+     */
+    public boolean isLenientFutureDates() {
+<span class="fc" id="L470">        return lenientFutureDates;</span>
+    }
+    /**
+     * &lt;p&gt;
+     * setter for the defaultDateFormatStr property.  This property
+     * specifies the main date format that will be used by a parser configured
+     * by this configuration to parse file timestamps.  If this is not
+     * specified, such a parser will use as a default value, the most commonly
+     * used format which will be in as used in &lt;code&gt;en_US&lt;/code&gt; locales.
+     * &lt;/p&gt;&lt;p&gt;
+     * This should be in the format described for
+     * &lt;code&gt;java.text.SimpleDateFormat&lt;/code&gt;.
+     * property.
+     * &lt;/p&gt;
+     * @param defaultDateFormatStr The defaultDateFormatStr to set.
+     */
+    public void setDefaultDateFormatStr(String defaultDateFormatStr) {
+<span class="fc" id="L487">        this.defaultDateFormatStr = defaultDateFormatStr;</span>
+<span class="fc" id="L488">    }</span>
+
+    /**
+     * &lt;p&gt;
+     * setter for the recentDateFormatStr property.  This property
+     * specifies a secondary date format that will be used by a parser
+     * configured by this configuration to parse file timestamps, typically
+     * those less than a year old.  If this is  not specified, such a parser
+     * will not attempt to parse using an alternate format.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * This is used primarily in unix-based systems.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * This should be in the format described for
+     * &lt;code&gt;java.text.SimpleDateFormat&lt;/code&gt;.
+     * &lt;/p&gt;
+     * @param recentDateFormatStr The recentDateFormatStr to set.
+     */
+    public void setRecentDateFormatStr(String recentDateFormatStr) {
+<span class="fc" id="L508">        this.recentDateFormatStr = recentDateFormatStr;</span>
+<span class="fc" id="L509">    }</span>
+
+    /**
+     * &lt;p&gt;
+     * setter for the lenientFutureDates property.  This boolean property
+     * (default: false) only has meaning when a
+     * {@link  #setRecentDateFormatStr(String)  recentDateFormatStr} property
+     * has been set.  In that case, if this property is set true, then the
+     * parser, when it encounters a listing parseable with the recent date
+     * format, will only consider a date to belong to the previous year if
+     * it is more than one day in the future.  This will allow all
+     * out-of-synch situations (whether based on &quot;slop&quot; - i.e. servers simply
+     * out of synch with one another or because of time zone differences -
+     * but in the latter case it is highly recommended to use the
+     * {@link  #setServerTimeZoneId(String)  serverTimeZoneId} property
+     * instead) to resolve correctly.
+     * &lt;/p&gt;&lt;p&gt;
+     * This is used primarily in unix-based systems.
+     * &lt;/p&gt;
+     * @param lenientFutureDates set true to compensate for out-of-synch
+     * conditions.
+     */
+    public void setLenientFutureDates(boolean lenientFutureDates) {
+<span class="fc" id="L532">        this.lenientFutureDates = lenientFutureDates;</span>
+<span class="fc" id="L533">    }</span>
+    /**
+     * &lt;p&gt;
+     * setter for the serverTimeZoneId property.  This property
+     * allows a time zone to be specified corresponding to that known to be
+     * used by an FTP server in file listings.  This might be particularly
+     * useful to clients such as Ant that try to use these timestamps for
+     * dependency checking.
+     * &lt;/p&gt;&lt;p&gt;
+     * This should be one of the identifiers used by
+     * &lt;code&gt;java.util.TimeZone&lt;/code&gt; to refer to time zones, for example,
+     * &lt;code&gt;America/Chicago&lt;/code&gt; or &lt;code&gt;Asia/Rangoon&lt;/code&gt;.
+     * &lt;/p&gt;
+     * @param serverTimeZoneId The serverTimeZoneId to set.
+     */
+    public void setServerTimeZoneId(String serverTimeZoneId) {
+<span class="fc" id="L549">        this.serverTimeZoneId = serverTimeZoneId;</span>
+<span class="fc" id="L550">    }</span>
+
+    /**
+     * &lt;p&gt;
+     * setter for the shortMonthNames property.
+     * This property allows the user to specify a set of month names
+     * used by the server that is different from those that may be
+     * specified using the {@link  #setServerLanguageCode(String)  serverLanguageCode}
+     * property.
+     * &lt;/p&gt;&lt;p&gt;
+     * This should be a string containing twelve strings each composed of
+     * three characters, delimited by pipe (|) characters.  Currently,
+     * only 8-bit ASCII characters are known to be supported.  For example,
+     * a set of month names used by a hypothetical Icelandic FTP server might
+     * conceivably be specified as
+     * &lt;code&gt;&quot;jan|feb|mar|apr|ma&amp;#xED;|j&amp;#xFA;n|j&amp;#xFA;l|&amp;#xE1;g&amp;#xFA;|sep|okt|n&amp;#xF3;v|des&quot;&lt;/code&gt;.
+     * &lt;/p&gt;
+     * @param shortMonthNames The value to set to the shortMonthNames property.
+     */
+    public void setShortMonthNames(String shortMonthNames) {
+<span class="nc" id="L570">        this.shortMonthNames = shortMonthNames;</span>
+<span class="nc" id="L571">    }</span>
+
+    /**
+     * &lt;p&gt;
+     * setter for the serverLanguageCode property.  This property allows
+     * user to specify a
+     * &lt;a href=&quot;http://www.ics.uci.edu/pub/ietf/http/related/iso639.txt&quot;&gt;
+     * two-letter ISO-639 language code&lt;/a&gt; that will be used to
+     * configure the set of month names used by the file timestamp parser.
+     * If neither this nor the {@link #setShortMonthNames(String) shortMonthNames}
+     * is specified, parsing will assume English month names, which may or
+     * may not be significant, depending on whether the date format(s)
+     * specified via {@link  #setDefaultDateFormatStr(String)  defaultDateFormatStr}
+     * and/or {@link  #setRecentDateFormatStr(String)  recentDateFormatStr} are using
+     * numeric or alphabetic month names.
+     * &lt;/p&gt;
+     * &lt;p&gt;If the code supplied is not supported here, &lt;code&gt;en_US&lt;/code&gt;
+     * month names will be used.  We are supporting here those language
+     * codes which, when a &lt;code&gt; java.util.Locale&lt;/code&gt; is constucted
+     * using it, and a &lt;code&gt;java.text.SimpleDateFormat&lt;/code&gt; is
+     * constructed using that Locale, the array returned by the
+     * SimpleDateFormat's &lt;code&gt;getShortMonths()&lt;/code&gt; method consists
+     * solely of three 8-bit ASCII character strings.  Additionally,
+     * languages which do not meet this requirement are included if a
+     * common alternative set of short month names is known to be used.
+     * This means that users who can tell us of additional such encodings
+     * may get them added to the list of supported languages by contacting
+     * the Apache Commons Net team.
+     * &lt;/p&gt;
+     * &lt;p&gt;&lt;strong&gt;
+     * Please note that this attribute will NOT be used to determine a
+     * locale-based date format for the language.  &lt;/strong&gt;
+     * Experience has shown that many if not most FTP servers outside the
+     * United States employ the standard &lt;code&gt;en_US&lt;/code&gt; date format
+     * orderings of &lt;code&gt;MMM d yyyy&lt;/code&gt; and &lt;code&gt;MMM d HH:mm&lt;/code&gt;
+     * and attempting to deduce this automatically here would cause more
+     * problems than it would solve.  The date format must be changed
+     * via the {@link  #setDefaultDateFormatStr(String)  defaultDateFormatStr} and/or
+     * {@link  #setRecentDateFormatStr(String)  recentDateFormatStr} parameters.
+     * &lt;/p&gt;
+     * @param serverLanguageCode The value to set to the serverLanguageCode property.
+     */
+    public void setServerLanguageCode(String serverLanguageCode) {
+<span class="fc" id="L614">        this.serverLanguageCode = serverLanguageCode;</span>
+<span class="fc" id="L615">    }</span>
+
+    /**
+     * Looks up the supplied language code in the internally maintained table of
+     * language codes.  Returns a DateFormatSymbols object configured with
+     * short month names corresponding to the code.  If there is no corresponding
+     * entry in the table, the object returned will be that for
+     * &lt;code&gt;Locale.US&lt;/code&gt;
+     * @param languageCode See {@link  #setServerLanguageCode(String)  serverLanguageCode}
+     * @return a DateFormatSymbols object configured with short month names
+     * corresponding to the supplied code, or with month names for
+     * &lt;code&gt;Locale.US&lt;/code&gt; if there is no corresponding entry in the internal
+     * table.
+     */
+    public static DateFormatSymbols lookupDateFormatSymbols(String languageCode)
+    {
+<span class="fc" id="L631">        Object lang = LANGUAGE_CODE_MAP.get(languageCode);</span>
+<span class="fc bfc" id="L632" title="All 2 branches covered.">        if (lang != null) {</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">            if (lang instanceof Locale) {</span>
+<span class="fc" id="L634">                return new DateFormatSymbols((Locale) lang);</span>
+<span class="pc bpc" id="L635" title="1 of 2 branches missed.">            } else if (lang instanceof String){</span>
+<span class="fc" id="L636">                return getDateFormatSymbols((String) lang);</span>
+            }
+        }
+<span class="fc" id="L639">        return new DateFormatSymbols(Locale.US);</span>
+    }
+
+    /**
+     * Returns a DateFormatSymbols object configured with short month names
+     * as in the supplied string
+     * @param shortmonths This  should be as described in
+     *  {@link  #setShortMonthNames(String)  shortMonthNames}
+     * @return a DateFormatSymbols object configured with short month names
+     * as in the supplied string
+     */
+    public static DateFormatSymbols getDateFormatSymbols(String shortmonths)
+    {
+<span class="fc" id="L652">        String[] months = splitShortMonthString(shortmonths);</span>
+<span class="fc" id="L653">        DateFormatSymbols dfs = new DateFormatSymbols(Locale.US);</span>
+<span class="fc" id="L654">        dfs.setShortMonths(months);</span>
+<span class="fc" id="L655">        return dfs;</span>
+    }
+
+    private static String[] splitShortMonthString(String shortmonths) {
+<span class="fc" id="L659">        StringTokenizer st = new StringTokenizer(shortmonths, &quot;|&quot;);</span>
+<span class="fc" id="L660">        int monthcnt = st.countTokens();</span>
+<span class="fc bfc" id="L661" title="All 2 branches covered.">        if (12 != monthcnt) {</span>
+<span class="fc" id="L662">            throw new IllegalArgumentException(</span>
+<span class="fc" id="L663">                    &quot;expecting a pipe-delimited string containing 12 tokens&quot;);</span>
+        }
+<span class="fc" id="L665">        String[] months = new String[13];</span>
+<span class="fc" id="L666">        int pos = 0;</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">        while(st.hasMoreTokens()) {</span>
+<span class="fc" id="L668">            months[pos++] = st.nextToken();</span>
+        }
+<span class="fc" id="L670">        months[pos]=&quot;&quot;;</span>
+<span class="fc" id="L671">        return months;</span>
+    }
+
+    /**
+     * Returns a Collection of all the language codes currently supported
+     * by this class. See {@link  #setServerLanguageCode(String)  serverLanguageCode}
+     * for a functional descrption of language codes within this system.
+     *
+     * @return a Collection of all the language codes currently supported
+     * by this class
+     */
+    public static Collection&lt;String&gt; getSupportedLanguageCodes() {
+<span class="nc" id="L683">        return LANGUAGE_CODE_MAP.keySet();</span>
+    }
+
+    /**
+     * Allow list parsing methods to create basic FTPFile entries if parsing fails.
+     * &lt;p&gt;
+     * In this case, the FTPFile will contain only the unparsed entry {@link FTPFile#getRawListing()}
+     * and {@link FTPFile#isValid()} will return {@code false}
+     * @param saveUnparseable if true, then create FTPFile entries if parsing fails
+     * @since 3.4
+     */
+    public void setUnparseableEntries(boolean saveUnparseable) {
+<span class="fc" id="L695">        this.saveUnparseableEntries = saveUnparseable;</span>
+<span class="fc" id="L696">    }</span>
+
+    /**
+     * @return true if list parsing should return FTPFile entries even for unparseable response lines
+     * &lt;p&gt;
+     * If true, the FTPFile for any unparseable entries will contain only the unparsed entry
+     * {@link FTPFile#getRawListing()} and {@link FTPFile#isValid()} will return {@code false}
+     * @since 3.4
+     */
+    public boolean getUnparseableEntries() {
+<span class="fc" id="L706">        return this.saveUnparseableEntries;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

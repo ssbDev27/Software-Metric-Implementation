@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FTPTimestampParserImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp.parser</a> &gt; <span class="el_source">FTPTimestampParserImpl.java</span></div><h1>FTPTimestampParserImpl.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp.parser;
+
+import java.text.DateFormatSymbols;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
+
+import org.apache.commons.net.ftp.Configurable;
+import org.apache.commons.net.ftp.FTPClientConfig;
+
+/**
+ * Default implementation of the {@link  FTPTimestampParser  FTPTimestampParser}
+ * interface also implements the {@link  org.apache.commons.net.ftp.Configurable  Configurable}
+ * interface to allow the parsing to be configured from the outside.
+ *
+ * @see ConfigurableFTPFileEntryParserImpl
+ * @since 1.4
+ */
+public class FTPTimestampParserImpl implements
+        FTPTimestampParser, Configurable
+{
+
+
+    /** The date format for all dates, except possibly recent dates. Assumed to include the year. */
+    private SimpleDateFormat defaultDateFormat;
+    /* The index in CALENDAR_UNITS of the smallest time unit in defaultDateFormat */
+    private int defaultDateSmallestUnitIndex;
+
+    /** The format used for recent dates (which don't have the year). May be null. */
+    private SimpleDateFormat recentDateFormat;
+    /* The index in CALENDAR_UNITS of the smallest time unit in recentDateFormat */
+    private int recentDateSmallestUnitIndex;
+
+<span class="fc" id="L54">    private boolean lenientFutureDates = false;</span>
+
+    /*
+     * List of units in order of increasing significance.
+     * This allows the code to clear all units in the Calendar until it
+     * reaches the least significant unit in the parse string.
+     * The date formats are analysed to find the least significant
+     * unit (e.g. Minutes or Milliseconds) and the appropriate index to
+     * the array is saved.
+     * This is done by searching the array for the unit specifier,
+     * and returning the index. When clearing the Calendar units,
+     * the code loops through the array until the previous entry.
+     * e.g. for MINUTE it would clear MILLISECOND and SECOND
+     */
+<span class="fc" id="L68">    private static final int[] CALENDAR_UNITS = {</span>
+<span class="fc" id="L69">        Calendar.MILLISECOND,</span>
+<span class="fc" id="L70">        Calendar.SECOND,</span>
+<span class="fc" id="L71">        Calendar.MINUTE,</span>
+<span class="fc" id="L72">        Calendar.HOUR_OF_DAY,</span>
+<span class="fc" id="L73">        Calendar.DAY_OF_MONTH,</span>
+<span class="fc" id="L74">        Calendar.MONTH,</span>
+<span class="fc" id="L75">        Calendar.YEAR};</span>
+
+    /*
+     * Return the index to the array representing the least significant
+     * unit found in the date format.
+     * Default is 0 (to avoid dropping precision)
+     */
+    private static int getEntry(SimpleDateFormat dateFormat) {
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (dateFormat == null) {</span>
+<span class="fc" id="L84">            return 0;</span>
+        }
+<span class="fc" id="L86">        final String FORMAT_CHARS=&quot;SsmHdM&quot;;</span>
+<span class="fc" id="L87">        final String pattern = dateFormat.toPattern();</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        for(char ch : FORMAT_CHARS.toCharArray()) {</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (pattern.indexOf(ch) != -1){ // found the character</span>
+<span class="pc bpc" id="L90" title="4 of 7 branches missed.">                switch(ch) {</span>
+                case 'S':
+<span class="nc" id="L92">                    return indexOf(Calendar.MILLISECOND);</span>
+                case 's':
+<span class="fc" id="L94">                    return indexOf(Calendar.SECOND);</span>
+                case 'm':
+<span class="fc" id="L96">                    return indexOf(Calendar.MINUTE);</span>
+                case 'H':
+<span class="nc" id="L98">                    return indexOf(Calendar.HOUR_OF_DAY);</span>
+                case 'd':
+<span class="fc" id="L100">                    return indexOf(Calendar.DAY_OF_MONTH);</span>
+                case 'M':
+<span class="nc" id="L102">                    return indexOf(Calendar.MONTH);</span>
+                }
+            }
+        }
+<span class="nc" id="L106">        return 0;</span>
+    }
+
+    /*
+     * Find the entry in the CALENDAR_UNITS array.
+     */
+    private static int indexOf(int calendarUnit) {
+        int i;
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        for(i = 0; i &lt;CALENDAR_UNITS.length; i++) {</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (calendarUnit == CALENDAR_UNITS[i]) {</span>
+<span class="fc" id="L116">                return i;</span>
+            }
+        }
+<span class="nc" id="L119">        return 0;</span>
+    }
+
+    /*
+     * Sets the Calendar precision (used by FTPFile#toFormattedDate) by clearing
+     * the immediately preceeding unit (if any).
+     * Unfortunately the clear(int) method results in setting all other units.
+     */
+    private static void setPrecision(int index, Calendar working) {
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (index &lt;= 0) { // e.g. MILLISECONDS</span>
+<span class="nc" id="L129">            return;</span>
+        }
+<span class="fc" id="L131">        final int field = CALENDAR_UNITS[index-1];</span>
+        // Just in case the analysis is wrong, stop clearing if
+        // field value is not the default.
+<span class="fc" id="L134">        final int value = working.get(field);</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (value != 0) { // don't reset if it has a value</span>
+//            new Throwable(&quot;Unexpected value &quot;+value).printStackTrace(); // DEBUG
+        } else {
+<span class="fc" id="L138">            working.clear(field); // reset just the required field</span>
+        }
+<span class="fc" id="L140">    }</span>
+
+    /**
+     * The only constructor for this class.
+     */
+<span class="fc" id="L145">    public FTPTimestampParserImpl() {</span>
+<span class="fc" id="L146">        setDefaultDateFormat(DEFAULT_SDF, null);</span>
+<span class="fc" id="L147">        setRecentDateFormat(DEFAULT_RECENT_SDF, null);</span>
+<span class="fc" id="L148">    }</span>
+
+    /**
+     * Implements the one {@link  FTPTimestampParser#parseTimestamp(String)  method}
+     * in the {@link  FTPTimestampParser  FTPTimestampParser} interface
+     * according to this algorithm:
+     *
+     * If the recentDateFormat member has been defined, try to parse the
+     * supplied string with that.  If that parse fails, or if the recentDateFormat
+     * member has not been defined, attempt to parse with the defaultDateFormat
+     * member.  If that fails, throw a ParseException.
+     *
+     * This method assumes that the server time is the same as the local time.
+     *
+     * @see FTPTimestampParserImpl#parseTimestamp(String, Calendar)
+     *
+     * @param timestampStr The timestamp to be parsed
+     * @return a Calendar with the parsed timestamp
+     */
+    @Override
+    public Calendar parseTimestamp(String timestampStr) throws ParseException {
+<span class="fc" id="L169">        Calendar now = Calendar.getInstance();</span>
+<span class="fc" id="L170">        return parseTimestamp(timestampStr, now);</span>
+    }
+
+    /**
+     * If the recentDateFormat member has been defined, try to parse the
+     * supplied string with that.  If that parse fails, or if the recentDateFormat
+     * member has not been defined, attempt to parse with the defaultDateFormat
+     * member.  If that fails, throw a ParseException.
+     *
+     * This method allows a {@link Calendar} instance to be passed in which represents the
+     * current (system) time.
+     *
+     * @see FTPTimestampParser#parseTimestamp(String)
+     * @param timestampStr The timestamp to be parsed
+     * @param serverTime The current time for the server
+     * @return the calendar
+     * @throws ParseException if timestamp cannot be parsed
+     * @since 1.5
+     */
+    public Calendar parseTimestamp(String timestampStr, Calendar serverTime) throws ParseException {
+<span class="fc" id="L190">        Calendar working = (Calendar) serverTime.clone();</span>
+<span class="fc" id="L191">        working.setTimeZone(getServerTimeZone()); // is this needed?</span>
+
+<span class="fc" id="L193">        Date parsed = null;</span>
+
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (recentDateFormat != null) {</span>
+<span class="fc" id="L196">            Calendar now = (Calendar) serverTime.clone();// Copy this, because we may change it</span>
+<span class="fc" id="L197">            now.setTimeZone(this.getServerTimeZone());</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (lenientFutureDates) {</span>
+                // add a day to &quot;now&quot; so that &quot;slop&quot; doesn't cause a date
+                // slightly in the future to roll back a full year.  (Bug 35181 =&gt; NET-83)
+<span class="fc" id="L201">                now.add(Calendar.DAY_OF_MONTH, 1);</span>
+            }
+            // The Java SimpleDateFormat class uses the epoch year 1970 if not present in the input
+            // As 1970 was not a leap year, it cannot parse &quot;Feb 29&quot; correctly.
+            // Java 1.5+ returns Mar 1 1970
+            // Temporarily add the current year to the short date time
+            // to cope with short-date leap year strings.
+            // Since Feb 29 is more that 6 months from the end of the year, this should be OK for
+            // all instances of short dates which are +- 6 months from current date.
+            // TODO this won't always work for systems that use short dates +0/-12months
+            // e.g. if today is Jan 1 2001 and the short date is Feb 29
+<span class="fc" id="L212">            String year = Integer.toString(now.get(Calendar.YEAR));</span>
+<span class="fc" id="L213">            String timeStampStrPlusYear = timestampStr + &quot; &quot; + year;</span>
+<span class="fc" id="L214">            SimpleDateFormat hackFormatter = new SimpleDateFormat(recentDateFormat.toPattern() + &quot; yyyy&quot;,</span>
+<span class="fc" id="L215">                    recentDateFormat.getDateFormatSymbols());</span>
+<span class="fc" id="L216">            hackFormatter.setLenient(false);</span>
+<span class="fc" id="L217">            hackFormatter.setTimeZone(recentDateFormat.getTimeZone());</span>
+<span class="fc" id="L218">            ParsePosition pp = new ParsePosition(0);</span>
+<span class="fc" id="L219">            parsed = hackFormatter.parse(timeStampStrPlusYear, pp);</span>
+            // Check if we parsed the full string, if so it must have been a short date originally
+<span class="pc bpc" id="L221" title="1 of 4 branches missed.">            if (parsed != null &amp;&amp; pp.getIndex() == timeStampStrPlusYear.length()) {</span>
+<span class="fc" id="L222">                working.setTime(parsed);</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                if (working.after(now)) { // must have been last year instead</span>
+<span class="fc" id="L224">                    working.add(Calendar.YEAR, -1);</span>
+                }
+<span class="fc" id="L226">                setPrecision(recentDateSmallestUnitIndex, working);</span>
+<span class="fc" id="L227">                return working;</span>
+            }
+        }
+
+<span class="fc" id="L231">        ParsePosition pp = new ParsePosition(0);</span>
+<span class="fc" id="L232">        parsed = defaultDateFormat.parse(timestampStr, pp);</span>
+        // note, length checks are mandatory for us since
+        // SimpleDateFormat methods will succeed if less than
+        // full string is matched.  They will also accept,
+        // despite &quot;leniency&quot; setting, a two-digit number as
+        // a valid year (e.g. 22:04 will parse as 22 A.D.)
+        // so could mistakenly confuse an hour with a year,
+        // if we don't insist on full length parsing.
+<span class="fc bfc" id="L240" title="All 4 branches covered.">        if (parsed != null &amp;&amp; pp.getIndex() == timestampStr.length()) {</span>
+<span class="fc" id="L241">            working.setTime(parsed);</span>
+<span class="fc" id="L242">        } else {</span>
+<span class="fc" id="L243">            throw new ParseException(</span>
+<span class="fc" id="L244">                    &quot;Timestamp '&quot;+timestampStr+&quot;' could not be parsed using a server time of &quot;</span>
+<span class="fc" id="L245">                        +serverTime.getTime().toString(),</span>
+<span class="fc" id="L246">                    pp.getErrorIndex());</span>
+        }
+<span class="fc" id="L248">        setPrecision(defaultDateSmallestUnitIndex, working);</span>
+<span class="fc" id="L249">        return working;</span>
+    }
+
+    /**
+     * @return Returns the defaultDateFormat.
+     */
+    public SimpleDateFormat getDefaultDateFormat() {
+<span class="nc" id="L256">        return defaultDateFormat;</span>
+    }
+    /**
+     * @return Returns the defaultDateFormat pattern string.
+     */
+    public String getDefaultDateFormatString() {
+<span class="nc" id="L262">        return defaultDateFormat.toPattern();</span>
+    }
+    /**
+     * @param format The defaultDateFormat to be set.
+     * @param dfs the symbols to use (may be null)
+     */
+    private void setDefaultDateFormat(String format, DateFormatSymbols dfs) {
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">        if (format != null) {</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">            if (dfs != null) {</span>
+<span class="fc" id="L271">                this.defaultDateFormat = new SimpleDateFormat(format, dfs);</span>
+<span class="fc" id="L272">            } else {</span>
+<span class="fc" id="L273">                this.defaultDateFormat = new SimpleDateFormat(format);</span>
+            }
+<span class="fc" id="L275">            this.defaultDateFormat.setLenient(false);</span>
+<span class="fc" id="L276">        } else {</span>
+<span class="nc" id="L277">            this.defaultDateFormat = null;</span>
+        }
+<span class="fc" id="L279">        this.defaultDateSmallestUnitIndex = getEntry(this.defaultDateFormat);</span>
+<span class="fc" id="L280">    }</span>
+    /**
+     * @return Returns the recentDateFormat.
+     */
+    public SimpleDateFormat getRecentDateFormat() {
+<span class="fc" id="L285">        return recentDateFormat;</span>
+    }
+    /**
+     * @return Returns the recentDateFormat.
+     */
+    public String getRecentDateFormatString() {
+<span class="fc" id="L291">        return recentDateFormat.toPattern();</span>
+    }
+    /**
+     * @param format The recentDateFormat to set.
+     * @param dfs the symbols to use (may be null)
+     */
+    private void setRecentDateFormat(String format, DateFormatSymbols dfs) {
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        if (format != null) {</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">            if (dfs != null) {</span>
+<span class="fc" id="L300">                this.recentDateFormat = new SimpleDateFormat(format, dfs);</span>
+<span class="fc" id="L301">            } else {</span>
+<span class="fc" id="L302">                this.recentDateFormat = new SimpleDateFormat(format);</span>
+            }
+<span class="fc" id="L304">            this.recentDateFormat.setLenient(false);</span>
+<span class="fc" id="L305">        } else {</span>
+<span class="fc" id="L306">            this.recentDateFormat = null;</span>
+        }
+<span class="fc" id="L308">        this.recentDateSmallestUnitIndex = getEntry(this.recentDateFormat);</span>
+<span class="fc" id="L309">    }</span>
+
+    /**
+     * @return returns an array of 12 strings representing the short
+     * month names used by this parse.
+     */
+    public String[] getShortMonths() {
+<span class="nc" id="L316">        return defaultDateFormat.getDateFormatSymbols().getShortMonths();</span>
+    }
+
+
+    /**
+     * @return Returns the serverTimeZone used by this parser.
+     */
+    public TimeZone getServerTimeZone() {
+<span class="fc" id="L324">        return this.defaultDateFormat.getTimeZone();</span>
+    }
+    /**
+     * sets a TimeZone represented by the supplied ID string into all
+     * of the parsers used by this server.
+     * @param serverTimeZone Time Id java.util.TimeZone id used by
+     * the ftp server.  If null the client's local time zone is assumed.
+     */
+    private void setServerTimeZone(String serverTimeZoneId) {
+<span class="fc" id="L333">        TimeZone serverTimeZone = TimeZone.getDefault();</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        if (serverTimeZoneId != null) {</span>
+<span class="fc" id="L335">            serverTimeZone = TimeZone.getTimeZone(serverTimeZoneId);</span>
+        }
+<span class="fc" id="L337">        this.defaultDateFormat.setTimeZone(serverTimeZone);</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        if (this.recentDateFormat != null) {</span>
+<span class="fc" id="L339">            this.recentDateFormat.setTimeZone(serverTimeZone);</span>
+        }
+<span class="fc" id="L341">    }</span>
+
+    /**
+     * Implementation of the {@link  Configurable  Configurable}
+     * interface. Configures this &lt;code&gt;FTPTimestampParser&lt;/code&gt; according
+     * to the following logic:
+     * &lt;p&gt;
+     * Set up the {@link  FTPClientConfig#setDefaultDateFormatStr(java.lang.String) defaultDateFormat}
+     * and optionally the {@link  FTPClientConfig#setRecentDateFormatStr(String) recentDateFormat}
+     * to values supplied in the config based on month names configured as follows:
+     * &lt;/p&gt;
+     * &lt;ul&gt;
+     * &lt;li&gt;If a {@link  FTPClientConfig#setShortMonthNames(String) shortMonthString}
+     * has been supplied in the &lt;code&gt;config&lt;/code&gt;, use that to parse  parse timestamps.&lt;/li&gt;
+     * &lt;li&gt;Otherwise, if a {@link  FTPClientConfig#setServerLanguageCode(String) serverLanguageCode}
+     * has been supplied in the &lt;code&gt;config&lt;/code&gt;, use the month names represented
+     * by that {@link  FTPClientConfig#lookupDateFormatSymbols(String) language}
+     * to parse timestamps.&lt;/li&gt;
+     * &lt;li&gt;otherwise use default English month names&lt;/li&gt;
+     * &lt;/ul&gt;&lt;p&gt;
+     * Finally if a {@link  org.apache.commons.net.ftp.FTPClientConfig#setServerTimeZoneId(String) serverTimeZoneId}
+     * has been supplied via the config, set that into all date formats that have
+     * been configured.
+     * &lt;/p&gt;
+     */
+    @Override
+    public void configure(FTPClientConfig config) {
+<span class="fc" id="L368">        DateFormatSymbols dfs = null;</span>
+
+<span class="fc" id="L370">        String languageCode = config.getServerLanguageCode();</span>
+<span class="fc" id="L371">        String shortmonths = config.getShortMonthNames();</span>
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">        if (shortmonths != null) {</span>
+<span class="nc" id="L373">            dfs = FTPClientConfig.getDateFormatSymbols(shortmonths);</span>
+<span class="pc bfc" id="L374" title="All 2 branches covered.">        } else if (languageCode != null) {</span>
+<span class="fc" id="L375">            dfs = FTPClientConfig.lookupDateFormatSymbols(languageCode);</span>
+<span class="fc" id="L376">        } else {</span>
+<span class="fc" id="L377">            dfs = FTPClientConfig.lookupDateFormatSymbols(&quot;en&quot;);</span>
+        }
+
+
+<span class="fc" id="L381">        String recentFormatString = config.getRecentDateFormatStr();</span>
+<span class="fc" id="L382">        setRecentDateFormat(recentFormatString, dfs);</span>
+
+<span class="fc" id="L384">        String defaultFormatString = config.getDefaultDateFormatStr();</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        if (defaultFormatString == null) {</span>
+<span class="nc" id="L386">            throw new IllegalArgumentException(&quot;defaultFormatString cannot be null&quot;);</span>
+        }
+<span class="fc" id="L388">        setDefaultDateFormat(defaultFormatString, dfs);</span>
+
+<span class="fc" id="L390">        setServerTimeZone(config.getServerTimeZoneId());</span>
+
+<span class="fc" id="L392">        this.lenientFutureDates = config.isLenientFutureDates();</span>
+<span class="fc" id="L393">    }</span>
+    /**
+     * @return Returns the lenientFutureDates.
+     */
+    boolean isLenientFutureDates() {
+<span class="nc" id="L398">        return lenientFutureDates;</span>
+    }
+    /**
+     * @param lenientFutureDates The lenientFutureDates to set.
+     */
+    void setLenientFutureDates(boolean lenientFutureDates) {
+<span class="fc" id="L404">        this.lenientFutureDates = lenientFutureDates;</span>
+<span class="fc" id="L405">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

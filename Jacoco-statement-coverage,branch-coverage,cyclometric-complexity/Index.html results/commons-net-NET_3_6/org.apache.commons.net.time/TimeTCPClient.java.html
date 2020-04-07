@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TimeTCPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.time</a> &gt; <span class="el_source">TimeTCPClient.java</span></div><h1>TimeTCPClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.time;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.util.Date;
+
+import org.apache.commons.net.SocketClient;
+
+/***
+ * The TimeTCPClient class is a TCP implementation of a client for the
+ * Time protocol described in RFC 868.  To use the class, merely
+ * establish a connection with
+ * {@link org.apache.commons.net.SocketClient#connect  connect }
+ * and call either {@link #getTime  getTime() } or
+ * {@link #getDate  getDate() } to retrieve the time, then
+ * call {@link org.apache.commons.net.SocketClient#disconnect  disconnect }
+ * to close the connection properly.
+ *
+ *
+ * @see TimeUDPClient
+ ***/
+
+public final class TimeTCPClient extends SocketClient
+{
+    /*** The default time port.  It is set to 37 according to RFC 868. ***/
+    public static final int DEFAULT_PORT = 37;
+
+    /***
+     * The number of seconds between 00:00 1 January 1900 and
+     * 00:00 1 January 1970.  This value can be useful for converting
+     * time values to other formats.
+     ***/
+    public static final long SECONDS_1900_TO_1970 = 2208988800L;
+
+    /***
+     * The default TimeTCPClient constructor.  It merely sets the default
+     * port to &lt;code&gt; DEFAULT_PORT &lt;/code&gt;.
+     ***/
+<span class="fc" id="L56">    public TimeTCPClient ()</span>
+    {
+<span class="fc" id="L58">        setDefaultPort(DEFAULT_PORT);</span>
+<span class="fc" id="L59">    }</span>
+
+    /***
+     * Retrieves the time from the server and returns it.  The time
+     * is the number of seconds since 00:00 (midnight) 1 January 1900 GMT,
+     * as specified by RFC 868.  This method reads the raw 32-bit big-endian
+     * unsigned integer from the server, converts it to a Java long, and
+     * returns the value.
+     * &lt;p&gt;
+     * The server will have closed the connection at this point, so you should
+     * call
+     * {@link org.apache.commons.net.SocketClient#disconnect  disconnect }
+     * after calling this method.  To retrieve another time, you must
+     * initiate another connection with
+     * {@link org.apache.commons.net.SocketClient#connect  connect }
+     * before calling &lt;code&gt; getTime() &lt;/code&gt; again.
+     *
+     * @return The time value retrieved from the server.
+     * @throws IOException  If an error occurs while fetching the time.
+     ***/
+    public long getTime() throws IOException
+    {
+        DataInputStream input;
+<span class="fc" id="L82">        input = new DataInputStream(_input_);</span>
+<span class="fc" id="L83">        return (input.readInt() &amp; 0xffffffffL);</span>
+    }
+
+    /***
+     * Retrieves the time from the server and returns a Java Date
+     * containing the time converted to the local timezone.
+     * &lt;p&gt;
+     * The server will have closed the connection at this point, so you should
+     * call
+     * {@link org.apache.commons.net.SocketClient#disconnect  disconnect }
+     * after calling this method.  To retrieve another time, you must
+     * initiate another connection with
+     * {@link org.apache.commons.net.SocketClient#connect  connect }
+     * before calling &lt;code&gt; getDate() &lt;/code&gt; again.
+     *
+     * @return A Date value containing the time retrieved from the server
+     *     converted to the local timezone.
+     * @throws IOException  If an error occurs while fetching the time.
+     ***/
+    public Date getDate() throws IOException
+    {
+<span class="fc" id="L104">        return new Date((getTime() - SECONDS_1900_TO_1970)*1000L);</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

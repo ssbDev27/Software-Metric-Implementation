@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>rlogin.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.unix</a> &gt; <span class="el_source">rlogin.java</span></div><h1>rlogin.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.unix;
+
+import java.io.IOException;
+import org.apache.commons.net.bsd.RLoginClient;
+
+import examples.util.IOUtil;
+
+/***
+ * This is an example program demonstrating how to use the RLoginClient
+ * class. This program connects to an rlogin daemon and begins to
+ * interactively read input from stdin (this will be line buffered on most
+ * systems, so don't expect character at a time interactivity), passing it
+ * to the remote login process and writing the remote stdout and stderr
+ * to local stdout.  If you don't have .rhosts or hosts.equiv files set up,
+ * the rlogin daemon will prompt you for a password.
+ * &lt;p&gt;
+ * On Unix systems you will not be able to use the rshell capability
+ * unless the process runs as root since only root can bind port addresses
+ * lower than 1024.
+ * &lt;p&gt;
+ * JVM's using green threads will likely have problems if the rlogin daemon
+ * requests a password.  This program is merely a demonstration and is
+ * not suitable for use as an application, especially given that it relies
+ * on line buffered input from System.in.  The best way to run this example
+ * is probably from a Win95 dos box into a Unix host.
+ * &lt;p&gt;
+ * Example: java rlogin myhost localusername remoteusername vt100
+ * &lt;p&gt;
+ * Usage: rlogin &lt;hostname&gt; &lt;localuser&gt; &lt;remoteuser&gt; &lt;terminal&gt;
+ ***/
+
+// This class requires the IOUtil support class!
+<span class="nc" id="L50">public final class rlogin</span>
+{
+
+    public static void main(String[] args)
+    {
+        String server, localuser, remoteuser, terminal;
+        RLoginClient client;
+
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (args.length != 4)</span>
+        {
+<span class="nc" id="L60">            System.err.println(</span>
+<span class="nc" id="L61">                &quot;Usage: rlogin &lt;hostname&gt; &lt;localuser&gt; &lt;remoteuser&gt; &lt;terminal&gt;&quot;);</span>
+<span class="nc" id="L62">            System.exit(1);</span>
+<span class="nc" id="L63">            return ; // so compiler can do proper flow control analysis</span>
+        }
+
+<span class="nc" id="L66">        client = new RLoginClient();</span>
+
+<span class="nc" id="L68">        server = args[0];</span>
+<span class="nc" id="L69">        localuser = args[1];</span>
+<span class="nc" id="L70">        remoteuser = args[2];</span>
+<span class="nc" id="L71">        terminal = args[3];</span>
+
+        try
+        {
+<span class="nc" id="L75">            client.connect(server);</span>
+<span class="nc" id="L76">        }</span>
+<span class="nc" id="L77">        catch (IOException e)</span>
+        {
+<span class="nc" id="L79">            System.err.println(&quot;Could not connect to server.&quot;);</span>
+<span class="nc" id="L80">            e.printStackTrace();</span>
+<span class="nc" id="L81">            System.exit(1);</span>
+        }
+
+        try
+        {
+<span class="nc" id="L86">            client.rlogin(localuser, remoteuser, terminal);</span>
+<span class="nc" id="L87">        }</span>
+<span class="nc" id="L88">        catch (IOException e)</span>
+        {
+            try
+            {
+<span class="nc" id="L92">                client.disconnect();</span>
+<span class="nc" id="L93">            }</span>
+<span class="nc" id="L94">            catch (IOException f)</span>
+            {/* ignored */}
+<span class="nc" id="L96">            e.printStackTrace();</span>
+<span class="nc" id="L97">            System.err.println(&quot;rlogin authentication failed.&quot;);</span>
+<span class="nc" id="L98">            System.exit(1);</span>
+        }
+
+
+<span class="nc" id="L102">        IOUtil.readWrite(client.getInputStream(), client.getOutputStream(),</span>
+<span class="nc" id="L103">                         System.in, System.out);</span>
+
+        try
+        {
+<span class="nc" id="L107">            client.disconnect();</span>
+<span class="nc" id="L108">        }</span>
+<span class="nc" id="L109">        catch (IOException e)</span>
+        {
+<span class="nc" id="L111">            e.printStackTrace();</span>
+<span class="nc" id="L112">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L115">        System.exit(0);</span>
+<span class="nc" id="L116">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

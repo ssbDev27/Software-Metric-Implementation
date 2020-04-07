@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProtocolCommandSupport.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net</a> &gt; <span class="el_source">ProtocolCommandSupport.java</span></div><h1>ProtocolCommandSupport.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net;
+
+import java.io.Serializable;
+import java.util.EventListener;
+
+import org.apache.commons.net.util.ListenerList;
+
+/***
+ * ProtocolCommandSupport is a convenience class for managing a list of
+ * ProtocolCommandListeners and firing ProtocolCommandEvents.  You can
+ * simply delegate ProtocolCommandEvent firing and listener
+ * registering/unregistering tasks to this class.
+ *
+ *
+ * @see ProtocolCommandEvent
+ * @see ProtocolCommandListener
+ ***/
+
+public class ProtocolCommandSupport implements Serializable
+{
+    private static final long serialVersionUID = -8017692739988399978L;
+
+    private final Object __source;
+    private final ListenerList __listeners;
+
+    /***
+     * Creates a ProtocolCommandSupport instance using the indicated source
+     * as the source of ProtocolCommandEvents.
+     *
+     * @param source  The source to use for all generated ProtocolCommandEvents.
+     ***/
+<span class="fc" id="L49">    public ProtocolCommandSupport(Object source)</span>
+    {
+<span class="fc" id="L51">        __listeners = new ListenerList();</span>
+<span class="fc" id="L52">        __source = source;</span>
+<span class="fc" id="L53">    }</span>
+
+
+    /***
+     * Fires a ProtocolCommandEvent signalling the sending of a command to all
+     * registered listeners, invoking their
+     * {@link org.apache.commons.net.ProtocolCommandListener#protocolCommandSent protocolCommandSent() }
+     *  methods.
+     *
+     * @param command The string representation of the command type sent, not
+     *      including the arguments (e.g., &quot;STAT&quot; or &quot;GET&quot;).
+     * @param message The entire command string verbatim as sent to the server,
+     *        including all arguments.
+     ***/
+    public void fireCommandSent(String command, String message)
+    {
+        ProtocolCommandEvent event;
+
+<span class="nc" id="L71">        event = new ProtocolCommandEvent(__source, command, message);</span>
+
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        for (EventListener listener : __listeners)</span>
+        {
+<span class="nc" id="L75">           ((ProtocolCommandListener)listener).protocolCommandSent(event);</span>
+        }
+<span class="nc" id="L77">    }</span>
+
+    /***
+     * Fires a ProtocolCommandEvent signalling the reception of a command reply
+     * to all registered listeners, invoking their
+     * {@link org.apache.commons.net.ProtocolCommandListener#protocolReplyReceived protocolReplyReceived() }
+     *  methods.
+     *
+     * @param replyCode The integer code indicating the natureof the reply.
+     *   This will be the protocol integer value for protocols
+     *   that use integer reply codes, or the reply class constant
+     *   corresponding to the reply for protocols like POP3 that use
+     *   strings like OK rather than integer codes (i.e., POP3Repy.OK).
+     * @param message The entire reply as received from the server.
+     ***/
+    public void fireReplyReceived(int replyCode, String message)
+    {
+        ProtocolCommandEvent event;
+<span class="nc" id="L95">        event = new ProtocolCommandEvent(__source, replyCode, message);</span>
+
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        for (EventListener listener : __listeners)</span>
+        {
+<span class="nc" id="L99">            ((ProtocolCommandListener)listener).protocolReplyReceived(event);</span>
+        }
+<span class="nc" id="L101">    }</span>
+
+    /***
+     * Adds a ProtocolCommandListener.
+     *
+     * @param listener  The ProtocolCommandListener to add.
+     ***/
+    public void addProtocolCommandListener(ProtocolCommandListener listener)
+    {
+<span class="nc" id="L110">        __listeners.addListener(listener);</span>
+<span class="nc" id="L111">    }</span>
+
+    /***
+     * Removes a ProtocolCommandListener.
+     *
+     * @param listener  The ProtocolCommandListener to remove.
+     ***/
+    public void removeProtocolCommandListener(ProtocolCommandListener listener)
+    {
+<span class="nc" id="L120">        __listeners.removeListener(listener);</span>
+<span class="nc" id="L121">    }</span>
+
+
+    /***
+     * Returns the number of ProtocolCommandListeners currently registered.
+     *
+     * @return The number of ProtocolCommandListeners currently registered.
+     ***/
+    public int getListenerCount()
+    {
+<span class="fc" id="L131">        return __listeners.getListenerCount();</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

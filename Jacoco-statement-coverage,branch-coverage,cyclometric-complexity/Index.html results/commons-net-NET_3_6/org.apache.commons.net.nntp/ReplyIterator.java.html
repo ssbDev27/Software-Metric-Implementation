@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReplyIterator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.nntp</a> &gt; <span class="el_source">ReplyIterator.java</span></div><h1>ReplyIterator.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package org.apache.commons.net.nntp;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+import org.apache.commons.net.io.DotTerminatedMessageReader;
+import org.apache.commons.net.io.Util;
+
+/**
+ * Wraps a {@link BufferedReader} and returns an {@code Iterable&lt;String&gt;}
+ * which returns the individual lines from the reader.
+ * @since 3.0
+ */
+class ReplyIterator implements Iterator&lt;String&gt;, Iterable&lt;String&gt; {
+
+    private final BufferedReader reader;
+
+    private String line;
+
+    private Exception savedException;
+
+    /**
+     *
+     * @param _reader the reader to wrap
+     * @param addDotReader whether to additionally wrap the reader in a DotTerminatedMessageReader
+     * @throws IOException
+     */
+<span class="nc" id="L48">    ReplyIterator(BufferedReader _reader, boolean addDotReader) throws IOException {</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        reader = addDotReader ? new DotTerminatedMessageReader(_reader) : _reader;</span>
+<span class="nc" id="L50">        line = reader.readLine(); // prime the iterator</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (line == null) {</span>
+<span class="nc" id="L52">            Util.closeQuietly(reader);</span>
+        }
+<span class="nc" id="L54">    }</span>
+
+    ReplyIterator(BufferedReader _reader) throws IOException {
+<span class="nc" id="L57">        this(_reader, true);</span>
+<span class="nc" id="L58">    }</span>
+
+    @Override
+    public boolean hasNext() {
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (savedException != null){</span>
+<span class="nc" id="L63">            throw new NoSuchElementException(savedException.toString());</span>
+        }
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        return line != null;</span>
+    }
+
+    @Override
+    public String next() throws NoSuchElementException {
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (savedException != null){</span>
+<span class="nc" id="L71">            throw new NoSuchElementException(savedException.toString());</span>
+        }
+<span class="nc" id="L73">        String prev = line;</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (prev == null) {</span>
+<span class="nc" id="L75">            throw new NoSuchElementException();</span>
+        }
+        try {
+<span class="nc" id="L78">            line = reader.readLine(); // save next line</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">            if (line == null) {</span>
+<span class="nc" id="L80">                Util.closeQuietly(reader);</span>
+            }
+<span class="nc" id="L82">        } catch (IOException ex) {</span>
+<span class="nc" id="L83">            savedException = ex; // if it fails, save the exception, as it does not apply to this call</span>
+<span class="nc" id="L84">            Util.closeQuietly(reader);</span>
+        }
+<span class="nc" id="L86">        return prev;</span>
+    }
+
+    @Override
+    public void remove() {
+<span class="nc" id="L91">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public Iterator&lt;String&gt; iterator() {
+<span class="nc" id="L96">        return this;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

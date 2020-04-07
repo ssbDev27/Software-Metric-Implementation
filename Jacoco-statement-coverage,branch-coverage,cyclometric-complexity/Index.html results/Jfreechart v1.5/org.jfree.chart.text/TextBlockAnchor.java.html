@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextBlockAnchor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JFreeChart</a> &gt; <a href="index.source.html" class="el_package">org.jfree.chart.text</a> &gt; <span class="el_source">TextBlockAnchor.java</span></div><h1>TextBlockAnchor.java</h1><pre class="source lang-java linenums">/* ===========================================================
+ * JFreeChart : a free chart library for the Java(tm) platform
+ * ===========================================================
+ *
+ * (C) Copyright 2000-2017, by Object Refinery Limited and Contributors.
+ *
+ * Project Info:  http://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ */
+
+package org.jfree.chart.text;
+
+import java.io.ObjectStreamException;
+import java.io.Serializable;
+
+/**
+ * Used to indicate the position of an anchor point for a text block.
+ */
+public final class TextBlockAnchor implements Serializable {
+
+    /** For serialization. */
+    private static final long serialVersionUID = -3045058380983401544L;
+    
+    /** Top/left. */
+<span class="fc" id="L43">    public static final TextBlockAnchor TOP_LEFT </span>
+<span class="fc" id="L44">        = new TextBlockAnchor(&quot;TextBlockAnchor.TOP_LEFT&quot;);</span>
+
+    /** Top/center. */
+<span class="fc" id="L47">    public static final TextBlockAnchor TOP_CENTER = new TextBlockAnchor(</span>
+<span class="fc" id="L48">        &quot;TextBlockAnchor.TOP_CENTER&quot;</span>
+    );
+
+    /** Top/right. */
+<span class="fc" id="L52">    public static final TextBlockAnchor TOP_RIGHT = new TextBlockAnchor(</span>
+<span class="fc" id="L53">       &quot;TextBlockAnchor.TOP_RIGHT&quot;</span>
+    );
+
+    /** Middle/left. */
+<span class="fc" id="L57">    public static final TextBlockAnchor CENTER_LEFT = new TextBlockAnchor(</span>
+<span class="fc" id="L58">        &quot;TextBlockAnchor.CENTER_LEFT&quot;</span>
+    );
+
+    /** Middle/center. */
+<span class="fc" id="L62">    public static final TextBlockAnchor CENTER </span>
+<span class="fc" id="L63">        = new TextBlockAnchor(&quot;TextBlockAnchor.CENTER&quot;);</span>
+
+    /** Middle/right. */
+<span class="fc" id="L66">    public static final TextBlockAnchor CENTER_RIGHT = new TextBlockAnchor(</span>
+<span class="fc" id="L67">        &quot;TextBlockAnchor.CENTER_RIGHT&quot;</span>
+    );
+
+    /** Bottom/left. */
+<span class="fc" id="L71">    public static final TextBlockAnchor BOTTOM_LEFT </span>
+<span class="fc" id="L72">        = new TextBlockAnchor(&quot;TextBlockAnchor.BOTTOM_LEFT&quot;);</span>
+
+    /** Bottom/center. */
+<span class="fc" id="L75">    public static final TextBlockAnchor BOTTOM_CENTER </span>
+<span class="fc" id="L76">        = new TextBlockAnchor(&quot;TextBlockAnchor.BOTTOM_CENTER&quot;);</span>
+
+    /** Bottom/right. */
+<span class="fc" id="L79">    public static final TextBlockAnchor BOTTOM_RIGHT </span>
+<span class="fc" id="L80">        = new TextBlockAnchor(&quot;TextBlockAnchor.BOTTOM_RIGHT&quot;);</span>
+
+    /** The name. */
+    private String name;
+
+    /**
+     * Private constructor.
+     *
+     * @param name  the name.
+     */
+<span class="fc" id="L90">    private TextBlockAnchor(String name) {</span>
+<span class="fc" id="L91">        this.name = name;</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Returns a string representing the object.
+     *
+     * @return The string.
+     */
+    public String toString() {
+<span class="nc" id="L100">        return this.name;</span>
+    }
+
+    /**
+     * Returns {@code true} if this object is equal to the specified 
+     * object, and {@code false} otherwise.
+     *
+     * @param o  the other object.
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object o) {
+
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (this == o) {</span>
+<span class="fc" id="L115">            return true;</span>
+        }
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (!(o instanceof TextBlockAnchor)) {</span>
+<span class="nc" id="L118">            return false;</span>
+        }
+
+<span class="fc" id="L121">        TextBlockAnchor other = (TextBlockAnchor) o;</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (!this.name.equals(other.name)) {</span>
+<span class="fc" id="L123">            return false;</span>
+        }
+
+<span class="fc" id="L126">        return true;</span>
+    }
+
+    /**
+     * Returns a hash code value for the object.
+     *
+     * @return the hashcode
+     */
+    @Override
+    public int hashCode() {
+<span class="fc" id="L136">        return this.name.hashCode();</span>
+    }
+
+    /**
+     * Ensures that serialization returns the unique instances.
+     * 
+     * @return The object.
+     * 
+     * @throws ObjectStreamException if there is a problem.
+     */
+    private Object readResolve() throws ObjectStreamException {
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        if (this.equals(TextBlockAnchor.TOP_CENTER)) {</span>
+<span class="fc" id="L148">            return TextBlockAnchor.TOP_CENTER;</span>
+        }
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        else if (this.equals(TextBlockAnchor.TOP_LEFT)) {</span>
+<span class="nc" id="L151">            return TextBlockAnchor.TOP_LEFT;</span>
+        }
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        else if (this.equals(TextBlockAnchor.TOP_RIGHT)) {</span>
+<span class="nc" id="L154">            return TextBlockAnchor.TOP_RIGHT;</span>
+        }
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        else if (this.equals(TextBlockAnchor.CENTER)) {</span>
+<span class="fc" id="L157">            return TextBlockAnchor.CENTER;</span>
+        }
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        else if (this.equals(TextBlockAnchor.CENTER_LEFT)) {</span>
+<span class="fc" id="L160">            return TextBlockAnchor.CENTER_LEFT;</span>
+        }
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        else if (this.equals(TextBlockAnchor.CENTER_RIGHT)) {</span>
+<span class="fc" id="L163">            return TextBlockAnchor.CENTER_RIGHT;</span>
+        }
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        else if (this.equals(TextBlockAnchor.BOTTOM_CENTER)) {</span>
+<span class="fc" id="L166">            return TextBlockAnchor.BOTTOM_CENTER;</span>
+        }
+<span class="nc bnc" id="L168" title="All 2 branches missed.">        else if (this.equals(TextBlockAnchor.BOTTOM_LEFT)) {</span>
+<span class="nc" id="L169">            return TextBlockAnchor.BOTTOM_LEFT;</span>
+        }
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        else if (this.equals(TextBlockAnchor.BOTTOM_RIGHT)) {</span>
+<span class="nc" id="L172">            return TextBlockAnchor.BOTTOM_RIGHT;</span>
+        }
+<span class="nc" id="L174">        return null;</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

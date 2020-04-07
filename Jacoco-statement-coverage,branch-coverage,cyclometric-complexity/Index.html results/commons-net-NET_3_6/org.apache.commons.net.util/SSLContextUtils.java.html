@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SSLContextUtils.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.util</a> &gt; <span class="el_source">SSLContextUtils.java</span></div><h1>SSLContextUtils.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package org.apache.commons.net.util;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+
+/**
+ * General utilities for SSLContext.
+ * @since 3.0
+ */
+public class SSLContextUtils {
+
+    private SSLContextUtils() {
+        // Not instantiable
+    }
+
+    /**
+     * Create and initialise an SSLContext.
+     * @param protocol the protocol used to instatiate the context
+     * @param keyManager the key manager, may be {@code null}
+     * @param trustManager the trust manager, may be {@code null}
+     * @return the initialised context.
+     * @throws IOException this is used to wrap any {@link GeneralSecurityException} that occurs
+     */
+    public static SSLContext createSSLContext(String protocol, KeyManager keyManager, TrustManager trustManager)
+            throws IOException {
+<span class="nc" id="L47">        return createSSLContext(protocol,</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">                keyManager == null ? null : new KeyManager[] { keyManager },</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">                trustManager == null ? null : new TrustManager[] { trustManager });</span>
+    }
+
+    /**
+     * Create and initialise an SSLContext.
+     * @param protocol the protocol used to instatiate the context
+     * @param keyManagers the array of key managers, may be {@code null} but array entries must not be {@code null}
+     * @param trustManagers the array of trust managers, may be {@code null} but array entries must not be {@code null}
+     * @return the initialised context.
+     * @throws IOException this is used to wrap any {@link GeneralSecurityException} that occurs
+     */
+    public static SSLContext createSSLContext(String protocol, KeyManager[] keyManagers, TrustManager[] trustManagers)
+        throws IOException {
+        SSLContext ctx;
+        try {
+<span class="nc" id="L64">            ctx = SSLContext.getInstance(protocol);</span>
+<span class="nc" id="L65">            ctx.init(keyManagers, trustManagers, /*SecureRandom*/ null);</span>
+<span class="nc" id="L66">        } catch (GeneralSecurityException e) {</span>
+<span class="nc" id="L67">            IOException ioe = new IOException(&quot;Could not initialize SSL context&quot;);</span>
+<span class="nc" id="L68">            ioe.initCause(e);</span>
+<span class="nc" id="L69">            throw ioe;</span>
+        }
+<span class="nc" id="L71">        return ctx;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

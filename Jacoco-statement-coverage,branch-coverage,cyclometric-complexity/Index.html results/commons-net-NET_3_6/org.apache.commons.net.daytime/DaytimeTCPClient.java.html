@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DaytimeTCPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.daytime</a> &gt; <span class="el_source">DaytimeTCPClient.java</span></div><h1>DaytimeTCPClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.daytime;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+import org.apache.commons.net.SocketClient;
+
+/**
+ * The DaytimeTCPClient class is a TCP implementation of a client for the
+ * Daytime protocol described in RFC 867.  To use the class, merely
+ * establish a connection with
+ * {@link org.apache.commons.net.SocketClient#connect  connect }
+ * and call {@link #getTime  getTime() } to retrieve the daytime
+ * string, then
+ * call {@link org.apache.commons.net.SocketClient#disconnect  disconnect }
+ * to close the connection properly.
+ * @see DaytimeUDPClient
+ */
+public final class DaytimeTCPClient extends SocketClient
+{
+    /** The default daytime port.  It is set to 13 according to RFC 867. */
+    public static final int DEFAULT_PORT = 13;
+
+    // Received dates will likely be less than 64 characters.
+    // This is a temporary buffer used while receiving data.
+<span class="nc" id="L44">    private final char[] __buffer = new char[64];</span>
+
+    /**
+     * The default DaytimeTCPClient constructor.  It merely sets the default
+     * port to &lt;code&gt; DEFAULT_PORT &lt;/code&gt;.
+     */
+<span class="nc" id="L50">    public DaytimeTCPClient ()</span>
+    {
+<span class="nc" id="L52">        setDefaultPort(DEFAULT_PORT);</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * Retrieves the time string from the server and returns it.  The
+     * server will have closed the connection at this point, so you should
+     * call
+     * {@link org.apache.commons.net.SocketClient#disconnect  disconnect }
+     * after calling this method.  To retrieve another time, you must
+     * initiate another connection with
+     * {@link org.apache.commons.net.SocketClient#connect  connect }
+     * before calling &lt;code&gt; getTime() &lt;/code&gt; again.
+     *
+     * @return The time string retrieved from the server.
+     * @throws IOException  If an error occurs while fetching the time string.
+     */
+    public String getTime() throws IOException
+    {
+        int read;
+<span class="nc" id="L71">        StringBuilder result = new StringBuilder(__buffer.length);</span>
+        BufferedReader reader;
+
+<span class="nc" id="L74">        reader = new BufferedReader(new InputStreamReader(_input_, getCharset()));</span>
+
+<span class="nc" id="L76">        while (true)</span>
+        {
+<span class="nc" id="L78">            read = reader.read(__buffer, 0, __buffer.length);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">            if (read &lt;= 0) {</span>
+<span class="nc" id="L80">                break;</span>
+            }
+<span class="nc" id="L82">            result.append(__buffer, 0, read);</span>
+        }
+
+<span class="nc" id="L85">        return result.toString();</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

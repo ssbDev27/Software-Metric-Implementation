@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExtendedPOP3Client.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.pop3</a> &gt; <span class="el_source">ExtendedPOP3Client.java</span></div><h1>ExtendedPOP3Client.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.pop3;
+
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.commons.net.util.Base64;
+
+
+/**
+ * A POP3 Cilent class with protocol and authentication extensions support
+ * (RFC2449 and RFC2195).
+ * @see POP3Client
+ * @since 3.0
+ */
+public class ExtendedPOP3Client extends POP3SClient
+{
+    /**
+     * The default ExtendedPOP3Client constructor.
+     * Creates a new Extended POP3 Client.
+     * @throws NoSuchAlgorithmException on error
+     */
+    public ExtendedPOP3Client() throws NoSuchAlgorithmException
+    {
+<span class="nc" id="L45">        super();</span>
+<span class="nc" id="L46">    }</span>
+
+    /***
+     * Authenticate to the POP3 server by sending the AUTH command with the
+     * selected mechanism, using the given username and the given password.
+     * &lt;p&gt;
+     * @param method the {@link AUTH_METHOD} to use
+     * @param username the user name
+     * @param password the password
+     * @return True if successfully completed, false if not.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @throws NoSuchAlgorithmException If the CRAM hash algorithm
+     *      cannot be instantiated by the Java runtime system.
+     * @throws InvalidKeyException If the CRAM hash algorithm
+     *      failed to use the given password.
+     * @throws InvalidKeySpecException If the CRAM hash algorithm
+     *      failed to use the given password.
+     ***/
+    public boolean auth(AUTH_METHOD method,
+                        String username, String password)
+                        throws IOException, NoSuchAlgorithmException,
+                        InvalidKeyException, InvalidKeySpecException
+    {
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (sendCommand(POP3Command.AUTH, method.getAuthName())</span>
+<span class="nc" id="L71">        != POP3Reply.OK_INT) {</span>
+<span class="nc" id="L72">            return false;</span>
+        }
+
+<span class="nc bnc" id="L75" title="All 3 branches missed.">        switch(method) {</span>
+            case PLAIN:
+                // the server sends an empty response (&quot;+ &quot;), so we don't have to read it.
+<span class="nc bnc" id="L78" title="All 2 branches missed.">                return sendCommand(</span>
+<span class="nc" id="L79">                    new String(</span>
+<span class="nc" id="L80">                        Base64.encodeBase64((&quot;\000&quot; + username + &quot;\000&quot; + password).getBytes(getCharset())),</span>
+<span class="nc" id="L81">                        getCharset())</span>
+                    ) == POP3Reply.OK;
+            case CRAM_MD5:
+                // get the CRAM challenge
+<span class="nc" id="L85">                byte[] serverChallenge = Base64.decodeBase64(getReplyString().substring(2).trim());</span>
+                // get the Mac instance
+<span class="nc" id="L87">                Mac hmac_md5 = Mac.getInstance(&quot;HmacMD5&quot;);</span>
+<span class="nc" id="L88">                hmac_md5.init(new SecretKeySpec(password.getBytes(getCharset()), &quot;HmacMD5&quot;));</span>
+                // compute the result:
+<span class="nc" id="L90">                byte[] hmacResult = _convertToHexString(hmac_md5.doFinal(serverChallenge)).getBytes(getCharset());</span>
+                // join the byte arrays to form the reply
+<span class="nc" id="L92">                byte[] usernameBytes = username.getBytes(getCharset());</span>
+<span class="nc" id="L93">                byte[] toEncode = new byte[usernameBytes.length + 1 /* the space */ + hmacResult.length];</span>
+<span class="nc" id="L94">                System.arraycopy(usernameBytes, 0, toEncode, 0, usernameBytes.length);</span>
+<span class="nc" id="L95">                toEncode[usernameBytes.length] = ' ';</span>
+<span class="nc" id="L96">                System.arraycopy(hmacResult, 0, toEncode, usernameBytes.length + 1, hmacResult.length);</span>
+                // send the reply and read the server code:
+<span class="nc bnc" id="L98" title="All 2 branches missed.">                return sendCommand(Base64.encodeBase64StringUnChunked(toEncode)) == POP3Reply.OK;</span>
+            default:
+<span class="nc" id="L100">                return false;</span>
+        }
+    }
+
+    /**
+     * Converts the given byte array to a String containing the hex values of the bytes.
+     * For example, the byte 'A' will be converted to '41', because this is the ASCII code
+     * (and the byte value) of the capital letter 'A'.
+     * @param a The byte array to convert.
+     * @return The resulting String of hex codes.
+     */
+    private String _convertToHexString(byte[] a)
+    {
+<span class="nc" id="L113">        StringBuilder result = new StringBuilder(a.length*2);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        for (byte element : a)</span>
+        {
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            if ( (element &amp; 0x0FF) &lt;= 15 ) {</span>
+<span class="nc" id="L117">                result.append(&quot;0&quot;);</span>
+            }
+<span class="nc" id="L119">            result.append(Integer.toHexString(element &amp; 0x0FF));</span>
+        }
+<span class="nc" id="L121">        return result.toString();</span>
+    }
+
+    /**
+     * The enumeration of currently-supported authentication methods.
+     */
+<span class="nc" id="L127">    public static enum AUTH_METHOD</span>
+    {
+<span class="nc" id="L129">        /** The standarised (RFC4616) PLAIN method, which sends the password unencrypted (insecure). */</span>
+<span class="nc" id="L130">        PLAIN(&quot;PLAIN&quot;),</span>
+
+<span class="nc" id="L132">        /** The standarised (RFC2195) CRAM-MD5 method, which doesn't send the password (secure). */</span>
+<span class="nc" id="L133">        CRAM_MD5(&quot;CRAM-MD5&quot;);</span>
+
+        private final String methodName;
+
+<span class="nc" id="L137">        AUTH_METHOD(String methodName){</span>
+<span class="nc" id="L138">            this.methodName = methodName;</span>
+<span class="nc" id="L139">        }</span>
+        /**
+         * Gets the name of the given authentication method suitable for the server.
+         * @return The name of the given authentication method suitable for the server.
+         */
+        public final String getAuthName()
+        {
+<span class="nc" id="L146">            return this.methodName;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

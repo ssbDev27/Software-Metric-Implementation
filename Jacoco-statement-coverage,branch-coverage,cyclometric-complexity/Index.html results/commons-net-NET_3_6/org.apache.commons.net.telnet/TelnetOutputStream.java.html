@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TelnetOutputStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.telnet</a> &gt; <span class="el_source">TelnetOutputStream.java</span></div><h1>TelnetOutputStream.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.telnet;
+
+import java.io.IOException;
+import java.io.OutputStream;
+
+/**
+ * Wraps an output stream.
+ * &lt;p&gt;
+ * In binary mode, the only conversion is to double IAC.
+ * &lt;p&gt;
+ * In ASCII mode, if convertCRtoCRLF is true (currently always true), any CR is converted to CRLF.
+ * IACs are doubled.
+ * Also a bare LF is converted to CRLF and a bare CR is converted to CR\0
+ * &lt;p&gt;
+ ***/
+
+
+final class TelnetOutputStream extends OutputStream
+{
+    private final TelnetClient __client;
+    // TODO there does not appear to be any way to change this value - should it be a ctor parameter?
+<span class="fc" id="L39">    private final boolean __convertCRtoCRLF = true;</span>
+<span class="fc" id="L40">    private boolean __lastWasCR = false;</span>
+
+<span class="fc" id="L42">    TelnetOutputStream(TelnetClient client)</span>
+    {
+<span class="fc" id="L44">        __client = client;</span>
+<span class="fc" id="L45">    }</span>
+
+
+    /***
+     * Writes a byte to the stream.
+     * &lt;p&gt;
+     * @param ch The byte to write.
+     * @throws IOException If an error occurs while writing to the underlying
+     *            stream.
+     ***/
+    @Override
+    public void write(int ch) throws IOException
+    {
+
+<span class="fc" id="L59">        synchronized (__client)</span>
+        {
+<span class="fc" id="L61">            ch &amp;= 0xff;</span>
+
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">            if (__client._requestedWont(TelnetOption.BINARY)) // i.e. ASCII</span>
+            {
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">                if (__lastWasCR)</span>
+                {
+                    if (__convertCRtoCRLF)
+                    {
+<span class="nc" id="L69">                        __client._sendByte('\n');</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">                        if (ch == '\n') // i.e. was CRLF anyway</span>
+                        {
+<span class="nc" id="L72">                            __lastWasCR = false;</span>
+<span class="nc" id="L73">                            return ;</span>
+                        }
+                    } // __convertCRtoCRLF
+                    else if (ch != '\n')
+                     {
+                        __client._sendByte('\0'); // RFC854 requires CR NUL for bare CR
+                    }
+                }
+
+<span class="pc bpc" id="L82" title="3 of 4 branches missed.">                switch (ch)</span>
+                {
+                case '\r':
+<span class="nc" id="L85">                    __client._sendByte('\r');</span>
+<span class="nc" id="L86">                    __lastWasCR = true;</span>
+<span class="nc" id="L87">                    break;</span>
+                case '\n':
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                    if (!__lastWasCR) { // convert LF to CRLF</span>
+<span class="nc" id="L90">                        __client._sendByte('\r');</span>
+                    }
+<span class="nc" id="L92">                    __client._sendByte(ch);</span>
+<span class="nc" id="L93">                    __lastWasCR = false;</span>
+<span class="nc" id="L94">                    break;</span>
+                case TelnetCommand.IAC:
+<span class="nc" id="L96">                    __client._sendByte(TelnetCommand.IAC);</span>
+<span class="nc" id="L97">                    __client._sendByte(TelnetCommand.IAC);</span>
+<span class="nc" id="L98">                    __lastWasCR = false;</span>
+<span class="nc" id="L99">                    break;</span>
+                default:
+<span class="fc" id="L101">                    __client._sendByte(ch);</span>
+<span class="fc" id="L102">                    __lastWasCR = false;</span>
+                    break;
+                }
+<span class="fc" id="L105">            } // end ASCII</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            else if (ch == TelnetCommand.IAC)</span>
+            {
+<span class="nc" id="L108">                __client._sendByte(ch);</span>
+<span class="nc" id="L109">                __client._sendByte(TelnetCommand.IAC);</span>
+<span class="nc" id="L110">            } else {</span>
+<span class="nc" id="L111">                __client._sendByte(ch);</span>
+            }
+        }
+<span class="fc" id="L114">    }</span>
+
+
+    /***
+     * Writes a byte array to the stream.
+     * &lt;p&gt;
+     * @param buffer  The byte array to write.
+     * @throws IOException If an error occurs while writing to the underlying
+     *            stream.
+     ***/
+    @Override
+    public void write(byte buffer[]) throws IOException
+    {
+<span class="fc" id="L127">        write(buffer, 0, buffer.length);</span>
+<span class="fc" id="L128">    }</span>
+
+
+    /***
+     * Writes a number of bytes from a byte array to the stream starting from
+     * a given offset.
+     * &lt;p&gt;
+     * @param buffer  The byte array to write.
+     * @param offset  The offset into the array at which to start copying data.
+     * @param length  The number of bytes to write.
+     * @throws IOException If an error occurs while writing to the underlying
+     *            stream.
+     ***/
+    @Override
+    public void write(byte buffer[], int offset, int length) throws IOException
+    {
+<span class="fc" id="L144">        synchronized (__client)</span>
+        {
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            while (length-- &gt; 0) {</span>
+<span class="fc" id="L147">                write(buffer[offset++]);</span>
+            }
+        }
+<span class="fc" id="L150">    }</span>
+
+    /*** Flushes the stream. ***/
+    @Override
+    public void flush() throws IOException
+    {
+<span class="fc" id="L156">        __client._flushOutputStream();</span>
+<span class="fc" id="L157">    }</span>
+
+    /*** Closes the stream. ***/
+    @Override
+    public void close() throws IOException
+    {
+<span class="fc" id="L163">        __client._closeOutputStream();</span>
+<span class="fc" id="L164">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

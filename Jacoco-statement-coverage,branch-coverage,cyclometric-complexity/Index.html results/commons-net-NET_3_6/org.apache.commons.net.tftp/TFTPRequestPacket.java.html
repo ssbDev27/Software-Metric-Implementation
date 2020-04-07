@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TFTPRequestPacket.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.tftp</a> &gt; <span class="el_source">TFTPRequestPacket.java</span></div><h1>TFTPRequestPacket.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.tftp;
+
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+
+/***
+ * An abstract class derived from TFTPPacket definiing a TFTP Request
+ * packet type.  It is subclassed by the
+ * {@link org.apache.commons.net.tftp.TFTPReadRequestPacket}
+ *   and
+ * {@link org.apache.commons.net.tftp.TFTPWriteRequestPacket}
+ *  classes.
+ * &lt;p&gt;
+ * Details regarding the TFTP protocol and the format of TFTP packets can
+ * be found in RFC 783.  But the point of these classes is to keep you
+ * from having to worry about the internals.  Additionally, only very
+ * few people should have to care about any of the TFTPPacket classes
+ * or derived classes.  Almost all users should only be concerned with the
+ * {@link org.apache.commons.net.tftp.TFTPClient} class
+ * {@link org.apache.commons.net.tftp.TFTPClient#receiveFile receiveFile()}
+ * and
+ * {@link org.apache.commons.net.tftp.TFTPClient#sendFile sendFile()}
+ * methods.
+ *
+ *
+ * @see TFTPPacket
+ * @see TFTPReadRequestPacket
+ * @see TFTPWriteRequestPacket
+ * @see TFTPPacketException
+ * @see TFTP
+ ***/
+
+public abstract class TFTPRequestPacket extends TFTPPacket
+{
+    /***
+     * An array containing the string names of the transfer modes and indexed
+     * by the transfer mode constants.
+     ***/
+<span class="fc" id="L56">    static final String[] _modeStrings = { &quot;netascii&quot;, &quot;octet&quot; };</span>
+
+    /***
+     * A null terminated byte array representation of the ascii names of the
+     * transfer mode constants.  This is convenient for creating the TFTP
+     * request packets.
+     ***/
+<span class="fc" id="L63">    private static final byte[] _modeBytes[] = {</span>
+<span class="fc" id="L64">                                           { (byte)'n', (byte)'e', (byte)'t', (byte)'a', (byte)'s', (byte)'c',</span>
+<span class="fc" id="L65">                                             (byte)'i', (byte)'i', 0 },</span>
+<span class="fc" id="L66">                                           { (byte)'o', (byte)'c', (byte)'t', (byte)'e', (byte)'t', 0 }</span>
+<span class="fc" id="L67">                                       };</span>
+
+    /*** The transfer mode of the request. ***/
+    private final int _mode;
+
+    /*** The filename of the request. ***/
+    private final String _filename;
+
+    /***
+     * Creates a request packet of a given type to be sent to a host at a
+     * given port with a filename and transfer mode request.
+     *
+     * @param destination  The host to which the packet is going to be sent.
+     * @param port  The port to which the packet is going to be sent.
+     * @param type The type of the request (either TFTPPacket.READ_REQUEST or
+     *             TFTPPacket.WRITE_REQUEST).
+     * @param filename The requested filename.
+     * @param mode The requested transfer mode.  This should be on of the TFTP
+     *        class MODE constants (e.g., TFTP.NETASCII_MODE).
+     ***/
+    TFTPRequestPacket(InetAddress destination, int port,
+                      int type, String filename, int mode)
+    {
+<span class="fc" id="L90">        super(type, destination, port);</span>
+
+<span class="fc" id="L92">        _filename = filename;</span>
+<span class="fc" id="L93">        _mode = mode;</span>
+<span class="fc" id="L94">    }</span>
+
+    /***
+     * Creates a request packet of a given type based on a received
+     * datagram.  Assumes the datagram is at least length 4, else an
+     * ArrayIndexOutOfBoundsException may be thrown.
+     *
+     * @param type The type of the request (either TFTPPacket.READ_REQUEST or
+     *             TFTPPacket.WRITE_REQUEST).
+     * @param datagram  The datagram containing the received request.
+     * @throws TFTPPacketException  If the datagram isn't a valid TFTP
+     *         request packet of the appropriate type.
+     ***/
+    TFTPRequestPacket(int type, DatagramPacket datagram)
+    throws TFTPPacketException
+    {
+<span class="fc" id="L110">        super(type, datagram.getAddress(), datagram.getPort());</span>
+
+<span class="fc" id="L112">        byte[] data = datagram.getData();</span>
+
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (getType() != data[1]) {</span>
+<span class="nc" id="L115">            throw new TFTPPacketException(&quot;TFTP operator code does not match type.&quot;);</span>
+        }
+
+<span class="fc" id="L118">        StringBuilder buffer = new StringBuilder();</span>
+
+<span class="fc" id="L120">        int index = 2;</span>
+<span class="fc" id="L121">        int length = datagram.getLength();</span>
+
+<span class="pc bpc" id="L123" title="1 of 4 branches missed.">        while (index &lt; length &amp;&amp; data[index] != 0)</span>
+        {
+<span class="fc" id="L125">            buffer.append((char)data[index]);</span>
+<span class="fc" id="L126">            ++index;</span>
+        }
+
+<span class="fc" id="L129">        _filename = buffer.toString();</span>
+
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (index &gt;= length) {</span>
+<span class="nc" id="L132">            throw new TFTPPacketException(&quot;Bad filename and mode format.&quot;);</span>
+        }
+
+<span class="fc" id="L135">        buffer.setLength(0);</span>
+<span class="fc" id="L136">        ++index; // need to advance beyond the end of string marker</span>
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">        while (index &lt; length &amp;&amp; data[index] != 0)</span>
+        {
+<span class="fc" id="L139">            buffer.append((char)data[index]);</span>
+<span class="fc" id="L140">            ++index;</span>
+        }
+
+<span class="fc" id="L143">        String modeString = buffer.toString().toLowerCase(java.util.Locale.ENGLISH);</span>
+<span class="fc" id="L144">        length = _modeStrings.length;</span>
+
+<span class="fc" id="L146">        int mode = 0;</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        for (index = 0; index &lt; length; index++)</span>
+        {
+<span class="fc bfc" id="L149" title="All 2 branches covered.">            if (modeString.equals(_modeStrings[index]))</span>
+            {
+<span class="fc" id="L151">                mode = index;</span>
+<span class="fc" id="L152">                break;</span>
+            }
+        }
+
+<span class="fc" id="L156">        _mode = mode;</span>
+
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        if (index &gt;= length)</span>
+        {
+<span class="nc" id="L160">            throw new TFTPPacketException(&quot;Unrecognized TFTP transfer mode: &quot; + modeString);</span>
+            // May just want to default to binary mode instead of throwing
+            // exception.
+            //_mode = TFTP.OCTET_MODE;
+        }
+<span class="fc" id="L165">    }</span>
+
+
+    /***
+     * This is a method only available within the package for
+     * implementing efficient datagram transport by elminating buffering.
+     * It takes a datagram as an argument, and a byte buffer in which
+     * to store the raw datagram data.  Inside the method, the data
+     * is set as the datagram's data and the datagram returned.
+     *
+     * @param datagram  The datagram to create.
+     * @param data The buffer to store the packet and to use in the datagram.
+     * @return The datagram argument.
+     ***/
+    @Override
+    final DatagramPacket _newDatagram(DatagramPacket datagram, byte[] data)
+    {
+        int fileLength, modeLength;
+
+<span class="fc" id="L184">        fileLength = _filename.length();</span>
+<span class="fc" id="L185">        modeLength = _modeBytes[_mode].length;</span>
+
+<span class="fc" id="L187">        data[0] = 0;</span>
+<span class="fc" id="L188">        data[1] = (byte)_type;</span>
+<span class="fc" id="L189">        System.arraycopy(_filename.getBytes(), 0, data, 2, fileLength);</span>
+<span class="fc" id="L190">        data[fileLength + 2] = 0;</span>
+<span class="fc" id="L191">        System.arraycopy(_modeBytes[_mode], 0, data, fileLength + 3,</span>
+<span class="fc" id="L192">                         modeLength);</span>
+
+<span class="fc" id="L194">        datagram.setAddress(_address);</span>
+<span class="fc" id="L195">        datagram.setPort(_port);</span>
+<span class="fc" id="L196">        datagram.setData(data);</span>
+<span class="fc" id="L197">        datagram.setLength(fileLength + modeLength + 3);</span>
+
+<span class="fc" id="L199">        return datagram;</span>
+    }
+
+    /***
+     * Creates a UDP datagram containing all the TFTP
+     * request packet data in the proper format.
+     * This is a method exposed to the programmer in case he
+     * wants to implement his own TFTP client instead of using
+     * the {@link org.apache.commons.net.tftp.TFTPClient}
+     * class.  Under normal circumstances, you should not have a need to call
+     * this method.
+     *
+     * @return A UDP datagram containing the TFTP request packet.
+     ***/
+    @Override
+    public final DatagramPacket newDatagram()
+    {
+        int fileLength, modeLength;
+        byte[] data;
+
+<span class="nc" id="L219">        fileLength = _filename.length();</span>
+<span class="nc" id="L220">        modeLength = _modeBytes[_mode].length;</span>
+
+<span class="nc" id="L222">        data = new byte[fileLength + modeLength + 4];</span>
+<span class="nc" id="L223">        data[0] = 0;</span>
+<span class="nc" id="L224">        data[1] = (byte)_type;</span>
+<span class="nc" id="L225">        System.arraycopy(_filename.getBytes(), 0, data, 2, fileLength);</span>
+<span class="nc" id="L226">        data[fileLength + 2] = 0;</span>
+<span class="nc" id="L227">        System.arraycopy(_modeBytes[_mode], 0, data, fileLength + 3,</span>
+<span class="nc" id="L228">                         modeLength);</span>
+
+<span class="nc" id="L230">        return new DatagramPacket(data, data.length, _address, _port);</span>
+    }
+
+    /***
+     * Returns the transfer mode of the request.
+     *
+     * @return The transfer mode of the request.
+     ***/
+    public final int getMode()
+    {
+<span class="fc" id="L240">        return _mode;</span>
+    }
+
+    /***
+     * Returns the requested filename.
+     *
+     * @return The requested filename.
+     ***/
+    public final String getFilename()
+    {
+<span class="fc" id="L250">        return _filename;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

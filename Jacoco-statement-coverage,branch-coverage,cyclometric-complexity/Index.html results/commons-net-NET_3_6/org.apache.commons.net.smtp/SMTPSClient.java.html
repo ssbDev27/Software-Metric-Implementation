@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SMTPSClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.smtp</a> &gt; <span class="el_source">SMTPSClient.java</span></div><h1>SMTPSClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.smtp;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+
+import org.apache.commons.net.io.CRLFLineReader;
+import org.apache.commons.net.util.SSLContextUtils;
+import org.apache.commons.net.util.SSLSocketUtils;
+
+/**
+ * SMTP over SSL processing. Copied from FTPSClient.java and modified to suit SMTP.
+ * If implicit mode is selected (NOT the default), SSL/TLS negotiation starts right
+ * after the connection has been established. In explicit mode (the default), SSL/TLS
+ * negotiation starts when the user calls execTLS() and the server accepts the command.
+ * Implicit usage:
+ *               SMTPSClient c = new SMTPSClient(true);
+ *               c.connect(&quot;127.0.0.1&quot;, 465);
+ * Explicit usage:
+ *               SMTPSClient c = new SMTPSClient();
+ *               c.connect(&quot;127.0.0.1&quot;, 25);
+ *               if (c.execTLS()) { /rest of the commands here/ }
+ *
+ * Warning: the hostname is not verified against the certificate by default, use
+ * {@link #setHostnameVerifier(HostnameVerifier)} or {@link #setEndpointCheckingEnabled(boolean)}
+ * (on Java 1.7+) to enable verification.
+ * @since 3.0
+ */
+public class SMTPSClient extends SMTPClient
+{
+    /** Default secure socket protocol name, like TLS */
+    private static final String DEFAULT_PROTOCOL = &quot;TLS&quot;;
+
+    /** The security mode. True - Implicit Mode / False - Explicit Mode. */
+    private final boolean isImplicit;
+    /** The secure socket protocol to be used, like SSL/TLS. */
+    private final String protocol;
+    /** The context object. */
+<span class="nc" id="L65">    private SSLContext context = null;</span>
+    /** The cipher suites. SSLSockets have a default set of these anyway,
+        so no initialization required. */
+<span class="nc" id="L68">    private String[] suites = null;</span>
+    /** The protocol versions. */
+<span class="nc" id="L70">    private String[] protocols = null;</span>
+
+    /** The {@link TrustManager} implementation, default null (i.e. use system managers). */
+<span class="nc" id="L73">    private TrustManager trustManager = null;</span>
+
+    /** The {@link KeyManager}, default null (i.e. use system managers). */
+<span class="nc" id="L76">    private KeyManager keyManager = null; // seems not to be required</span>
+
+    /** The {@link HostnameVerifier} to use post-TLS, default null (i.e. no verification). */
+<span class="nc" id="L79">    private HostnameVerifier hostnameVerifier = null;</span>
+
+    /** Use Java 1.7+ HTTPS Endpoint Identification Algorithim. */
+    private boolean tlsEndpointChecking;
+
+    /**
+     * Constructor for SMTPSClient, using {@link #DEFAULT_PROTOCOL} i.e. TLS
+     * Sets security mode to explicit (isImplicit = false).
+     */
+    public SMTPSClient()
+    {
+<span class="nc" id="L90">        this(DEFAULT_PROTOCOL, false);</span>
+<span class="nc" id="L91">    }</span>
+
+    /**
+     * Constructor for SMTPSClient, using {@link #DEFAULT_PROTOCOL} i.e. TLS
+     * @param implicit The security mode, {@code true} for implicit, {@code false} for explicit
+     */
+    public SMTPSClient(boolean implicit)
+    {
+<span class="nc" id="L99">        this(DEFAULT_PROTOCOL, implicit);</span>
+<span class="nc" id="L100">    }</span>
+
+    /**
+     * Constructor for SMTPSClient, using explicit security mode.
+     * @param proto the protocol.
+     */
+    public SMTPSClient(String proto)
+    {
+<span class="nc" id="L108">        this(proto, false);</span>
+<span class="nc" id="L109">    }</span>
+
+    /**
+     * Constructor for SMTPSClient.
+     * @param proto the protocol.
+     * @param implicit The security mode, {@code true} for implicit, {@code false} for explicit
+     */
+<span class="nc" id="L116">    public SMTPSClient(String proto, boolean implicit)</span>
+    {
+<span class="nc" id="L118">        protocol = proto;</span>
+<span class="nc" id="L119">        isImplicit = implicit;</span>
+<span class="nc" id="L120">    }</span>
+
+    /**
+     * Constructor for SMTPSClient.
+     * @param proto the protocol.
+     * @param implicit The security mode, {@code true} for implicit, {@code false} for explicit
+     * @param encoding the encoding
+     * @since 3.3
+     */
+    public SMTPSClient(String proto, boolean implicit, String encoding)
+    {
+<span class="nc" id="L131">        super(encoding);</span>
+<span class="nc" id="L132">        protocol = proto;</span>
+<span class="nc" id="L133">        isImplicit = implicit;</span>
+<span class="nc" id="L134">    }</span>
+
+    /**
+     * Constructor for SMTPSClient, using {@link #DEFAULT_PROTOCOL} i.e. TLS
+     * @param implicit The security mode, {@code true} for implicit, {@code false} for explicit
+     * @param ctx A pre-configured SSL Context.
+     */
+<span class="nc" id="L141">    public SMTPSClient(boolean implicit, SSLContext ctx)</span>
+    {
+<span class="nc" id="L143">        isImplicit = implicit;</span>
+<span class="nc" id="L144">        context = ctx;</span>
+<span class="nc" id="L145">        protocol = DEFAULT_PROTOCOL;</span>
+<span class="nc" id="L146">    }</span>
+
+    /**
+     * Constructor for SMTPSClient.
+     * @param context A pre-configured SSL Context.
+     * @see #SMTPSClient(boolean, SSLContext)
+     */
+    public SMTPSClient(SSLContext context)
+    {
+<span class="nc" id="L155">        this(false, context);</span>
+<span class="nc" id="L156">    }</span>
+
+    /**
+     * Because there are so many connect() methods,
+     * the _connectAction_() method is provided as a means of performing
+     * some action immediately after establishing a connection,
+     * rather than reimplementing all of the connect() methods.
+     * @throws IOException If it is thrown by _connectAction_().
+     * @see org.apache.commons.net.SocketClient#_connectAction_()
+     */
+    @Override
+    protected void _connectAction_() throws IOException
+    {
+        // Implicit mode.
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (isImplicit) {</span>
+<span class="nc" id="L171">            performSSLNegotiation();</span>
+        }
+<span class="nc" id="L173">        super._connectAction_();</span>
+        // Explicit mode - don't do anything. The user calls execTLS()
+<span class="nc" id="L175">    }</span>
+
+    /**
+     * Performs a lazy init of the SSL context.
+     * @throws IOException When could not initialize the SSL context.
+     */
+    private void initSSLContext() throws IOException
+    {
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (context == null)</span>
+        {
+<span class="nc" id="L185">            context = SSLContextUtils.createSSLContext(protocol, getKeyManager(), getTrustManager());</span>
+        }
+<span class="nc" id="L187">    }</span>
+
+    /**
+     * SSL/TLS negotiation. Acquires an SSL socket of a
+     * connection and carries out handshake processing.
+     * @throws IOException If server negotiation fails.
+     */
+    private void performSSLNegotiation() throws IOException
+    {
+<span class="nc" id="L196">        initSSLContext();</span>
+
+<span class="nc" id="L198">        SSLSocketFactory ssf = context.getSocketFactory();</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        String host = (_hostname_ != null) ? _hostname_ : getRemoteAddress().getHostAddress();</span>
+<span class="nc" id="L200">        int port = getRemotePort();</span>
+<span class="nc" id="L201">        SSLSocket socket =</span>
+<span class="nc" id="L202">            (SSLSocket) ssf.createSocket(_socket_, host, port, true);</span>
+<span class="nc" id="L203">        socket.setEnableSessionCreation(true);</span>
+<span class="nc" id="L204">        socket.setUseClientMode(true);</span>
+
+<span class="nc bnc" id="L206" title="All 2 branches missed.">        if (tlsEndpointChecking) {</span>
+<span class="nc" id="L207">            SSLSocketUtils.enableEndpointNameVerification(socket);</span>
+        }
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        if (protocols != null) {</span>
+<span class="nc" id="L210">            socket.setEnabledProtocols(protocols);</span>
+        }
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (suites != null) {</span>
+<span class="nc" id="L213">            socket.setEnabledCipherSuites(suites);</span>
+        }
+<span class="nc" id="L215">        socket.startHandshake();</span>
+
+        // TODO the following setup appears to duplicate that in the super class methods
+<span class="nc" id="L218">        _socket_ = socket;</span>
+<span class="nc" id="L219">        _input_ = socket.getInputStream();</span>
+<span class="nc" id="L220">        _output_ = socket.getOutputStream();</span>
+<span class="nc" id="L221">        _reader = new CRLFLineReader(</span>
+<span class="nc" id="L222">                        new InputStreamReader(_input_, encoding));</span>
+<span class="nc" id="L223">        _writer = new BufferedWriter(</span>
+<span class="nc" id="L224">                        new OutputStreamWriter(_output_, encoding));</span>
+
+<span class="nc bnc" id="L226" title="All 4 branches missed.">        if (hostnameVerifier != null &amp;&amp; !hostnameVerifier.verify(host, socket.getSession())) {</span>
+<span class="nc" id="L227">            throw new SSLHandshakeException(&quot;Hostname doesn't match certificate&quot;);</span>
+        }
+<span class="nc" id="L229">    }</span>
+
+    /**
+     * Get the {@link KeyManager} instance.
+     * @return The current {@link KeyManager} instance.
+     */
+    public KeyManager getKeyManager()
+    {
+<span class="nc" id="L237">        return keyManager;</span>
+    }
+
+    /**
+     * Set a {@link KeyManager} to use.
+     * @param newKeyManager The KeyManager implementation to set.
+     * @see org.apache.commons.net.util.KeyManagerUtils
+     */
+    public void setKeyManager(KeyManager newKeyManager)
+    {
+<span class="nc" id="L247">        keyManager = newKeyManager;</span>
+<span class="nc" id="L248">    }</span>
+
+    /**
+     * Controls which particular cipher suites are enabled for use on this
+     * connection. Called before server negotiation.
+     * @param cipherSuites The cipher suites.
+     */
+    public void setEnabledCipherSuites(String[] cipherSuites)
+    {
+<span class="nc" id="L257">        suites = new String[cipherSuites.length];</span>
+<span class="nc" id="L258">        System.arraycopy(cipherSuites, 0, suites, 0, cipherSuites.length);</span>
+<span class="nc" id="L259">    }</span>
+
+    /**
+     * Returns the names of the cipher suites which could be enabled
+     * for use on this connection.
+     * When the underlying {@link java.net.Socket Socket} is not an {@link SSLSocket} instance, returns null.
+     * @return An array of cipher suite names, or &lt;code&gt;null&lt;/code&gt;.
+     */
+    public String[] getEnabledCipherSuites()
+    {
+<span class="nc bnc" id="L269" title="All 2 branches missed.">        if (_socket_ instanceof SSLSocket)</span>
+        {
+<span class="nc" id="L271">            return ((SSLSocket)_socket_).getEnabledCipherSuites();</span>
+        }
+<span class="nc" id="L273">        return null;</span>
+    }
+
+    /**
+     * Controls which particular protocol versions are enabled for use on this
+     * connection. I perform setting before a server negotiation.
+     * @param protocolVersions The protocol versions.
+     */
+    public void setEnabledProtocols(String[] protocolVersions)
+    {
+<span class="nc" id="L283">        protocols = new String[protocolVersions.length];</span>
+<span class="nc" id="L284">        System.arraycopy(protocolVersions, 0, protocols, 0, protocolVersions.length);</span>
+<span class="nc" id="L285">    }</span>
+
+    /**
+     * Returns the names of the protocol versions which are currently
+     * enabled for use on this connection.
+     * When the underlying {@link java.net.Socket Socket} is not an {@link SSLSocket} instance, returns null.
+     * @return An array of protocols, or &lt;code&gt;null&lt;/code&gt;.
+     */
+    public String[] getEnabledProtocols()
+    {
+<span class="nc bnc" id="L295" title="All 2 branches missed.">        if (_socket_ instanceof SSLSocket)</span>
+        {
+<span class="nc" id="L297">            return ((SSLSocket)_socket_).getEnabledProtocols();</span>
+        }
+<span class="nc" id="L299">        return null;</span>
+    }
+
+    /**
+     * The TLS command execution.
+     * @throws IOException If an I/O error occurs while sending
+     * the command or performing the negotiation.
+     * @return TRUE if the command and negotiation succeeded.
+     */
+    public boolean execTLS() throws IOException
+    {
+<span class="nc bnc" id="L310" title="All 2 branches missed.">        if (!SMTPReply.isPositiveCompletion(sendCommand(&quot;STARTTLS&quot;)))</span>
+        {
+<span class="nc" id="L312">            return false;</span>
+            //throw new SSLException(getReplyString());
+        }
+<span class="nc" id="L315">        performSSLNegotiation();</span>
+<span class="nc" id="L316">        return true;</span>
+    }
+
+    /**
+     * Get the currently configured {@link TrustManager}.
+     * @return A TrustManager instance.
+     */
+    public TrustManager getTrustManager()
+    {
+<span class="nc" id="L325">        return trustManager;</span>
+    }
+
+    /**
+     * Override the default {@link TrustManager} to use.
+     * @param newTrustManager The TrustManager implementation to set.
+     * @see org.apache.commons.net.util.TrustManagerUtils
+     */
+    public void setTrustManager(TrustManager newTrustManager)
+    {
+<span class="nc" id="L335">        trustManager = newTrustManager;</span>
+<span class="nc" id="L336">    }</span>
+
+    /**
+     * Get the currently configured {@link HostnameVerifier}.
+     * @return A HostnameVerifier instance.
+     * @since 3.4
+     */
+    public HostnameVerifier getHostnameVerifier()
+    {
+<span class="nc" id="L345">        return hostnameVerifier;</span>
+    }
+
+    /**
+     * Override the default {@link HostnameVerifier} to use.
+     * @param newHostnameVerifier The HostnameVerifier implementation to set or &lt;code&gt;null&lt;/code&gt; to disable.
+     * @since 3.4
+     */
+    public void setHostnameVerifier(HostnameVerifier newHostnameVerifier)
+    {
+<span class="nc" id="L355">        hostnameVerifier = newHostnameVerifier;</span>
+<span class="nc" id="L356">    }</span>
+
+    /**
+     * Return whether or not endpoint identification using the HTTPS algorithm
+     * on Java 1.7+ is enabled. The default behaviour is for this to be disabled.
+     *
+     * @return True if enabled, false if not.
+     * @since 3.4
+     */
+    public boolean isEndpointCheckingEnabled()
+    {
+<span class="nc" id="L367">        return tlsEndpointChecking;</span>
+    }
+
+    /**
+     * Automatic endpoint identification checking using the HTTPS algorithm
+     * is supported on Java 1.7+. The default behaviour is for this to be disabled.
+     *
+     * @param enable Enable automatic endpoint identification checking using the HTTPS algorithm on Java 1.7+.
+     * @since 3.4
+     */
+    public void setEndpointCheckingEnabled(boolean enable)
+    {
+<span class="nc" id="L379">        tlsEndpointChecking = enable;</span>
+<span class="nc" id="L380">    }</span>
+}
+
+/* kate: indent-width 4; replace-tabs on; */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

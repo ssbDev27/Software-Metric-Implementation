@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>POP3MessageInfo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.pop3</a> &gt; <span class="el_source">POP3MessageInfo.java</span></div><h1>POP3MessageInfo.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.pop3;
+
+/***
+ * POP3MessageInfo is used to return information about messages stored on
+ * a POP3 server.  Its fields are used to mean slightly different things
+ * depending on the information being returned.
+ * &lt;p&gt;
+ * In response to a status command, &lt;code&gt; number &lt;/code&gt;
+ * contains the number of messages in the mailbox, &lt;code&gt; size &lt;/code&gt;
+ * contains the size of the mailbox in bytes, and &lt;code&gt; identifier &lt;/code&gt;
+ * is null.
+ * &lt;p&gt;
+ * In response to a message listings, &lt;code&gt; number &lt;/code&gt;
+ * contains the message number, &lt;code&gt; size &lt;/code&gt; contains the
+ * size of the message in bytes, and &lt;code&gt; identifier &lt;/code&gt; is null.
+ * &lt;p&gt;
+ * In response to unique identifier listings, &lt;code&gt; number &lt;/code&gt; contains
+ * the message number, &lt;code&gt; size &lt;/code&gt; is undefined, and
+ * &lt;code&gt; identifier &lt;/code&gt; contains the message's unique identifier.
+ *
+ *
+ ***/
+
+public final class POP3MessageInfo
+{
+    public int number;
+    public int size;
+    public String identifier;
+
+    /***
+     * Creates a POP3MessageInfo instance with &lt;code&gt;number&lt;/code&gt; and
+     * &lt;code&gt; size &lt;/code&gt; set to 0, and &lt;code&gt;identifier&lt;/code&gt; set to
+     * null.
+     ***/
+    public POP3MessageInfo()
+    {
+<span class="nc" id="L54">        this(0, null, 0);</span>
+<span class="nc" id="L55">    }</span>
+
+    /***
+     * Creates a POP3MessageInfo instance with &lt;code&gt;number&lt;/code&gt; set
+     * to &lt;code&gt; num &lt;/code&gt;, &lt;code&gt; size &lt;/code&gt; set to &lt;code&gt; octets &lt;/code&gt;,
+     * and &lt;code&gt;identifier&lt;/code&gt; set to null.
+     * @param num the number
+     * @param octets the size
+     ***/
+    public POP3MessageInfo(int num, int octets)
+    {
+<span class="nc" id="L66">        this(num, null, octets);</span>
+<span class="nc" id="L67">    }</span>
+
+    /***
+     * Creates a POP3MessageInfo instance with &lt;code&gt;number&lt;/code&gt; set
+     * to &lt;code&gt; num &lt;/code&gt;, &lt;code&gt; size &lt;/code&gt; undefined,
+     * and &lt;code&gt;identifier&lt;/code&gt; set to &lt;code&gt;uid&lt;/code&gt;.
+     * @param num the number
+     * @param uid the UID
+     ***/
+    public POP3MessageInfo(int num, String uid)
+    {
+<span class="nc" id="L78">        this(num, uid, -1);</span>
+<span class="nc" id="L79">    }</span>
+
+<span class="nc" id="L81">    private POP3MessageInfo(int num, String uid, int size) {</span>
+<span class="nc" id="L82">        this.number = num;</span>
+<span class="nc" id="L83">        this.size = size;</span>
+<span class="nc" id="L84">        this.identifier = uid;</span>
+<span class="nc" id="L85">    }</span>
+
+    /**
+     * @since 3.6
+     */
+    @Override
+    public String toString() {
+<span class="nc" id="L92">        return &quot;Number: &quot; + number + &quot;. Size: &quot; + size + &quot;. Id: &quot; + identifier;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,585 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>POP3Client.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.pop3</a> &gt; <span class="el_source">POP3Client.java</span></div><h1>POP3Client.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.pop3;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ListIterator;
+import java.util.StringTokenizer;
+
+import org.apache.commons.net.io.DotTerminatedMessageReader;
+
+/***
+ * The POP3Client class implements the client side of the Internet POP3
+ * Protocol defined in RFC 1939.  All commands are supported, including
+ * the APOP command which requires MD5 encryption.  See RFC 1939 for
+ * more details on the POP3 protocol.
+ * &lt;p&gt;
+ * Rather than list it separately for each method, we mention here that
+ * every method communicating with the server and throwing an IOException
+ * can also throw a
+ * {@link org.apache.commons.net.MalformedServerReplyException}
+ * , which is a subclass
+ * of IOException.  A MalformedServerReplyException will be thrown when
+ * the reply received from the server deviates enough from the protocol
+ * specification that it cannot be interpreted in a useful manner despite
+ * attempts to be as lenient as possible.
+ *
+ *
+ * @see POP3MessageInfo
+ * @see org.apache.commons.net.io.DotTerminatedMessageReader
+ * @see org.apache.commons.net.MalformedServerReplyException
+ ***/
+
+<span class="nc" id="L51">public class POP3Client extends POP3</span>
+{
+
+    private static POP3MessageInfo __parseStatus(String line)
+    {
+        int num, size;
+        StringTokenizer tokenizer;
+
+<span class="nc" id="L59">        tokenizer = new StringTokenizer(line);</span>
+
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (!tokenizer.hasMoreElements()) {</span>
+<span class="nc" id="L62">            return null;</span>
+        }
+
+<span class="nc" id="L65">        num = size = 0;</span>
+
+        try
+        {
+<span class="nc" id="L69">            num = Integer.parseInt(tokenizer.nextToken());</span>
+
+<span class="nc bnc" id="L71" title="All 2 branches missed.">            if (!tokenizer.hasMoreElements()) {</span>
+<span class="nc" id="L72">                return null;</span>
+            }
+
+<span class="nc" id="L75">            size = Integer.parseInt(tokenizer.nextToken());</span>
+<span class="nc" id="L76">        }</span>
+<span class="nc" id="L77">        catch (NumberFormatException e)</span>
+        {
+<span class="nc" id="L79">            return null;</span>
+        }
+
+<span class="nc" id="L82">        return new POP3MessageInfo(num, size);</span>
+    }
+
+    private static POP3MessageInfo __parseUID(String line)
+    {
+        int num;
+        StringTokenizer tokenizer;
+
+<span class="nc" id="L90">        tokenizer = new StringTokenizer(line);</span>
+
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (!tokenizer.hasMoreElements()) {</span>
+<span class="nc" id="L93">            return null;</span>
+        }
+
+<span class="nc" id="L96">        num = 0;</span>
+
+        try
+        {
+<span class="nc" id="L100">            num = Integer.parseInt(tokenizer.nextToken());</span>
+
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            if (!tokenizer.hasMoreElements()) {</span>
+<span class="nc" id="L103">                return null;</span>
+            }
+
+<span class="nc" id="L106">            line = tokenizer.nextToken();</span>
+<span class="nc" id="L107">        }</span>
+<span class="nc" id="L108">        catch (NumberFormatException e)</span>
+        {
+<span class="nc" id="L110">            return null;</span>
+        }
+
+<span class="nc" id="L113">        return new POP3MessageInfo(num, line);</span>
+    }
+
+    /***
+     * Send a CAPA command to the POP3 server.
+     * @return True if the command was successful, false if not.
+     * @throws IOException If a network I/O error occurs in the process of
+     *        sending the CAPA command.
+     * @since 3.1 (was previously in ExtendedPOP3Client)
+     ***/
+    public boolean capa() throws IOException
+    {
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (sendCommand(POP3Command.CAPA) == POP3Reply.OK) {</span>
+<span class="nc" id="L126">            getAdditionalReply();</span>
+<span class="nc" id="L127">            return true;</span>
+        }
+<span class="nc" id="L129">        return false;</span>
+
+    }
+
+    /***
+     * Login to the POP3 server with the given username and password.  You
+     * must first connect to the server with
+     * {@link org.apache.commons.net.SocketClient#connect  connect }
+     * before attempting to login.  A login attempt is only valid if
+     * the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#AUTHORIZATION_STATE AUTHORIZATION_STATE }
+     * .  After logging in, the client enters the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .
+     *
+     * @param username  The account name being logged in to.
+     * @param password  The plain text password of the account.
+     * @return True if the login attempt was successful, false if not.
+     * @throws IOException If a network I/O error occurs in the process of
+     *            logging in.
+     ***/
+    public boolean login(String username, String password) throws IOException
+    {
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        if (getState() != AUTHORIZATION_STATE) {</span>
+<span class="nc" id="L153">            return false;</span>
+        }
+
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (sendCommand(POP3Command.USER, username) != POP3Reply.OK) {</span>
+<span class="nc" id="L157">            return false;</span>
+        }
+
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        if (sendCommand(POP3Command.PASS, password) != POP3Reply.OK) {</span>
+<span class="nc" id="L161">            return false;</span>
+        }
+
+<span class="nc" id="L164">        setState(TRANSACTION_STATE);</span>
+
+<span class="nc" id="L166">        return true;</span>
+    }
+
+
+    /***
+     * Login to the POP3 server with the given username and authentication
+     * information.  Use this method when connecting to a server requiring
+     * authentication using the APOP command.  Because the timestamp
+     * produced in the greeting banner varies from server to server, it is
+     * not possible to consistently extract the information.  Therefore,
+     * after connecting to the server, you must call
+     * {@link org.apache.commons.net.pop3.POP3#getReplyString getReplyString }
+     *  and parse out the timestamp information yourself.
+     * &lt;p&gt;
+     * You must first connect to the server with
+     * {@link org.apache.commons.net.SocketClient#connect  connect }
+     * before attempting to login.  A login attempt is only valid if
+     * the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#AUTHORIZATION_STATE AUTHORIZATION_STATE }
+     * .  After logging in, the client enters the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .  After connecting, you must parse out the
+     * server specific information to use as a timestamp, and pass that
+     * information to this method.  The secret is a shared secret known
+     * to you and the server.  See RFC 1939 for more details regarding
+     * the APOP command.
+     *
+     * @param username  The account name being logged in to.
+     * @param timestamp  The timestamp string to combine with the secret.
+     * @param secret  The shared secret which produces the MD5 digest when
+     *        combined with the timestamp.
+     * @return True if the login attempt was successful, false if not.
+     * @throws IOException If a network I/O error occurs in the process of
+     *            logging in.
+     * @throws NoSuchAlgorithmException If the MD5 encryption algorithm
+     *      cannot be instantiated by the Java runtime system.
+     ***/
+    public boolean login(String username, String timestamp, String secret)
+    throws IOException, NoSuchAlgorithmException
+    {
+        int i;
+        byte[] digest;
+        StringBuilder buffer, digestBuffer;
+        MessageDigest md5;
+
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (getState() != AUTHORIZATION_STATE) {</span>
+<span class="nc" id="L212">            return false;</span>
+        }
+
+<span class="nc" id="L215">        md5 = MessageDigest.getInstance(&quot;MD5&quot;);</span>
+<span class="nc" id="L216">        timestamp += secret;</span>
+<span class="nc" id="L217">        digest = md5.digest(timestamp.getBytes(getCharset()));</span>
+<span class="nc" id="L218">        digestBuffer = new StringBuilder(128);</span>
+
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        for (i = 0; i &lt; digest.length; i++) {</span>
+<span class="nc" id="L221">            int digit = digest[i] &amp; 0xff;</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">            if (digit &lt;= 15) { // Add leading zero if necessary (NET-351)</span>
+<span class="nc" id="L223">                digestBuffer.append(&quot;0&quot;);</span>
+            }
+<span class="nc" id="L225">            digestBuffer.append(Integer.toHexString(digit));</span>
+        }
+
+<span class="nc" id="L228">        buffer = new StringBuilder(256);</span>
+<span class="nc" id="L229">        buffer.append(username);</span>
+<span class="nc" id="L230">        buffer.append(' ');</span>
+<span class="nc" id="L231">        buffer.append(digestBuffer.toString());</span>
+
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        if (sendCommand(POP3Command.APOP, buffer.toString()) != POP3Reply.OK) {</span>
+<span class="nc" id="L234">            return false;</span>
+        }
+
+<span class="nc" id="L237">        setState(TRANSACTION_STATE);</span>
+
+<span class="nc" id="L239">        return true;</span>
+    }
+
+
+    /***
+     * Logout of the POP3 server.  To fully disconnect from the server
+     * you must call
+     * {@link org.apache.commons.net.pop3.POP3#disconnect  disconnect }.
+     * A logout attempt is valid in any state.  If
+     * the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * , it enters the
+     * {@link org.apache.commons.net.pop3.POP3#UPDATE_STATE UPDATE_STATE }
+     *  on a successful logout.
+     *
+     * @return True if the logout attempt was successful, false if not.
+     * @throws IOException If a network I/O error occurs in the process
+     *           of logging out.
+     ***/
+    public boolean logout() throws IOException
+    {
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (getState() == TRANSACTION_STATE) {</span>
+<span class="nc" id="L261">            setState(UPDATE_STATE);</span>
+        }
+<span class="nc" id="L263">        sendCommand(POP3Command.QUIT);</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        return (_replyCode == POP3Reply.OK);</span>
+    }
+
+
+    /***
+     * Send a NOOP command to the POP3 server.  This is useful for keeping
+     * a connection alive since most POP3 servers will timeout after 10
+     * minutes of inactivity.  A noop attempt will only succeed if
+     * the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .
+     *
+     * @return True if the noop attempt was successful, false if not.
+     * @throws IOException If a network I/O error occurs in the process of
+     *        sending the NOOP command.
+     ***/
+    public boolean noop() throws IOException
+    {
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        if (getState() == TRANSACTION_STATE) {</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">            return (sendCommand(POP3Command.NOOP) == POP3Reply.OK);</span>
+        }
+<span class="nc" id="L285">        return false;</span>
+    }
+
+
+    /***
+     * Delete a message from the POP3 server.  The message is only marked
+     * for deletion by the server.  If you decide to unmark the message, you
+     * must issuse a {@link #reset  reset } command.  Messages marked
+     * for deletion are only deleted by the server on
+     * {@link #logout  logout }.
+     * A delete attempt can only succeed if the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .
+     *
+     * @param messageId  The message number to delete.
+     * @return True if the deletion attempt was successful, false if not.
+     * @throws IOException If a network I/O error occurs in the process of
+     *           sending the delete command.
+     ***/
+    public boolean deleteMessage(int messageId) throws IOException
+    {
+<span class="nc bnc" id="L306" title="All 2 branches missed.">        if (getState() == TRANSACTION_STATE) {</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">            return (sendCommand(POP3Command.DELE, Integer.toString(messageId))</span>
+                    == POP3Reply.OK);
+        }
+<span class="nc" id="L310">        return false;</span>
+    }
+
+
+    /***
+     * Reset the POP3 session.  This is useful for undoing any message
+     * deletions that may have been performed.  A reset attempt can only
+     * succeed if the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .
+     *
+     * @return True if the reset attempt was successful, false if not.
+     * @throws IOException If a network I/O error occurs in the process of
+     *      sending the reset command.
+     ***/
+    public boolean reset() throws IOException
+    {
+<span class="nc bnc" id="L327" title="All 2 branches missed.">        if (getState() == TRANSACTION_STATE) {</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">            return (sendCommand(POP3Command.RSET) == POP3Reply.OK);</span>
+        }
+<span class="nc" id="L330">        return false;</span>
+    }
+
+    /***
+     * Get the mailbox status.  A status attempt can only
+     * succeed if the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .  Returns a POP3MessageInfo instance
+     * containing the number of messages in the mailbox and the total
+     * size of the messages in bytes.  Returns null if the status the
+     * attempt fails.
+     *
+     * @return A POP3MessageInfo instance containing the number of
+     *         messages in the mailbox and the total size of the messages
+     *         in bytes.  Returns null if the status the attempt fails.
+     * @throws IOException If a network I/O error occurs in the process of
+     *       sending the status command.
+     ***/
+    public POP3MessageInfo status() throws IOException
+    {
+<span class="nc bnc" id="L350" title="All 2 branches missed.">        if (getState() != TRANSACTION_STATE) {</span>
+<span class="nc" id="L351">            return null;</span>
+        }
+<span class="nc bnc" id="L353" title="All 2 branches missed.">        if (sendCommand(POP3Command.STAT) != POP3Reply.OK) {</span>
+<span class="nc" id="L354">            return null;</span>
+        }
+<span class="nc" id="L356">        return __parseStatus(_lastReplyLine.substring(3));</span>
+    }
+
+
+    /***
+     * List an individual message.  A list attempt can only
+     * succeed if the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .  Returns a POP3MessageInfo instance
+     * containing the number of the listed message and the
+     * size of the message in bytes.  Returns null if the list
+     * attempt fails (e.g., if the specified message number does
+     * not exist).
+     *
+     * @param messageId  The number of the message list.
+     * @return A POP3MessageInfo instance containing the number of the
+     *         listed message and the size of the message in bytes.  Returns
+     *         null if the list attempt fails.
+     * @throws IOException If a network I/O error occurs in the process of
+     *         sending the list command.
+     ***/
+    public POP3MessageInfo listMessage(int messageId) throws IOException
+    {
+<span class="nc bnc" id="L379" title="All 2 branches missed.">        if (getState() != TRANSACTION_STATE) {</span>
+<span class="nc" id="L380">            return null;</span>
+        }
+<span class="nc bnc" id="L382" title="All 2 branches missed.">        if (sendCommand(POP3Command.LIST, Integer.toString(messageId))</span>
+                != POP3Reply.OK) {
+<span class="nc" id="L384">            return null;</span>
+        }
+<span class="nc" id="L386">        return __parseStatus(_lastReplyLine.substring(3));</span>
+    }
+
+
+    /***
+     * List all messages.  A list attempt can only
+     * succeed if the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .  Returns an array of POP3MessageInfo instances,
+     * each containing the number of a message and its size in bytes.
+     * If there are no messages, this method returns a zero length array.
+     * If the list attempt fails, it returns null.
+     *
+     * @return An array of POP3MessageInfo instances representing all messages
+     * in the order they appear in the mailbox,
+     * each containing the number of a message and its size in bytes.
+     * If there are no messages, this method returns a zero length array.
+     * If the list attempt fails, it returns null.
+     * @throws IOException If a network I/O error occurs in the process of
+     *     sending the list command.
+     ***/
+    public POP3MessageInfo[] listMessages() throws IOException
+    {
+<span class="nc bnc" id="L409" title="All 2 branches missed.">        if (getState() != TRANSACTION_STATE) {</span>
+<span class="nc" id="L410">            return null;</span>
+        }
+<span class="nc bnc" id="L412" title="All 2 branches missed.">        if (sendCommand(POP3Command.LIST) != POP3Reply.OK) {</span>
+<span class="nc" id="L413">            return null;</span>
+        }
+<span class="nc" id="L415">        getAdditionalReply();</span>
+
+        // This could be a zero length array if no messages present
+<span class="nc" id="L418">        POP3MessageInfo[] messages = new POP3MessageInfo[_replyLines.size() - 2]; // skip first and last lines</span>
+
+<span class="nc" id="L420">        ListIterator&lt;String&gt; en = _replyLines.listIterator(1); // Skip first line</span>
+
+        // Fetch lines.
+<span class="nc bnc" id="L423" title="All 2 branches missed.">        for (int line = 0; line &lt; messages.length; line++) {</span>
+<span class="nc" id="L424">            messages[line] = __parseStatus(en.next());</span>
+        }
+
+<span class="nc" id="L427">        return messages;</span>
+    }
+
+    /***
+     * List the unique identifier for a message.  A list attempt can only
+     * succeed if the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .  Returns a POP3MessageInfo instance
+     * containing the number of the listed message and the
+     * unique identifier for that message.  Returns null if the list
+     * attempt fails  (e.g., if the specified message number does
+     * not exist).
+     *
+     * @param messageId  The number of the message list.
+     * @return A POP3MessageInfo instance containing the number of the
+     *         listed message and the unique identifier for that message.
+     *         Returns null if the list attempt fails.
+     * @throws IOException If a network I/O error occurs in the process of
+     *        sending the list unique identifier command.
+     ***/
+    public POP3MessageInfo listUniqueIdentifier(int messageId)
+    throws IOException
+    {
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        if (getState() != TRANSACTION_STATE) {</span>
+<span class="nc" id="L451">            return null;</span>
+        }
+<span class="nc bnc" id="L453" title="All 2 branches missed.">        if (sendCommand(POP3Command.UIDL, Integer.toString(messageId))</span>
+                != POP3Reply.OK) {
+<span class="nc" id="L455">            return null;</span>
+        }
+<span class="nc" id="L457">        return __parseUID(_lastReplyLine.substring(3));</span>
+    }
+
+
+    /***
+     * List the unique identifiers for all messages.  A list attempt can only
+     * succeed if the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * .  Returns an array of POP3MessageInfo instances,
+     * each containing the number of a message and its unique identifier.
+     * If there are no messages, this method returns a zero length array.
+     * If the list attempt fails, it returns null.
+     *
+     * @return An array of POP3MessageInfo instances representing all messages
+     * in the order they appear in the mailbox,
+     * each containing the number of a message and its unique identifier
+     * If there are no messages, this method returns a zero length array.
+     * If the list attempt fails, it returns null.
+     * @throws IOException If a network I/O error occurs in the process of
+     *     sending the list unique identifier command.
+     ***/
+    public POP3MessageInfo[] listUniqueIdentifiers() throws IOException
+    {
+<span class="nc bnc" id="L480" title="All 2 branches missed.">        if (getState() != TRANSACTION_STATE) {</span>
+<span class="nc" id="L481">            return null;</span>
+        }
+<span class="nc bnc" id="L483" title="All 2 branches missed.">        if (sendCommand(POP3Command.UIDL) != POP3Reply.OK) {</span>
+<span class="nc" id="L484">            return null;</span>
+        }
+<span class="nc" id="L486">        getAdditionalReply();</span>
+
+        // This could be a zero length array if no messages present
+<span class="nc" id="L489">        POP3MessageInfo[] messages = new POP3MessageInfo[_replyLines.size() - 2]; // skip first and last lines</span>
+
+<span class="nc" id="L491">        ListIterator&lt;String&gt; en = _replyLines.listIterator(1); // skip first line</span>
+
+        // Fetch lines.
+<span class="nc bnc" id="L494" title="All 2 branches missed.">        for (int line = 0; line &lt; messages.length; line++) {</span>
+<span class="nc" id="L495">            messages[line] = __parseUID(en.next());</span>
+        }
+
+<span class="nc" id="L498">        return messages;</span>
+    }
+
+
+    /**
+     * Retrieve a message from the POP3 server.  A retrieve message attempt
+     * can only succeed if the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * &lt;p&gt;
+     * You must not issue any commands to the POP3 server (i.e., call any
+     * other methods) until you finish reading the message from the
+     * returned BufferedReader instance.
+     * The POP3 protocol uses the same stream for issuing commands as it does
+     * for returning results.  Therefore the returned BufferedReader actually reads
+     * directly from the POP3 connection.  After the end of message has been
+     * reached, new commands can be executed and their replies read.  If
+     * you do not follow these requirements, your program will not work
+     * properly.
+     *
+     * @param messageId  The number of the message to fetch.
+     * @return A DotTerminatedMessageReader instance
+     * from which the entire message can be read.
+     * This can safely be cast to a {@link java.io.BufferedReader BufferedReader} in order to
+     * use the {@link java.io.BufferedReader#readLine() BufferedReader#readLine()} method.
+     * Returns null if the retrieval attempt fails  (e.g., if the specified
+     * message number does not exist).
+     * @throws IOException If a network I/O error occurs in the process of
+     *        sending the retrieve message command.
+     */
+    public Reader retrieveMessage(int messageId) throws IOException
+    {
+<span class="nc bnc" id="L529" title="All 2 branches missed.">        if (getState() != TRANSACTION_STATE) {</span>
+<span class="nc" id="L530">            return null;</span>
+        }
+<span class="nc bnc" id="L532" title="All 2 branches missed.">        if (sendCommand(POP3Command.RETR, Integer.toString(messageId)) != POP3Reply.OK) {</span>
+<span class="nc" id="L533">            return null;</span>
+        }
+
+<span class="nc" id="L536">        return new DotTerminatedMessageReader(_reader);</span>
+    }
+
+
+    /**
+     * Retrieve only the specified top number of lines of a message from the
+     * POP3 server.  A retrieve top lines attempt
+     * can only succeed if the client is in the
+     * {@link org.apache.commons.net.pop3.POP3#TRANSACTION_STATE TRANSACTION_STATE }
+     * &lt;p&gt;
+     * You must not issue any commands to the POP3 server (i.e., call any
+     * other methods) until you finish reading the message from the returned
+     * BufferedReader instance.
+     * The POP3 protocol uses the same stream for issuing commands as it does
+     * for returning results.  Therefore the returned BufferedReader actually reads
+     * directly from the POP3 connection.  After the end of message has been
+     * reached, new commands can be executed and their replies read.  If
+     * you do not follow these requirements, your program will not work
+     * properly.
+     *
+     * @param messageId  The number of the message to fetch.
+     * @param numLines  The top number of lines to fetch. This must be &amp;gt;= 0.
+     * @return  A DotTerminatedMessageReader instance
+     * from which the specified top number of lines of the message can be
+     * read.
+     * This can safely be cast to a {@link java.io.BufferedReader BufferedReader} in order to
+     * use the {@link java.io.BufferedReader#readLine() BufferedReader#readLine()} method.
+     * Returns null if the retrieval attempt fails  (e.g., if the specified
+     * message number does not exist).
+     * @throws IOException If a network I/O error occurs in the process of
+     *       sending the top command.
+     */
+    public Reader retrieveMessageTop(int messageId, int numLines)
+    throws IOException
+    {
+<span class="nc bnc" id="L571" title="All 4 branches missed.">        if (numLines &lt; 0 || getState() != TRANSACTION_STATE) {</span>
+<span class="nc" id="L572">            return null;</span>
+        }
+<span class="nc bnc" id="L574" title="All 2 branches missed.">        if (sendCommand(POP3Command.TOP, Integer.toString(messageId) + &quot; &quot; +</span>
+<span class="nc" id="L575">                        Integer.toString(numLines)) != POP3Reply.OK) {</span>
+<span class="nc" id="L576">            return null;</span>
+        }
+
+<span class="nc" id="L579">        return new DotTerminatedMessageReader(_reader);</span>
+    }
+
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultFTPFileEntryParserFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp.parser</a> &gt; <span class="el_source">DefaultFTPFileEntryParserFactory.java</span></div><h1>DefaultFTPFileEntryParserFactory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp.parser;
+
+import java.util.regex.Pattern;
+
+import org.apache.commons.net.ftp.Configurable;
+import org.apache.commons.net.ftp.FTPClientConfig;
+import org.apache.commons.net.ftp.FTPFileEntryParser;
+
+
+/**
+ * This is the default implementation of the
+ * FTPFileEntryParserFactory interface.  This is the
+ * implementation that will be used by
+ * org.apache.commons.net.ftp.FTPClient.listFiles()
+ * if no other implementation has been specified.
+ *
+ * @see org.apache.commons.net.ftp.FTPClient#listFiles
+ * @see org.apache.commons.net.ftp.FTPClient#setParserFactory
+ */
+<span class="fc" id="L37">public class DefaultFTPFileEntryParserFactory</span>
+    implements FTPFileEntryParserFactory
+{
+
+    // Match a plain Java Identifier
+    private static final String JAVA_IDENTIFIER = &quot;\\p{javaJavaIdentifierStart}(\\p{javaJavaIdentifierPart})*&quot;;
+    // Match a qualified name, e.g. a.b.c.Name - but don't allow the default package as that would allow &quot;VMS&quot;/&quot;UNIX&quot; etc.
+    private static final String JAVA_QUALIFIED_NAME  = &quot;(&quot;+JAVA_IDENTIFIER+&quot;\\.)+&quot;+JAVA_IDENTIFIER;
+    // Create the pattern, as it will be reused many times
+<span class="fc" id="L46">    private static final Pattern JAVA_QUALIFIED_NAME_PATTERN = Pattern.compile(JAVA_QUALIFIED_NAME);</span>
+
+    /**
+     * This default implementation of the FTPFileEntryParserFactory
+     * interface works according to the following logic:
+     * First it attempts to interpret the supplied key as a fully
+     * qualified classname (default package is not allowed) of a class implementing the
+     * FTPFileEntryParser interface.  If that succeeds, a parser
+     * object of this class is instantiated and is returned;
+     * otherwise it attempts to interpret the key as an identirier
+     * commonly used by the FTP SYST command to identify systems.
+     * &lt;p&gt;
+     * If &lt;code&gt;key&lt;/code&gt; is not recognized as a fully qualified
+     * classname known to the system, this method will then attempt
+     * to see whether it &lt;b&gt;contains&lt;/b&gt; a string identifying one of
+     * the known parsers.  This comparison is &lt;b&gt;case-insensitive&lt;/b&gt;.
+     * The intent here is where possible, to select as keys strings
+     * which are returned by the SYST command on the systems which
+     * the corresponding parser successfully parses.  This enables
+     * this factory to be used in the auto-detection system.
+     *
+     * @param key    should be a fully qualified classname corresponding to
+     *               a class implementing the FTPFileEntryParser interface&lt;br&gt;
+     *               OR&lt;br&gt;
+     *               a string containing (case-insensitively) one of the
+     *               following keywords:
+     *               &lt;ul&gt;
+     *               &lt;li&gt;{@link FTPClientConfig#SYST_UNIX UNIX}&lt;/li&gt;
+     *               &lt;li&gt;{@link FTPClientConfig#SYST_NT WINDOWS}&lt;/li&gt;
+     *               &lt;li&gt;{@link FTPClientConfig#SYST_OS2 OS/2}&lt;/li&gt;
+     *               &lt;li&gt;{@link FTPClientConfig#SYST_OS400 OS/400}&lt;/li&gt;
+     *               &lt;li&gt;{@link FTPClientConfig#SYST_AS400 AS/400}&lt;/li&gt;
+     *               &lt;li&gt;{@link FTPClientConfig#SYST_VMS VMS}&lt;/li&gt;
+     *               &lt;li&gt;{@link FTPClientConfig#SYST_MVS MVS}&lt;/li&gt;
+     *               &lt;li&gt;{@link FTPClientConfig#SYST_NETWARE NETWARE}&lt;/li&gt;
+     *               &lt;li&gt;{@link FTPClientConfig#SYST_L8 TYPE:L8}&lt;/li&gt;
+     *               &lt;/ul&gt;
+     * @return the FTPFileEntryParser corresponding to the supplied key.
+     * @throws ParserInitializationException thrown if for any reason the factory cannot resolve
+     *                   the supplied key into an FTPFileEntryParser.
+     * @see FTPFileEntryParser
+     */
+    @Override
+    public FTPFileEntryParser createFileEntryParser(String key)
+    {
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L92">            throw new ParserInitializationException(&quot;Parser key cannot be null&quot;);</span>
+        }
+<span class="fc" id="L94">        return createFileEntryParser(key, null);</span>
+    }
+
+    // Common method to process both key and config parameters.
+    private FTPFileEntryParser createFileEntryParser(String key, FTPClientConfig config) {
+<span class="fc" id="L99">        FTPFileEntryParser parser = null;</span>
+
+        // Is the key a possible class name?
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (JAVA_QUALIFIED_NAME_PATTERN.matcher(key).matches()) {</span>
+            try
+            {
+<span class="fc" id="L105">                Class&lt;?&gt; parserClass = Class.forName(key);</span>
+                try {
+<span class="fc" id="L107">                    parser = (FTPFileEntryParser) parserClass.newInstance();</span>
+<span class="fc" id="L108">                } catch (ClassCastException e) {</span>
+<span class="fc" id="L109">                    throw new ParserInitializationException(parserClass.getName()</span>
+<span class="fc" id="L110">                        + &quot; does not implement the interface &quot;</span>
+<span class="fc" id="L111">                        + &quot;org.apache.commons.net.ftp.FTPFileEntryParser.&quot;, e);</span>
+<span class="fc" id="L112">                } catch (Exception e) {</span>
+<span class="fc" id="L113">                    throw new ParserInitializationException(&quot;Error initializing parser&quot;, e);</span>
+<span class="nc" id="L114">                } catch (ExceptionInInitializerError e) {</span>
+<span class="nc" id="L115">                    throw new ParserInitializationException(&quot;Error initializing parser&quot;, e);</span>
+                }
+<span class="nc" id="L117">            } catch (ClassNotFoundException e) {</span>
+                // OK, assume it is an alias
+            }
+        }
+
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (parser == null) { // Now try for aliases</span>
+<span class="fc" id="L123">            String ukey = key.toUpperCase(java.util.Locale.ENGLISH);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            if (ukey.indexOf(FTPClientConfig.SYST_UNIX_TRIM_LEADING) &gt;= 0)</span>
+            {
+<span class="fc" id="L126">                parser = new UnixFTPEntryParser(config, true);</span>
+<span class="fc" id="L127">            }</span>
+            // must check this after SYST_UNIX_TRIM_LEADING as it is a substring of it
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            else if (ukey.indexOf(FTPClientConfig.SYST_UNIX) &gt;= 0)</span>
+            {
+<span class="fc" id="L131">                parser = new UnixFTPEntryParser(config, false);</span>
+<span class="fc" id="L132">            }</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            else if (ukey.indexOf(FTPClientConfig.SYST_VMS) &gt;= 0)</span>
+            {
+<span class="fc" id="L135">                parser = new VMSVersioningFTPEntryParser(config);</span>
+<span class="fc" id="L136">            }</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            else if (ukey.indexOf(FTPClientConfig.SYST_NT) &gt;= 0)</span>
+            {
+<span class="fc" id="L139">                parser = createNTFTPEntryParser(config);</span>
+<span class="fc" id="L140">            }</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            else if (ukey.indexOf(FTPClientConfig.SYST_OS2) &gt;= 0)</span>
+            {
+<span class="fc" id="L143">                parser = new OS2FTPEntryParser(config);</span>
+<span class="fc" id="L144">            }</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            else if (ukey.indexOf(FTPClientConfig.SYST_OS400) &gt;= 0 ||</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                    ukey.indexOf(FTPClientConfig.SYST_AS400) &gt;= 0)</span>
+            {
+<span class="fc" id="L148">                parser = createOS400FTPEntryParser(config);</span>
+<span class="fc" id="L149">            }</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            else if (ukey.indexOf(FTPClientConfig.SYST_MVS) &gt;= 0)</span>
+            {
+<span class="fc" id="L152">                parser = new MVSFTPEntryParser(); // Does not currently support config parameter</span>
+<span class="fc" id="L153">            }</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            else if (ukey.indexOf(FTPClientConfig.SYST_NETWARE) &gt;= 0)</span>
+            {
+<span class="fc" id="L156">                parser = new NetwareFTPEntryParser(config);</span>
+<span class="fc" id="L157">            }</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            else if (ukey.indexOf(FTPClientConfig.SYST_MACOS_PETER) &gt;= 0)</span>
+            {
+<span class="fc" id="L160">                parser = new MacOsPeterFTPEntryParser(config);</span>
+<span class="fc" id="L161">            }</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">            else if (ukey.indexOf(FTPClientConfig.SYST_L8) &gt;= 0)</span>
+            {
+                // L8 normally means Unix, but move it to the end for some L8 systems that aren't.
+                // This check should be last!
+<span class="fc" id="L166">                parser = new UnixFTPEntryParser(config);</span>
+<span class="fc" id="L167">            }</span>
+            else
+            {
+<span class="fc" id="L170">                throw new ParserInitializationException(&quot;Unknown parser type: &quot; + key);</span>
+            }
+        }
+
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        if (parser instanceof Configurable) {</span>
+<span class="fc" id="L175">            ((Configurable)parser).configure(config);</span>
+        }
+<span class="fc" id="L177">        return parser;</span>
+    }
+
+    /**
+     * &lt;p&gt;Implementation extracts a key from the supplied
+     * {@link  FTPClientConfig FTPClientConfig}
+     * parameter and creates an object implementing the
+     * interface FTPFileEntryParser and uses the supplied configuration
+     * to configure it.
+     * &lt;/p&gt;&lt;p&gt;
+     * Note that this method will generally not be called in scenarios
+     * that call for autodetection of parser type but rather, for situations
+     * where the user knows that the server uses a non-default configuration
+     * and knows what that configuration is.
+     * &lt;/p&gt;
+     * @param config  A {@link  FTPClientConfig FTPClientConfig}
+     * used to configure the parser created
+     *
+     * @return the @link  FTPFileEntryParser FTPFileEntryParser} so created.
+     * @throws ParserInitializationException
+     *                   Thrown on any exception in instantiation
+     * @throws NullPointerException if {@code config} is {@code null}
+     * @since 1.4
+     */
+    @Override
+    public FTPFileEntryParser createFileEntryParser(FTPClientConfig config)
+    throws ParserInitializationException
+    {
+<span class="fc" id="L205">        String key = config.getServerSystemKey();</span>
+<span class="fc" id="L206">        return createFileEntryParser(key, config);</span>
+    }
+
+
+    public FTPFileEntryParser createUnixFTPEntryParser()
+    {
+<span class="nc" id="L212">        return new UnixFTPEntryParser();</span>
+    }
+
+    public FTPFileEntryParser createVMSVersioningFTPEntryParser()
+    {
+<span class="nc" id="L217">        return new VMSVersioningFTPEntryParser();</span>
+    }
+
+    public FTPFileEntryParser createNetwareFTPEntryParser() {
+<span class="nc" id="L221">        return new NetwareFTPEntryParser();</span>
+    }
+
+    public FTPFileEntryParser createNTFTPEntryParser()
+    {
+<span class="nc" id="L226">        return createNTFTPEntryParser(null);</span>
+    }
+
+    /**
+     * Creates an NT FTP parser: if the config exists, and the system key equals
+     * {@link FTPClientConfig.SYST_NT} then a plain {@link NTFTPEntryParser} is used,
+     * otherwise a composite of {@link NTFTPEntryParser} and {@link UnixFTPEntryParser} is used.
+     * @param config the config to use, may be {@code null}
+     * @return the parser
+     */
+    private FTPFileEntryParser createNTFTPEntryParser(FTPClientConfig config)
+    {
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        if (config != null &amp;&amp; FTPClientConfig.SYST_NT.equals(</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">                config.getServerSystemKey()))</span>
+        {
+<span class="fc" id="L241">            return new NTFTPEntryParser(config);</span>
+        } else {
+            // clone the config as it may be changed by the parsers (NET-602)
+<span class="fc bfc" id="L244" title="All 2 branches covered.">            final FTPClientConfig config2 =  (config != null) ? new FTPClientConfig(config) : null;</span>
+<span class="fc" id="L245">            return new CompositeFileEntryParser(new FTPFileEntryParser[]</span>
+<span class="fc" id="L246">                   {</span>
+<span class="fc" id="L247">                       new NTFTPEntryParser(config),</span>
+<span class="pc" id="L248">                       new UnixFTPEntryParser(config2,</span>
+<span class="pc bpc" id="L249" title="1 of 4 branches missed.">                               config2 != null &amp;&amp; FTPClientConfig.SYST_UNIX_TRIM_LEADING.equals(config2.getServerSystemKey()))</span>
+                   });
+        }
+    }
+
+     public FTPFileEntryParser createOS2FTPEntryParser()
+    {
+<span class="nc" id="L256">        return new OS2FTPEntryParser();</span>
+    }
+
+    public FTPFileEntryParser createOS400FTPEntryParser()
+    {
+<span class="nc" id="L261">        return createOS400FTPEntryParser(null);</span>
+    }
+
+    /**
+     * Creates an OS400 FTP parser: if the config exists, and the system key equals
+     * {@link FTPClientConfig.SYST_OS400} then a plain {@link OS400FTPEntryParser} is used,
+     * otherwise a composite of {@link OS400FTPEntryParser} and {@link UnixFTPEntryParser} is used.
+     * @param config the config to use, may be {@code null}
+     * @return the parser
+     */
+    private FTPFileEntryParser createOS400FTPEntryParser(FTPClientConfig config)
+        {
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        if (config != null &amp;&amp;</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">                FTPClientConfig.SYST_OS400.equals(config.getServerSystemKey()))</span>
+        {
+<span class="fc" id="L276">            return new OS400FTPEntryParser(config);</span>
+        } else {
+            // clone the config as it may be changed by the parsers (NET-602)
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            final FTPClientConfig config2 =  (config != null) ? new FTPClientConfig(config) : null;</span>
+<span class="fc" id="L280">            return new CompositeFileEntryParser(new FTPFileEntryParser[]</span>
+<span class="fc" id="L281">                {</span>
+<span class="fc" id="L282">                    new OS400FTPEntryParser(config),</span>
+<span class="pc" id="L283">                    new UnixFTPEntryParser(config2,</span>
+<span class="pc bpc" id="L284" title="1 of 4 branches missed.">                            config2 != null &amp;&amp; FTPClientConfig.SYST_UNIX_TRIM_LEADING.equals(config2.getServerSystemKey()))</span>
+                });
+        }
+    }
+
+    public FTPFileEntryParser createMVSEntryParser()
+    {
+<span class="nc" id="L291">        return new MVSFTPEntryParser();</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

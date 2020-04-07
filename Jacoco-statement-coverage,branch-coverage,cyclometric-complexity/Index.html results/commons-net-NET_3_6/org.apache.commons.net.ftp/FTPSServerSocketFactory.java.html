@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FTPSServerSocketFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp</a> &gt; <span class="el_source">FTPSServerSocketFactory.java</span></div><h1>FTPSServerSocketFactory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.ftp;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+
+import javax.net.ServerSocketFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+
+/**
+ * Server socket factory for FTPS connections.
+ * @since 2.2
+ */
+public class FTPSServerSocketFactory extends ServerSocketFactory {
+
+    /** Factory for secure socket factories */
+    private final SSLContext context;
+
+<span class="nc" id="L37">    public FTPSServerSocketFactory(SSLContext context) {</span>
+<span class="nc" id="L38">        this.context = context;</span>
+<span class="nc" id="L39">    }</span>
+
+    // Override the default superclass method
+    @Override
+    public ServerSocket createServerSocket() throws IOException {
+<span class="nc" id="L44">        return init(this.context.getServerSocketFactory().createServerSocket());</span>
+    }
+
+    @Override
+    public ServerSocket createServerSocket(int port) throws IOException {
+<span class="nc" id="L49">        return init(this.context.getServerSocketFactory().createServerSocket(port));</span>
+    }
+
+    @Override
+    public ServerSocket createServerSocket(int port, int backlog) throws IOException {
+<span class="nc" id="L54">        return init(this.context.getServerSocketFactory().createServerSocket(port, backlog));</span>
+    }
+
+    @Override
+    public ServerSocket createServerSocket(int port, int backlog, InetAddress ifAddress) throws IOException {
+<span class="nc" id="L59">        return init(this.context.getServerSocketFactory().createServerSocket(port, backlog, ifAddress));</span>
+    }
+
+    /**
+     * Sets the socket so newly accepted connections will use SSL client mode.
+     *
+     * @param socket the SSLServerSocket to initialise
+     * @return the socket
+     * @throws ClassCastException if socket is not an instance of SSLServerSocket
+     */
+    public ServerSocket init(ServerSocket socket) {
+<span class="nc" id="L70">        ((SSLServerSocket) socket).setUseClientMode(true);</span>
+<span class="nc" id="L71">        return socket;</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

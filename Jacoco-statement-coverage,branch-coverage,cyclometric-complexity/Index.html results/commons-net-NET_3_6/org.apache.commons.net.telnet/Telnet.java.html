@@ -1,0 +1,1266 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Telnet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.telnet</a> &gt; <span class="el_source">Telnet.java</span></div><h1>Telnet.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.telnet;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.commons.net.SocketClient;
+
+class Telnet extends SocketClient
+{
+    static final boolean debug =  /*true;*/ false;
+
+    static final boolean debugoptions =  /*true;*/ false;
+
+<span class="fc" id="L34">    static final byte[] _COMMAND_DO = {</span>
+<span class="fc" id="L35">                                          (byte)TelnetCommand.IAC, (byte)TelnetCommand.DO</span>
+                                      };
+
+<span class="fc" id="L38">    static final byte[] _COMMAND_DONT = {</span>
+<span class="fc" id="L39">                                            (byte)TelnetCommand.IAC, (byte)TelnetCommand.DONT</span>
+                                        };
+
+<span class="fc" id="L42">    static final byte[] _COMMAND_WILL = {</span>
+<span class="fc" id="L43">                                            (byte)TelnetCommand.IAC, (byte)TelnetCommand.WILL</span>
+                                        };
+
+<span class="fc" id="L46">    static final byte[] _COMMAND_WONT = {</span>
+<span class="fc" id="L47">                                            (byte)TelnetCommand.IAC, (byte)TelnetCommand.WONT</span>
+                                        };
+
+<span class="fc" id="L50">    static final byte[] _COMMAND_SB = {</span>
+<span class="fc" id="L51">                                          (byte)TelnetCommand.IAC, (byte)TelnetCommand.SB</span>
+                                      };
+
+<span class="fc" id="L54">    static final byte[] _COMMAND_SE = {</span>
+<span class="fc" id="L55">                                          (byte)TelnetCommand.IAC, (byte)TelnetCommand.SE</span>
+                                      };
+
+    static final int _WILL_MASK = 0x01, _DO_MASK = 0x02,
+                                  _REQUESTED_WILL_MASK = 0x04, _REQUESTED_DO_MASK = 0x08;
+
+    /* public */
+    static final int DEFAULT_PORT =  23;
+
+    int[] _doResponse, _willResponse, _options;
+
+    /* TERMINAL-TYPE option (start)*/
+    /***
+     * Terminal type option
+     ***/
+    protected static final int TERMINAL_TYPE = 24;
+
+    /***
+     * Send (for subnegotiation)
+     ***/
+    protected static final int TERMINAL_TYPE_SEND =  1;
+
+    /***
+     * Is (for subnegotiation)
+     ***/
+    protected static final int TERMINAL_TYPE_IS =  0;
+
+    /***
+     * Is sequence (for subnegotiation)
+     ***/
+<span class="fc" id="L85">    static final byte[] _COMMAND_IS = {</span>
+<span class="fc" id="L86">                                          (byte) TERMINAL_TYPE, (byte) TERMINAL_TYPE_IS</span>
+                                      };
+
+    /***
+     * Terminal type
+     ***/
+<span class="pc" id="L92">    private String terminalType = null;</span>
+    /* TERMINAL-TYPE option (end)*/
+
+    /* open TelnetOptionHandler functionality (start)*/
+    /***
+     * Array of option handlers
+     ***/
+    private final TelnetOptionHandler optionHandlers[];
+
+    /* open TelnetOptionHandler functionality (end)*/
+
+    /* Code Section added for supporting AYT (start)*/
+    /***
+     * AYT sequence
+     ***/
+<span class="fc" id="L107">    static final byte[] _COMMAND_AYT = {</span>
+<span class="fc" id="L108">                                          (byte) TelnetCommand.IAC, (byte) TelnetCommand.AYT</span>
+<span class="fc" id="L109">                                       };</span>
+
+    /***
+     * monitor to wait for AYT
+     ***/
+<span class="pc" id="L114">    private final Object aytMonitor = new Object();</span>
+
+    /***
+     * flag for AYT
+     ***/
+<span class="pc" id="L119">    private volatile boolean aytFlag = true;</span>
+    /* Code Section added for supporting AYT (end)*/
+
+    /***
+     * The stream on which to spy
+     ***/
+<span class="pc" id="L125">    private volatile OutputStream spyStream = null;</span>
+
+    /***
+     * The notification handler
+     ***/
+<span class="pc" id="L130">    private TelnetNotificationHandler __notifhand = null;</span>
+    /***
+     * Empty Constructor
+     ***/
+<span class="nc" id="L134">    Telnet()</span>
+    {
+<span class="nc" id="L136">        setDefaultPort(DEFAULT_PORT);</span>
+<span class="nc" id="L137">        _doResponse = new int[TelnetOption.MAX_OPTION_VALUE + 1];</span>
+<span class="nc" id="L138">        _willResponse = new int[TelnetOption.MAX_OPTION_VALUE + 1];</span>
+<span class="nc" id="L139">        _options = new int[TelnetOption.MAX_OPTION_VALUE + 1];</span>
+<span class="nc" id="L140">        optionHandlers =</span>
+<span class="nc" id="L141">            new TelnetOptionHandler[TelnetOption.MAX_OPTION_VALUE + 1];</span>
+<span class="nc" id="L142">    }</span>
+
+    /* TERMINAL-TYPE option (start)*/
+    /***
+     * This constructor lets you specify the terminal type.
+     *
+     * @param termtype - terminal type to be negotiated (ej. VT100)
+     ***/
+<span class="fc" id="L150">    Telnet(String termtype)</span>
+    {
+<span class="fc" id="L152">        setDefaultPort(DEFAULT_PORT);</span>
+<span class="fc" id="L153">        _doResponse = new int[TelnetOption.MAX_OPTION_VALUE + 1];</span>
+<span class="fc" id="L154">        _willResponse = new int[TelnetOption.MAX_OPTION_VALUE + 1];</span>
+<span class="fc" id="L155">        _options = new int[TelnetOption.MAX_OPTION_VALUE + 1];</span>
+<span class="fc" id="L156">        terminalType = termtype;</span>
+<span class="fc" id="L157">        optionHandlers =</span>
+<span class="fc" id="L158">            new TelnetOptionHandler[TelnetOption.MAX_OPTION_VALUE + 1];</span>
+<span class="fc" id="L159">    }</span>
+    /* TERMINAL-TYPE option (end)*/
+
+    /***
+     * Looks for the state of the option.
+     *
+     * @return returns true if a will has been acknowledged
+     *
+     * @param option - option code to be looked up.
+     ***/
+    boolean _stateIsWill(int option)
+    {
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        return ((_options[option] &amp; _WILL_MASK) != 0);</span>
+    }
+
+    /***
+     * Looks for the state of the option.
+     *
+     * @return returns true if a wont has been acknowledged
+     *
+     * @param option - option code to be looked up.
+     ***/
+    boolean _stateIsWont(int option)
+    {
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        return !_stateIsWill(option);</span>
+    }
+
+    /***
+     * Looks for the state of the option.
+     *
+     * @return returns true if a do has been acknowledged
+     *
+     * @param option - option code to be looked up.
+     ***/
+    boolean _stateIsDo(int option)
+    {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        return ((_options[option] &amp; _DO_MASK) != 0);</span>
+    }
+
+    /***
+     * Looks for the state of the option.
+     *
+     * @return returns true if a dont has been acknowledged
+     *
+     * @param option - option code to be looked up.
+     ***/
+    boolean _stateIsDont(int option)
+    {
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">        return !_stateIsDo(option);</span>
+    }
+
+    /***
+     * Looks for the state of the option.
+     *
+     * @return returns true if a will has been reuqested
+     *
+     * @param option - option code to be looked up.
+     ***/
+    boolean _requestedWill(int option)
+    {
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        return ((_options[option] &amp; _REQUESTED_WILL_MASK) != 0);</span>
+    }
+
+    /***
+     * Looks for the state of the option.
+     *
+     * @return returns true if a wont has been reuqested
+     *
+     * @param option - option code to be looked up.
+     ***/
+    boolean _requestedWont(int option)
+    {
+<span class="fc bfc" id="L231" title="All 2 branches covered.">        return !_requestedWill(option);</span>
+    }
+
+    /***
+     * Looks for the state of the option.
+     *
+     * @return returns true if a do has been reuqested
+     *
+     * @param option - option code to be looked up.
+     ***/
+    boolean _requestedDo(int option)
+    {
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        return ((_options[option] &amp; _REQUESTED_DO_MASK) != 0);</span>
+    }
+
+    /***
+     * Looks for the state of the option.
+     *
+     * @return returns true if a dont has been reuqested
+     *
+     * @param option - option code to be looked up.
+     ***/
+    boolean _requestedDont(int option)
+    {
+<span class="fc bfc" id="L255" title="All 2 branches covered.">        return !_requestedDo(option);</span>
+    }
+
+    /***
+     * Sets the state of the option.
+     *
+     * @param option - option code to be set.
+     * @throws IOException
+     ***/
+    void _setWill(int option) throws IOException
+    {
+<span class="fc" id="L266">        _options[option] |= _WILL_MASK;</span>
+
+        /* open TelnetOptionHandler functionality (start)*/
+<span class="fc bfc" id="L269" title="All 2 branches covered.">        if (_requestedWill(option))</span>
+        {
+<span class="fc bfc" id="L271" title="All 2 branches covered.">            if (optionHandlers[option] != null)</span>
+            {
+<span class="fc" id="L273">                optionHandlers[option].setWill(true);</span>
+
+<span class="fc" id="L275">                int subneg[] =</span>
+<span class="fc" id="L276">                    optionHandlers[option].startSubnegotiationLocal();</span>
+
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">                if (subneg != null)</span>
+                {
+<span class="nc" id="L280">                    _sendSubnegotiation(subneg);</span>
+                }
+            }
+        }
+        /* open TelnetOptionHandler functionality (end)*/
+<span class="fc" id="L285">    }</span>
+
+    /***
+     * Sets the state of the option.
+     *
+     * @param option - option code to be set.
+     * @throws IOException
+     ***/
+    void _setDo(int option) throws IOException
+    {
+<span class="fc" id="L295">        _options[option] |= _DO_MASK;</span>
+
+        /* open TelnetOptionHandler functionality (start)*/
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        if (_requestedDo(option))</span>
+        {
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">            if (optionHandlers[option] != null)</span>
+            {
+<span class="fc" id="L302">                optionHandlers[option].setDo(true);</span>
+
+<span class="fc" id="L304">                int subneg[] =</span>
+<span class="fc" id="L305">                    optionHandlers[option].startSubnegotiationRemote();</span>
+
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">                if (subneg != null)</span>
+                {
+<span class="nc" id="L309">                    _sendSubnegotiation(subneg);</span>
+                }
+            }
+        }
+        /* open TelnetOptionHandler functionality (end)*/
+<span class="fc" id="L314">    }</span>
+
+    /***
+     * Sets the state of the option.
+     *
+     * @param option - option code to be set.
+     ***/
+    void _setWantWill(int option)
+    {
+<span class="fc" id="L323">        _options[option] |= _REQUESTED_WILL_MASK;</span>
+<span class="fc" id="L324">    }</span>
+
+    /***
+     * Sets the state of the option.
+     *
+     * @param option - option code to be set.
+     ***/
+    void _setWantDo(int option)
+    {
+<span class="fc" id="L333">        _options[option] |= _REQUESTED_DO_MASK;</span>
+<span class="fc" id="L334">    }</span>
+
+    /***
+     * Sets the state of the option.
+     *
+     * @param option - option code to be set.
+     ***/
+    void _setWont(int option)
+    {
+<span class="fc" id="L343">        _options[option] &amp;= ~_WILL_MASK;</span>
+
+        /* open TelnetOptionHandler functionality (start)*/
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        if (optionHandlers[option] != null)</span>
+        {
+<span class="fc" id="L348">            optionHandlers[option].setWill(false);</span>
+        }
+        /* open TelnetOptionHandler functionality (end)*/
+<span class="fc" id="L351">    }</span>
+
+    /***
+     * Sets the state of the option.
+     *
+     * @param option - option code to be set.
+     ***/
+    void _setDont(int option)
+    {
+<span class="fc" id="L360">        _options[option] &amp;= ~_DO_MASK;</span>
+
+        /* open TelnetOptionHandler functionality (start)*/
+<span class="pc bpc" id="L363" title="1 of 2 branches missed.">        if (optionHandlers[option] != null)</span>
+        {
+<span class="fc" id="L365">            optionHandlers[option].setDo(false);</span>
+        }
+        /* open TelnetOptionHandler functionality (end)*/
+<span class="fc" id="L368">    }</span>
+
+    /***
+     * Sets the state of the option.
+     *
+     * @param option - option code to be set.
+     ***/
+    void _setWantWont(int option)
+    {
+<span class="fc" id="L377">        _options[option] &amp;= ~_REQUESTED_WILL_MASK;</span>
+<span class="fc" id="L378">    }</span>
+
+    /***
+     * Sets the state of the option.
+     *
+     * @param option - option code to be set.
+     ***/
+    void _setWantDont(int option)
+    {
+<span class="fc" id="L387">        _options[option] &amp;= ~_REQUESTED_DO_MASK;</span>
+<span class="fc" id="L388">    }</span>
+
+    /**
+     * Processes a COMMAND.
+     *
+     * @param command - option code to be set.
+     **/
+    void _processCommand(int command)
+    {
+        if (debugoptions)
+        {
+            System.err.println(&quot;RECEIVED COMMAND: &quot; + command);
+        }
+
+<span class="nc bnc" id="L402" title="All 2 branches missed.">        if (__notifhand != null)</span>
+        {
+<span class="nc" id="L404">            __notifhand.receivedNegotiation(</span>
+<span class="nc" id="L405">                TelnetNotificationHandler.RECEIVED_COMMAND, command);</span>
+        }
+<span class="nc" id="L407">    }</span>
+
+    /**
+     * Processes a DO request.
+     *
+     * @param option - option code to be set.
+     * @throws IOException - Exception in I/O.
+     **/
+    void _processDo(int option) throws IOException
+    {
+        if (debugoptions)
+        {
+            System.err.println(&quot;RECEIVED DO: &quot;
+                + TelnetOption.getOption(option));
+        }
+
+<span class="fc bfc" id="L423" title="All 2 branches covered.">        if (__notifhand != null)</span>
+        {
+<span class="fc" id="L425">            __notifhand.receivedNegotiation(</span>
+<span class="fc" id="L426">                TelnetNotificationHandler.RECEIVED_DO,</span>
+<span class="fc" id="L427">                option);</span>
+        }
+
+<span class="fc" id="L430">        boolean acceptNewState = false;</span>
+
+
+        /* open TelnetOptionHandler functionality (start)*/
+<span class="fc bfc" id="L434" title="All 2 branches covered.">        if (optionHandlers[option] != null)</span>
+        {
+<span class="fc" id="L436">            acceptNewState = optionHandlers[option].getAcceptLocal();</span>
+<span class="fc" id="L437">        }</span>
+        else
+        {
+        /* open TelnetOptionHandler functionality (end)*/
+            /* TERMINAL-TYPE option (start)*/
+<span class="fc bfc" id="L442" title="All 2 branches covered.">            if (option == TERMINAL_TYPE)</span>
+            {
+<span class="pc bpc" id="L444" title="2 of 4 branches missed.">                if ((terminalType != null) &amp;&amp; (terminalType.length() &gt; 0))</span>
+                {
+<span class="fc" id="L446">                    acceptNewState = true;</span>
+                }
+            }
+            /* TERMINAL-TYPE option (end)*/
+        /* open TelnetOptionHandler functionality (start)*/
+        }
+        /* open TelnetOptionHandler functionality (end)*/
+
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">        if (_willResponse[option] &gt; 0)</span>
+        {
+<span class="nc" id="L456">            --_willResponse[option];</span>
+<span class="nc bnc" id="L457" title="All 4 branches missed.">            if (_willResponse[option] &gt; 0 &amp;&amp; _stateIsWill(option))</span>
+            {
+<span class="nc" id="L459">                --_willResponse[option];</span>
+            }
+        }
+
+<span class="pc bpc" id="L463" title="1 of 2 branches missed.">        if (_willResponse[option] == 0)</span>
+        {
+<span class="fc bfc" id="L465" title="All 2 branches covered.">            if (_requestedWont(option))</span>
+            {
+
+<span class="fc" id="L468">                switch (option)</span>
+                {
+
+                default:
+                    break;
+
+                }
+
+
+<span class="fc bfc" id="L477" title="All 2 branches covered.">                if (acceptNewState)</span>
+                {
+<span class="fc" id="L479">                    _setWantWill(option);</span>
+<span class="fc" id="L480">                    _sendWill(option);</span>
+<span class="fc" id="L481">                }</span>
+                else
+                {
+<span class="fc" id="L484">                    ++_willResponse[option];</span>
+<span class="fc" id="L485">                    _sendWont(option);</span>
+                }
+<span class="fc" id="L487">            }</span>
+            else
+            {
+                // Other end has acknowledged option.
+
+<span class="fc" id="L492">                switch (option)</span>
+                {
+
+                default:
+                    break;
+
+                }
+
+            }
+        }
+
+<span class="fc" id="L503">        _setWill(option);</span>
+<span class="fc" id="L504">    }</span>
+
+    /**
+     * Processes a DONT request.
+     *
+     * @param option - option code to be set.
+     * @throws IOException - Exception in I/O.
+     **/
+    void _processDont(int option) throws IOException
+    {
+        if (debugoptions)
+        {
+            System.err.println(&quot;RECEIVED DONT: &quot;
+                + TelnetOption.getOption(option));
+        }
+<span class="fc bfc" id="L519" title="All 2 branches covered.">        if (__notifhand != null)</span>
+        {
+<span class="fc" id="L521">            __notifhand.receivedNegotiation(</span>
+<span class="fc" id="L522">                TelnetNotificationHandler.RECEIVED_DONT,</span>
+<span class="fc" id="L523">                option);</span>
+        }
+<span class="pc bpc" id="L525" title="1 of 2 branches missed.">        if (_willResponse[option] &gt; 0)</span>
+        {
+<span class="nc" id="L527">            --_willResponse[option];</span>
+<span class="nc bnc" id="L528" title="All 4 branches missed.">            if (_willResponse[option] &gt; 0 &amp;&amp; _stateIsWont(option))</span>
+            {
+<span class="nc" id="L530">                --_willResponse[option];</span>
+            }
+        }
+
+<span class="pc bpc" id="L534" title="2 of 4 branches missed.">        if (_willResponse[option] == 0 &amp;&amp; _requestedWill(option))</span>
+        {
+
+<span class="fc" id="L537">            switch (option)</span>
+            {
+
+            default:
+                break;
+
+            }
+
+            /* FIX for a BUG in the negotiation (start)*/
+<span class="pc bpc" id="L546" title="1 of 4 branches missed.">            if ((_stateIsWill(option)) || (_requestedWill(option)))</span>
+            {
+<span class="fc" id="L548">                _sendWont(option);</span>
+            }
+
+<span class="fc" id="L551">            _setWantWont(option);</span>
+            /* FIX for a BUG in the negotiation (end)*/
+        }
+
+<span class="fc" id="L555">        _setWont(option);</span>
+<span class="fc" id="L556">    }</span>
+
+
+    /**
+     * Processes a WILL request.
+     *
+     * @param option - option code to be set.
+     * @throws IOException - Exception in I/O.
+     **/
+    void _processWill(int option) throws IOException
+    {
+        if (debugoptions)
+        {
+            System.err.println(&quot;RECEIVED WILL: &quot;
+                + TelnetOption.getOption(option));
+        }
+
+<span class="pc bpc" id="L573" title="1 of 2 branches missed.">        if (__notifhand != null)</span>
+        {
+<span class="nc" id="L575">            __notifhand.receivedNegotiation(</span>
+<span class="nc" id="L576">                TelnetNotificationHandler.RECEIVED_WILL,</span>
+<span class="nc" id="L577">                option);</span>
+        }
+
+<span class="fc" id="L580">        boolean acceptNewState = false;</span>
+
+        /* open TelnetOptionHandler functionality (start)*/
+<span class="fc bfc" id="L583" title="All 2 branches covered.">        if (optionHandlers[option] != null)</span>
+        {
+<span class="fc" id="L585">            acceptNewState = optionHandlers[option].getAcceptRemote();</span>
+        }
+        /* open TelnetOptionHandler functionality (end)*/
+
+<span class="fc bfc" id="L589" title="All 2 branches covered.">        if (_doResponse[option] &gt; 0)</span>
+        {
+<span class="fc" id="L591">            --_doResponse[option];</span>
+<span class="pc bpc" id="L592" title="2 of 4 branches missed.">            if (_doResponse[option] &gt; 0 &amp;&amp; _stateIsDo(option))</span>
+            {
+<span class="nc" id="L594">                --_doResponse[option];</span>
+            }
+        }
+
+<span class="pc bpc" id="L598" title="1 of 4 branches missed.">        if (_doResponse[option] == 0 &amp;&amp; _requestedDont(option))</span>
+        {
+
+<span class="fc" id="L601">            switch (option)</span>
+            {
+
+            default:
+                break;
+
+            }
+
+
+<span class="pc bpc" id="L610" title="1 of 2 branches missed.">            if (acceptNewState)</span>
+            {
+<span class="nc" id="L612">                _setWantDo(option);</span>
+<span class="nc" id="L613">                _sendDo(option);</span>
+<span class="nc" id="L614">            }</span>
+            else
+            {
+<span class="fc" id="L617">                ++_doResponse[option];</span>
+<span class="fc" id="L618">                _sendDont(option);</span>
+            }
+        }
+
+<span class="fc" id="L622">        _setDo(option);</span>
+<span class="fc" id="L623">    }</span>
+
+    /**
+     * Processes a WONT request.
+     *
+     * @param option - option code to be set.
+     * @throws IOException - Exception in I/O.
+     **/
+    void _processWont(int option) throws IOException
+    {
+        if (debugoptions)
+        {
+            System.err.println(&quot;RECEIVED WONT: &quot;
+                + TelnetOption.getOption(option));
+        }
+
+<span class="fc bfc" id="L639" title="All 2 branches covered.">        if (__notifhand != null)</span>
+        {
+<span class="fc" id="L641">            __notifhand.receivedNegotiation(</span>
+<span class="fc" id="L642">                TelnetNotificationHandler.RECEIVED_WONT,</span>
+<span class="fc" id="L643">                option);</span>
+        }
+
+<span class="pc bpc" id="L646" title="1 of 2 branches missed.">        if (_doResponse[option] &gt; 0)</span>
+        {
+<span class="fc" id="L648">            --_doResponse[option];</span>
+<span class="pc bpc" id="L649" title="2 of 4 branches missed.">            if (_doResponse[option] &gt; 0 &amp;&amp; _stateIsDont(option))</span>
+            {
+<span class="fc" id="L651">                --_doResponse[option];</span>
+            }
+        }
+
+<span class="pc bpc" id="L655" title="2 of 4 branches missed.">        if (_doResponse[option] == 0 &amp;&amp; _requestedDo(option))</span>
+        {
+
+<span class="fc" id="L658">            switch (option)</span>
+            {
+
+            default:
+                break;
+
+            }
+
+            /* FIX for a BUG in the negotiation (start)*/
+<span class="pc bpc" id="L667" title="2 of 4 branches missed.">            if ((_stateIsDo(option)) || (_requestedDo(option)))</span>
+            {
+<span class="fc" id="L669">                _sendDont(option);</span>
+            }
+
+<span class="fc" id="L672">            _setWantDont(option);</span>
+            /* FIX for a BUG in the negotiation (end)*/
+        }
+
+<span class="fc" id="L676">        _setDont(option);</span>
+<span class="fc" id="L677">    }</span>
+
+    /* TERMINAL-TYPE option (start)*/
+    /**
+     * Processes a suboption negotiation.
+     *
+     * @param suboption - subnegotiation data received
+     * @param suboptionLength - length of data received
+     * @throws IOException - Exception in I/O.
+     **/
+    void _processSuboption(int suboption[], int suboptionLength)
+    throws IOException
+    {
+        if (debug)
+        {
+            System.err.println(&quot;PROCESS SUBOPTION.&quot;);
+        }
+
+        /* open TelnetOptionHandler functionality (start)*/
+<span class="pc bpc" id="L696" title="1 of 2 branches missed.">        if (suboptionLength &gt; 0)</span>
+        {
+<span class="fc bfc" id="L698" title="All 2 branches covered.">            if (optionHandlers[suboption[0]] != null)</span>
+            {
+<span class="fc" id="L700">                int responseSuboption[] =</span>
+<span class="fc" id="L701">                  optionHandlers[suboption[0]].answerSubnegotiation(suboption,</span>
+<span class="fc" id="L702">                  suboptionLength);</span>
+<span class="fc" id="L703">                _sendSubnegotiation(responseSuboption);</span>
+<span class="fc" id="L704">            }</span>
+            else
+            {
+<span class="pc bpc" id="L707" title="1 of 2 branches missed.">                if (suboptionLength &gt; 1)</span>
+                {
+                    if (debug)
+                    {
+                        for (int ii = 0; ii &lt; suboptionLength; ii++)
+                        {
+                            System.err.println(&quot;SUB[&quot; + ii + &quot;]: &quot;
+                                + suboption[ii]);
+                        }
+                    }
+<span class="pc bpc" id="L717" title="1 of 2 branches missed.">                    if ((suboption[0] == TERMINAL_TYPE)</span>
+<span class="pc bpc" id="L718" title="1 of 2 branches missed.">                        &amp;&amp; (suboption[1] == TERMINAL_TYPE_SEND))</span>
+                    {
+<span class="fc" id="L720">                        _sendTerminalType();</span>
+                    }
+                }
+            }
+        }
+        /* open TelnetOptionHandler functionality (end)*/
+<span class="fc" id="L726">    }</span>
+
+    /***
+     * Sends terminal type information.
+     *
+     * @throws IOException - Exception in I/O.
+     ***/
+    final synchronized void _sendTerminalType()
+    throws IOException
+    {
+        if (debug)
+        {
+            System.err.println(&quot;SEND TERMINAL-TYPE: &quot; + terminalType);
+        }
+<span class="pc bpc" id="L740" title="1 of 2 branches missed.">        if (terminalType != null)</span>
+        {
+<span class="fc" id="L742">            _output_.write(_COMMAND_SB);</span>
+<span class="fc" id="L743">            _output_.write(_COMMAND_IS);</span>
+<span class="fc" id="L744">            _output_.write(terminalType.getBytes(getCharset()));</span>
+<span class="fc" id="L745">            _output_.write(_COMMAND_SE);</span>
+<span class="fc" id="L746">            _output_.flush();</span>
+        }
+<span class="fc" id="L748">    }</span>
+
+    /* TERMINAL-TYPE option (end)*/
+
+    /* open TelnetOptionHandler functionality (start)*/
+    /**
+     * Manages subnegotiation for Terminal Type.
+     *
+     * @param subn - subnegotiation data to be sent
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _sendSubnegotiation(int subn[])
+    throws IOException
+    {
+        if (debug)
+        {
+            System.err.println(&quot;SEND SUBNEGOTIATION: &quot;);
+            if (subn != null)
+            {
+                System.err.println(Arrays.toString(subn));
+            }
+        }
+<span class="pc bpc" id="L770" title="1 of 2 branches missed.">        if (subn != null)</span>
+        {
+<span class="fc" id="L772">            _output_.write(_COMMAND_SB);</span>
+            // Note _output_ is buffered, so might as well simplify by writing single bytes
+<span class="fc bfc" id="L774" title="All 2 branches covered.">            for (int element : subn)</span>
+            {
+<span class="fc" id="L776">                byte b = (byte) element;</span>
+<span class="pc bpc" id="L777" title="1 of 2 branches missed.">                if (b == (byte) TelnetCommand.IAC) { // cast is necessary because IAC is outside the signed byte range</span>
+<span class="nc" id="L778">                    _output_.write(b); // double any IAC bytes</span>
+                }
+<span class="fc" id="L780">                _output_.write(b);</span>
+            }
+<span class="fc" id="L782">            _output_.write(_COMMAND_SE);</span>
+
+            /* Code Section added for sending the negotiation ASAP (start)*/
+<span class="fc" id="L785">            _output_.flush();</span>
+            /* Code Section added for sending the negotiation ASAP (end)*/
+        }
+<span class="fc" id="L788">    }</span>
+    /* open TelnetOptionHandler functionality (end)*/
+
+    /**
+     * Sends a command, automatically adds IAC prefix and flushes the output.
+     *
+     * @param cmd - command data to be sent
+     * @throws IOException - Exception in I/O.
+     * @since 3.0
+     */
+    final synchronized void _sendCommand(byte cmd) throws IOException
+    {
+<span class="nc" id="L800">            _output_.write(TelnetCommand.IAC);</span>
+<span class="nc" id="L801">            _output_.write(cmd);</span>
+<span class="nc" id="L802">            _output_.flush();</span>
+<span class="nc" id="L803">    }</span>
+
+    /* Code Section added for supporting AYT (start)*/
+    /***
+     * Processes the response of an AYT
+     ***/
+    final synchronized void _processAYTResponse()
+    {
+<span class="fc bfc" id="L811" title="All 2 branches covered.">        if (!aytFlag)</span>
+        {
+<span class="fc" id="L813">            synchronized (aytMonitor)</span>
+            {
+<span class="fc" id="L815">                aytFlag = true;</span>
+<span class="fc" id="L816">                aytMonitor.notifyAll();</span>
+            }
+        }
+<span class="fc" id="L819">    }</span>
+    /* Code Section added for supporting AYT (end)*/
+
+    /***
+     * Called upon connection.
+     *
+     * @throws IOException - Exception in I/O.
+     ***/
+    @Override
+    protected void _connectAction_() throws IOException
+    {
+        /* (start). BUGFIX: clean the option info for each connection*/
+<span class="fc bfc" id="L831" title="All 2 branches covered.">        for (int ii = 0; ii &lt; TelnetOption.MAX_OPTION_VALUE + 1; ii++)</span>
+        {
+<span class="fc" id="L833">            _doResponse[ii] = 0;</span>
+<span class="fc" id="L834">            _willResponse[ii] = 0;</span>
+<span class="fc" id="L835">            _options[ii] = 0;</span>
+<span class="fc bfc" id="L836" title="All 2 branches covered.">            if (optionHandlers[ii] != null)</span>
+            {
+<span class="fc" id="L838">                optionHandlers[ii].setDo(false);</span>
+<span class="fc" id="L839">                optionHandlers[ii].setWill(false);</span>
+            }
+        }
+        /* (end). BUGFIX: clean the option info for each connection*/
+
+<span class="fc" id="L844">        super._connectAction_();</span>
+<span class="fc" id="L845">        _input_ = new BufferedInputStream(_input_);</span>
+<span class="fc" id="L846">        _output_ = new BufferedOutputStream(_output_);</span>
+
+        /* open TelnetOptionHandler functionality (start)*/
+<span class="fc bfc" id="L849" title="All 2 branches covered.">        for (int ii = 0; ii &lt; TelnetOption.MAX_OPTION_VALUE + 1; ii++)</span>
+        {
+<span class="fc bfc" id="L851" title="All 2 branches covered.">            if (optionHandlers[ii] != null)</span>
+            {
+<span class="fc bfc" id="L853" title="All 2 branches covered.">                if (optionHandlers[ii].getInitLocal())</span>
+                {
+<span class="fc" id="L855">                    _requestWill(optionHandlers[ii].getOptionCode());</span>
+                }
+
+<span class="fc bfc" id="L858" title="All 2 branches covered.">                if (optionHandlers[ii].getInitRemote())</span>
+                {
+<span class="fc" id="L860">                    _requestDo(optionHandlers[ii].getOptionCode());</span>
+                }
+            }
+        }
+        /* open TelnetOptionHandler functionality (end)*/
+<span class="fc" id="L865">    }</span>
+
+    /**
+     * Sends a DO.
+     *
+     * @param option - Option code.
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _sendDo(int option)
+    throws IOException
+    {
+        if (debug || debugoptions)
+        {
+            System.err.println(&quot;DO: &quot; + TelnetOption.getOption(option));
+        }
+<span class="fc" id="L880">        _output_.write(_COMMAND_DO);</span>
+<span class="fc" id="L881">        _output_.write(option);</span>
+
+        /* Code Section added for sending the negotiation ASAP (start)*/
+<span class="fc" id="L884">        _output_.flush();</span>
+        /* Code Section added for sending the negotiation ASAP (end)*/
+<span class="fc" id="L886">    }</span>
+
+    /**
+     * Requests a DO.
+     *
+     * @param option - Option code.
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _requestDo(int option)
+    throws IOException
+    {
+<span class="pc bpc" id="L897" title="3 of 4 branches missed.">        if ((_doResponse[option] == 0 &amp;&amp; _stateIsDo(option))</span>
+<span class="pc bpc" id="L898" title="1 of 2 branches missed.">            || _requestedDo(option))</span>
+        {
+<span class="nc" id="L900">            return ;</span>
+        }
+<span class="fc" id="L902">        _setWantDo(option);</span>
+<span class="fc" id="L903">        ++_doResponse[option];</span>
+<span class="fc" id="L904">        _sendDo(option);</span>
+<span class="fc" id="L905">    }</span>
+
+    /**
+     * Sends a DONT.
+     *
+     * @param option - Option code.
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _sendDont(int option)
+    throws IOException
+    {
+        if (debug || debugoptions)
+        {
+            System.err.println(&quot;DONT: &quot; + TelnetOption.getOption(option));
+        }
+<span class="fc" id="L920">        _output_.write(_COMMAND_DONT);</span>
+<span class="fc" id="L921">        _output_.write(option);</span>
+
+        /* Code Section added for sending the negotiation ASAP (start)*/
+<span class="fc" id="L924">        _output_.flush();</span>
+        /* Code Section added for sending the negotiation ASAP (end)*/
+<span class="fc" id="L926">    }</span>
+
+    /**
+     * Requests a DONT.
+     *
+     * @param option - Option code.
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _requestDont(int option)
+    throws IOException
+    {
+<span class="pc bpc" id="L937" title="3 of 4 branches missed.">        if ((_doResponse[option] == 0 &amp;&amp; _stateIsDont(option))</span>
+<span class="pc bpc" id="L938" title="1 of 2 branches missed.">            || _requestedDont(option))</span>
+        {
+<span class="nc" id="L940">            return ;</span>
+        }
+<span class="fc" id="L942">        _setWantDont(option);</span>
+<span class="fc" id="L943">        ++_doResponse[option];</span>
+<span class="fc" id="L944">        _sendDont(option);</span>
+<span class="fc" id="L945">    }</span>
+
+
+    /**
+     * Sends a WILL.
+     *
+     * @param option - Option code.
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _sendWill(int option)
+    throws IOException
+    {
+        if (debug || debugoptions)
+        {
+            System.err.println(&quot;WILL: &quot; + TelnetOption.getOption(option));
+        }
+<span class="fc" id="L961">        _output_.write(_COMMAND_WILL);</span>
+<span class="fc" id="L962">        _output_.write(option);</span>
+
+        /* Code Section added for sending the negotiation ASAP (start)*/
+<span class="fc" id="L965">        _output_.flush();</span>
+        /* Code Section added for sending the negotiation ASAP (end)*/
+<span class="fc" id="L967">    }</span>
+
+    /**
+     * Requests a WILL.
+     *
+     * @param option - Option code.
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _requestWill(int option)
+    throws IOException
+    {
+<span class="pc bpc" id="L978" title="2 of 4 branches missed.">        if ((_willResponse[option] == 0 &amp;&amp; _stateIsWill(option))</span>
+<span class="pc bpc" id="L979" title="1 of 2 branches missed.">            || _requestedWill(option))</span>
+        {
+<span class="nc" id="L981">            return ;</span>
+        }
+<span class="fc" id="L983">        _setWantWill(option);</span>
+<span class="fc" id="L984">        ++_doResponse[option];</span>
+<span class="fc" id="L985">        _sendWill(option);</span>
+<span class="fc" id="L986">    }</span>
+
+    /**
+     * Sends a WONT.
+     *
+     * @param option - Option code.
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _sendWont(int option)
+    throws IOException
+    {
+        if (debug || debugoptions)
+        {
+            System.err.println(&quot;WONT: &quot; + TelnetOption.getOption(option));
+        }
+<span class="fc" id="L1001">        _output_.write(_COMMAND_WONT);</span>
+<span class="fc" id="L1002">        _output_.write(option);</span>
+
+        /* Code Section added for sending the negotiation ASAP (start)*/
+<span class="fc" id="L1005">        _output_.flush();</span>
+        /* Code Section added for sending the negotiation ASAP (end)*/
+<span class="fc" id="L1007">    }</span>
+
+    /**
+     * Requests a WONT.
+     *
+     * @param option - Option code.
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _requestWont(int option)
+    throws IOException
+    {
+<span class="pc bpc" id="L1018" title="2 of 4 branches missed.">        if ((_willResponse[option] == 0 &amp;&amp; _stateIsWont(option))</span>
+<span class="pc bpc" id="L1019" title="1 of 2 branches missed.">            || _requestedWont(option))</span>
+        {
+<span class="nc" id="L1021">            return ;</span>
+        }
+<span class="fc" id="L1023">        _setWantWont(option);</span>
+<span class="fc" id="L1024">        ++_doResponse[option];</span>
+<span class="fc" id="L1025">        _sendWont(option);</span>
+<span class="fc" id="L1026">    }</span>
+
+    /**
+     * Sends a byte.
+     *
+     * @param b - byte to send
+     * @throws IOException - Exception in I/O.
+     **/
+    final synchronized void _sendByte(int b)
+    throws IOException
+    {
+<span class="fc" id="L1037">        _output_.write(b);</span>
+
+        /* Code Section added for supporting spystreams (start)*/
+<span class="fc" id="L1040">        _spyWrite(b);</span>
+        /* Code Section added for supporting spystreams (end)*/
+
+<span class="fc" id="L1043">    }</span>
+
+    /* Code Section added for supporting AYT (start)*/
+    /**
+     * Sends an Are You There sequence and waits for the result.
+     *
+     * @param timeout - Time to wait for a response (millis.)
+     * @throws IOException - Exception in I/O.
+     * @throws IllegalArgumentException - Illegal argument
+     * @throws InterruptedException - Interrupted during wait.
+     * @return true if AYT received a response, false otherwise
+     **/
+    final boolean _sendAYT(long timeout)
+    throws IOException, IllegalArgumentException, InterruptedException
+    {
+<span class="fc" id="L1058">        boolean retValue = false;</span>
+<span class="fc" id="L1059">        synchronized (aytMonitor)</span>
+        {
+<span class="fc" id="L1061">            synchronized (this)</span>
+            {
+<span class="fc" id="L1063">                aytFlag = false;</span>
+<span class="fc" id="L1064">                _output_.write(_COMMAND_AYT);</span>
+<span class="fc" id="L1065">                _output_.flush();</span>
+            }
+<span class="fc" id="L1067">            aytMonitor.wait(timeout);</span>
+<span class="fc bfc" id="L1068" title="All 2 branches covered.">            if (aytFlag == false)</span>
+            {
+<span class="fc" id="L1070">                retValue = false;</span>
+<span class="fc" id="L1071">                aytFlag = true;</span>
+<span class="fc" id="L1072">            }</span>
+            else
+            {
+<span class="fc" id="L1075">                retValue = true;</span>
+            }
+        }
+
+<span class="fc" id="L1079">        return (retValue);</span>
+    }
+    /* Code Section added for supporting AYT (end)*/
+
+    /* open TelnetOptionHandler functionality (start)*/
+
+    /**
+     * Registers a new TelnetOptionHandler for this telnet  to use.
+     *
+     * @param opthand - option handler to be registered.
+     * @throws InvalidTelnetOptionException - The option code is invalid.
+     * @throws IOException on error
+     **/
+    void addOptionHandler(TelnetOptionHandler opthand)
+    throws InvalidTelnetOptionException, IOException
+    {
+<span class="fc" id="L1095">        int optcode = opthand.getOptionCode();</span>
+<span class="fc bfc" id="L1096" title="All 2 branches covered.">        if (TelnetOption.isValidOption(optcode))</span>
+        {
+<span class="pc bpc" id="L1098" title="1 of 2 branches missed.">            if (optionHandlers[optcode] == null)</span>
+            {
+<span class="fc" id="L1100">                optionHandlers[optcode] = opthand;</span>
+<span class="pc bpc" id="L1101" title="1 of 2 branches missed.">                if (isConnected())</span>
+                {
+<span class="nc bnc" id="L1103" title="All 2 branches missed.">                    if (opthand.getInitLocal())</span>
+                    {
+<span class="nc" id="L1105">                        _requestWill(optcode);</span>
+                    }
+
+<span class="nc bnc" id="L1108" title="All 2 branches missed.">                    if (opthand.getInitRemote())</span>
+                    {
+<span class="nc" id="L1110">                        _requestDo(optcode);</span>
+                    }
+                }
+<span class="nc" id="L1113">            }</span>
+            else
+            {
+<span class="nc" id="L1116">                throw (new InvalidTelnetOptionException(</span>
+<span class="nc" id="L1117">                    &quot;Already registered option&quot;, optcode));</span>
+            }
+        }
+        else
+        {
+<span class="fc" id="L1122">            throw (new InvalidTelnetOptionException(</span>
+<span class="fc" id="L1123">                &quot;Invalid Option Code&quot;, optcode));</span>
+        }
+<span class="fc" id="L1125">    }</span>
+
+    /**
+     * Unregisters a  TelnetOptionHandler.
+     *
+     * @param optcode - Code of the option to be unregistered.
+     * @throws InvalidTelnetOptionException - The option code is invalid.
+     * @throws IOException on error
+     **/
+    void deleteOptionHandler(int optcode)
+    throws InvalidTelnetOptionException, IOException
+    {
+<span class="fc bfc" id="L1137" title="All 2 branches covered.">        if (TelnetOption.isValidOption(optcode))</span>
+        {
+<span class="fc bfc" id="L1139" title="All 2 branches covered.">            if (optionHandlers[optcode] == null)</span>
+            {
+<span class="fc" id="L1141">                throw (new InvalidTelnetOptionException(</span>
+<span class="fc" id="L1142">                    &quot;Unregistered option&quot;, optcode));</span>
+            }
+            else
+            {
+<span class="fc" id="L1146">                TelnetOptionHandler opthand = optionHandlers[optcode];</span>
+<span class="fc" id="L1147">                optionHandlers[optcode] = null;</span>
+
+<span class="pc bpc" id="L1149" title="1 of 2 branches missed.">                if (opthand.getWill())</span>
+                {
+<span class="fc" id="L1151">                    _requestWont(optcode);</span>
+                }
+
+<span class="pc bpc" id="L1154" title="1 of 2 branches missed.">                if (opthand.getDo())</span>
+                {
+<span class="fc" id="L1156">                    _requestDont(optcode);</span>
+                }
+            }
+<span class="fc" id="L1159">        }</span>
+        else
+        {
+<span class="fc" id="L1162">            throw (new InvalidTelnetOptionException(</span>
+<span class="fc" id="L1163">                &quot;Invalid Option Code&quot;, optcode));</span>
+        }
+<span class="fc" id="L1165">    }</span>
+    /* open TelnetOptionHandler functionality (end)*/
+
+    /* Code Section added for supporting spystreams (start)*/
+    /***
+     * Registers an OutputStream for spying what's going on in
+     * the Telnet session.
+     *
+     * @param spystream - OutputStream on which session activity
+     * will be echoed.
+     ***/
+    void _registerSpyStream(OutputStream  spystream)
+    {
+<span class="fc" id="L1178">        spyStream = spystream;</span>
+<span class="fc" id="L1179">    }</span>
+
+    /***
+     * Stops spying this Telnet.
+     *
+     ***/
+    void _stopSpyStream()
+    {
+<span class="fc" id="L1187">        spyStream = null;</span>
+<span class="fc" id="L1188">    }</span>
+
+    /***
+     * Sends a read char on the spy stream.
+     *
+     * @param ch - character read from the session
+     ***/
+    void _spyRead(int ch)
+    {
+<span class="fc" id="L1197">        OutputStream spy = spyStream;</span>
+<span class="fc bfc" id="L1198" title="All 2 branches covered.">        if (spy != null)</span>
+        {
+            try
+            {
+<span class="pc bpc" id="L1202" title="1 of 2 branches missed.">                if (ch != '\r') // never write '\r' on its own</span>
+                {
+<span class="pc bpc" id="L1204" title="1 of 2 branches missed.">                    if (ch == '\n')</span>
+                    {
+<span class="nc" id="L1206">                        spy.write('\r'); // add '\r' before '\n'</span>
+                    }
+<span class="fc" id="L1208">                    spy.write(ch); // write original character</span>
+<span class="fc" id="L1209">                    spy.flush();</span>
+                }
+<span class="fc" id="L1211">            }</span>
+<span class="nc" id="L1212">            catch (IOException e)</span>
+            {
+<span class="nc" id="L1214">                spyStream = null;</span>
+            }
+        }
+<span class="fc" id="L1217">    }</span>
+
+    /***
+     * Sends a written char on the spy stream.
+     *
+     * @param ch - character written to the session
+     ***/
+    void _spyWrite(int ch)
+    {
+<span class="pc bpc" id="L1226" title="1 of 2 branches missed.">        if (!(_stateIsDo(TelnetOption.ECHO)</span>
+<span class="nc bnc" id="L1227" title="All 2 branches missed.">            &amp;&amp; _requestedDo(TelnetOption.ECHO)))</span>
+        {
+<span class="fc" id="L1229">            OutputStream spy = spyStream;</span>
+<span class="fc bfc" id="L1230" title="All 2 branches covered.">            if (spy != null)</span>
+            {
+                try
+                {
+<span class="fc" id="L1234">                    spy.write(ch);</span>
+<span class="fc" id="L1235">                    spy.flush();</span>
+<span class="fc" id="L1236">                }</span>
+<span class="nc" id="L1237">                catch (IOException e)</span>
+                {
+<span class="nc" id="L1239">                    spyStream = null;</span>
+                }
+            }
+        }
+<span class="fc" id="L1243">    }</span>
+    /* Code Section added for supporting spystreams (end)*/
+
+    /***
+     * Registers a notification handler to which will be sent
+     * notifications of received telnet option negotiation commands.
+     *
+     * @param notifhand - TelnetNotificationHandler to be registered
+     ***/
+    public void registerNotifHandler(TelnetNotificationHandler  notifhand)
+    {
+<span class="fc" id="L1254">        __notifhand = notifhand;</span>
+<span class="fc" id="L1255">    }</span>
+
+    /***
+     * Unregisters the current notification handler.
+     *
+     ***/
+    public void unregisterNotifHandler()
+    {
+<span class="nc" id="L1263">        __notifhand = null;</span>
+<span class="nc" id="L1264">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

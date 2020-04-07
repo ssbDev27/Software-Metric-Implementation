@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IMAP.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.imap</a> &gt; <span class="el_source">IMAP.java</span></div><h1>IMAP.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.imap;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.EOFException;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.net.SocketClient;
+import org.apache.commons.net.io.CRLFLineReader;
+
+
+/**
+ * The IMAP class provides the basic the functionality necessary to implement your
+ * own IMAP client.
+ */
+public class IMAP extends SocketClient
+{
+    /** The default IMAP port (RFC 3501). */
+    public static final int DEFAULT_PORT = 143;
+
+<span class="fc" id="L42">    public enum IMAPState</span>
+    {
+<span class="fc" id="L44">        /** A constant representing the state where the client is not yet connected to a server. */</span>
+<span class="fc" id="L45">        DISCONNECTED_STATE,</span>
+<span class="fc" id="L46">        /**  A constant representing the &quot;not authenticated&quot; state. */</span>
+<span class="fc" id="L47">        NOT_AUTH_STATE,</span>
+<span class="fc" id="L48">        /**  A constant representing the &quot;authenticated&quot; state. */</span>
+<span class="fc" id="L49">        AUTH_STATE,</span>
+<span class="fc" id="L50">        /**  A constant representing the &quot;logout&quot; state. */</span>
+<span class="fc" id="L51">        LOGOUT_STATE;</span>
+    }
+
+    // RFC 3501, section 5.1.3. It should be &quot;modified UTF-7&quot;.
+    /**
+     * The default control socket ecoding.
+     */
+    protected static final String __DEFAULT_ENCODING = &quot;ISO-8859-1&quot;;
+
+    private IMAPState __state;
+    protected BufferedWriter __writer;
+
+    protected BufferedReader _reader;
+    private int _replyCode;
+    private final List&lt;String&gt; _replyLines;
+
+    /**
+     * Implement this interface and register it via {@link #setChunkListener(IMAPChunkListener)}
+     * in order to get access to multi-line partial command responses.
+     * Useful when processing large FETCH responses.
+     */
+    public interface IMAPChunkListener {
+        /**
+         * Called when a multi-line partial response has been received.
+         * @param imap the instance, get the response
+         * by calling {@link #getReplyString()} or {@link #getReplyStrings()}
+         * @return {@code true} if the reply buffer is to be cleared on return
+         */
+        boolean chunkReceived(IMAP imap);
+    }
+
+    /**
+     * &lt;p&gt;
+     * Implementation of IMAPChunkListener that returns {@code true}
+     * but otherwise does nothing.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * This is intended for use with a suitable ProtocolCommandListener.
+     * If the IMAP response contains multiple-line data, the protocol listener
+     * will be called for each multi-line chunk.
+     * The accumulated reply data will be cleared after calling the listener.
+     * If the response is very long, this can significantly reduce memory requirements.
+     * The listener will also start receiving response data earlier, as it does not have
+     * to wait for the entire response to be read.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     * The ProtocolCommandListener must be prepared to accept partial responses.
+     * This should not be a problem for listeners that just log the input.
+     * &lt;/p&gt;
+     * @see #setChunkListener(IMAPChunkListener)
+     * @since 3.4
+     */
+<span class="fc" id="L103">    public static final IMAPChunkListener TRUE_CHUNK_LISTENER = new IMAPChunkListener(){</span>
+        @Override
+        public boolean chunkReceived(IMAP imap) {
+<span class="nc" id="L106">            return true;</span>
+        }
+
+<span class="fc" id="L109">    };</span>
+    private volatile IMAPChunkListener __chunkListener;
+
+<span class="fc" id="L112">    private final char[] _initialID = { 'A', 'A', 'A', 'A' };</span>
+
+    /**
+     * The default IMAPClient constructor.  Initializes the state
+     * to &lt;code&gt;DISCONNECTED_STATE&lt;/code&gt;.
+     */
+<span class="fc" id="L118">    public IMAP()</span>
+    {
+<span class="fc" id="L120">        setDefaultPort(DEFAULT_PORT);</span>
+<span class="fc" id="L121">        __state = IMAPState.DISCONNECTED_STATE;</span>
+<span class="fc" id="L122">        _reader = null;</span>
+<span class="fc" id="L123">        __writer = null;</span>
+<span class="fc" id="L124">        _replyLines = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L125">        createCommandSupport();</span>
+<span class="fc" id="L126">    }</span>
+
+    /**
+     * Get the reply for a command that expects a tagged response.
+     *
+     * @throws IOException
+     */
+    private void __getReply() throws IOException
+    {
+<span class="nc" id="L135">        __getReply(true); // tagged response</span>
+<span class="nc" id="L136">    }</span>
+
+    /**
+     * Get the reply for a command, reading the response until the
+     * reply is found.
+     *
+     * @param wantTag {@code true} if the command expects a tagged response.
+     * @throws IOException
+     */
+    private void __getReply(boolean wantTag) throws IOException
+    {
+<span class="nc" id="L147">        _replyLines.clear();</span>
+<span class="nc" id="L148">        String line = _reader.readLine();</span>
+
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (line == null) {</span>
+<span class="nc" id="L151">            throw new EOFException(&quot;Connection closed without indication.&quot;);</span>
+        }
+
+<span class="nc" id="L154">        _replyLines.add(line);</span>
+
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (wantTag) {</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">            while(IMAPReply.isUntagged(line)) {</span>
+<span class="nc" id="L158">                int literalCount = IMAPReply.literalCount(line);</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">                final boolean isMultiLine = literalCount &gt;= 0;</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">                while (literalCount &gt;= 0) {</span>
+<span class="nc" id="L161">                    line=_reader.readLine();</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                    if (line == null) {</span>
+<span class="nc" id="L163">                        throw new EOFException(&quot;Connection closed without indication.&quot;);</span>
+                    }
+<span class="nc" id="L165">                    _replyLines.add(line);</span>
+<span class="nc" id="L166">                    literalCount -= (line.length() + 2); // Allow for CRLF</span>
+                }
+<span class="nc bnc" id="L168" title="All 2 branches missed.">                if (isMultiLine) {</span>
+<span class="nc" id="L169">                    IMAPChunkListener il = __chunkListener;</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                    if (il != null) {</span>
+<span class="nc" id="L171">                        boolean clear = il.chunkReceived(this);</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">                        if (clear) {</span>
+<span class="nc" id="L173">                            fireReplyReceived(IMAPReply.PARTIAL, getReplyString());</span>
+<span class="nc" id="L174">                            _replyLines.clear();</span>
+                        }
+                    }
+                }
+<span class="nc" id="L178">                line = _reader.readLine(); // get next chunk or final tag</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">                if (line == null) {</span>
+<span class="nc" id="L180">                    throw new EOFException(&quot;Connection closed without indication.&quot;);</span>
+                }
+<span class="nc" id="L182">                _replyLines.add(line);</span>
+            }
+            // check the response code on the last line
+<span class="nc" id="L185">            _replyCode = IMAPReply.getReplyCode(line);</span>
+<span class="nc" id="L186">        } else {</span>
+<span class="nc" id="L187">            _replyCode = IMAPReply.getUntaggedReplyCode(line);</span>
+        }
+
+<span class="nc" id="L190">        fireReplyReceived(_replyCode, getReplyString());</span>
+<span class="nc" id="L191">    }</span>
+
+    /**
+     * Overrides {@link SocketClient#fireReplyReceived(int, String)} so as to
+     * avoid creating the reply string if there are no listeners to invoke.
+     *
+     * @param replyCode passed to the listeners
+     * @param ignored the string is only created if there are listeners defined.
+     * @see #getReplyString()
+     * @since 3.4
+     */
+    @Override
+    protected void fireReplyReceived(int replyCode, String ignored) {
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (getCommandSupport().getListenerCount() &gt; 0) {</span>
+<span class="nc" id="L205">            getCommandSupport().fireReplyReceived(replyCode, getReplyString());</span>
+        }
+<span class="nc" id="L207">    }</span>
+
+    /**
+     * Performs connection initialization and sets state to
+     * {@link IMAPState#NOT_AUTH_STATE}.
+     */
+    @Override
+    protected void _connectAction_() throws IOException
+    {
+<span class="nc" id="L216">        super._connectAction_();</span>
+<span class="nc" id="L217">        _reader =</span>
+<span class="nc" id="L218">          new CRLFLineReader(new InputStreamReader(_input_,</span>
+<span class="nc" id="L219">                                                   __DEFAULT_ENCODING));</span>
+<span class="nc" id="L220">        __writer =</span>
+<span class="nc" id="L221">          new BufferedWriter(new OutputStreamWriter(_output_,</span>
+<span class="nc" id="L222">                                                    __DEFAULT_ENCODING));</span>
+<span class="nc" id="L223">        int tmo = getSoTimeout();</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        if (tmo &lt;= 0) { // none set currently</span>
+<span class="nc" id="L225">            setSoTimeout(connectTimeout); // use connect timeout to ensure we don't block forever</span>
+        }
+<span class="nc" id="L227">        __getReply(false); // untagged response</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (tmo &lt;= 0) {</span>
+<span class="nc" id="L229">            setSoTimeout(tmo); // restore the original value</span>
+        }
+<span class="nc" id="L231">        setState(IMAPState.NOT_AUTH_STATE);</span>
+<span class="nc" id="L232">    }</span>
+
+    /**
+     * Sets IMAP client state.  This must be one of the
+     * &lt;code&gt;_STATE&lt;/code&gt; constants.
+     *
+     * @param state  The new state.
+     */
+    protected void setState(IMAP.IMAPState state)
+    {
+<span class="nc" id="L242">        __state = state;</span>
+<span class="nc" id="L243">    }</span>
+
+
+    /**
+     * Returns the current IMAP client state.
+     *
+     * @return The current IMAP client state.
+     */
+    public IMAP.IMAPState getState()
+    {
+<span class="nc" id="L253">        return __state;</span>
+    }
+
+    /**
+     * Disconnects the client from the server, and sets the state to
+     * &lt;code&gt; DISCONNECTED_STATE &lt;/code&gt;.  The reply text information
+     * from the last issued command is voided to allow garbage collection
+     * of the memory used to store that information.
+     *
+     * @throws IOException  If there is an error in disconnecting.
+     */
+    @Override
+    public void disconnect() throws IOException
+    {
+<span class="nc" id="L267">        super.disconnect();</span>
+<span class="nc" id="L268">        _reader = null;</span>
+<span class="nc" id="L269">        __writer = null;</span>
+<span class="nc" id="L270">        _replyLines.clear();</span>
+<span class="nc" id="L271">        setState(IMAPState.DISCONNECTED_STATE);</span>
+<span class="nc" id="L272">    }</span>
+
+
+    /**
+     * Sends a command an arguments to the server and returns the reply code.
+     *
+     * @param commandID The ID (tag) of the command.
+     * @param command  The IMAP command to send.
+     * @param args     The command arguments.
+     * @return  The server reply code (either IMAPReply.OK, IMAPReply.NO or IMAPReply.BAD).
+     */
+    private int sendCommandWithID(String commandID, String command, String args) throws IOException
+    {
+<span class="nc" id="L285">        StringBuilder __commandBuffer = new StringBuilder();</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (commandID != null)</span>
+        {
+<span class="nc" id="L288">            __commandBuffer.append(commandID);</span>
+<span class="nc" id="L289">            __commandBuffer.append(' ');</span>
+        }
+<span class="nc" id="L291">        __commandBuffer.append(command);</span>
+
+<span class="nc bnc" id="L293" title="All 2 branches missed.">        if (args != null)</span>
+        {
+<span class="nc" id="L295">            __commandBuffer.append(' ');</span>
+<span class="nc" id="L296">            __commandBuffer.append(args);</span>
+        }
+<span class="nc" id="L298">        __commandBuffer.append(SocketClient.NETASCII_EOL);</span>
+
+<span class="nc" id="L300">        String message = __commandBuffer.toString();</span>
+<span class="nc" id="L301">        __writer.write(message);</span>
+<span class="nc" id="L302">        __writer.flush();</span>
+
+<span class="nc" id="L304">        fireCommandSent(command, message);</span>
+
+<span class="nc" id="L306">        __getReply();</span>
+<span class="nc" id="L307">        return _replyCode;</span>
+    }
+
+    /**
+     * Sends a command an arguments to the server and returns the reply code.
+     *
+     * @param command  The IMAP command to send.
+     * @param args     The command arguments.
+     * @return  The server reply code (see IMAPReply).
+     * @throws IOException on error
+     */
+    public int sendCommand(String command, String args) throws IOException
+    {
+<span class="nc" id="L320">        return sendCommandWithID(generateCommandID(), command, args);</span>
+    }
+
+    /**
+     * Sends a command with no arguments to the server and returns the
+     * reply code.
+     *
+     * @param command  The IMAP command to send.
+     * @return  The server reply code (see IMAPReply).
+     * @throws IOException on error
+     */
+    public int sendCommand(String command) throws IOException
+    {
+<span class="nc" id="L333">        return sendCommand(command, null);</span>
+    }
+
+    /**
+     * Sends a command and arguments to the server and returns the reply code.
+     *
+     * @param command  The IMAP command to send
+     *                  (one of the IMAPCommand constants).
+     * @param args     The command arguments.
+     * @return  The server reply code (see IMAPReply).
+     * @throws IOException on error
+     */
+    public int sendCommand(IMAPCommand command, String args) throws IOException
+    {
+<span class="nc" id="L347">        return sendCommand(command.getIMAPCommand(), args);</span>
+    }
+
+    /**
+     * Sends a command and arguments to the server and return whether successful.
+     *
+     * @param command  The IMAP command to send
+     *                  (one of the IMAPCommand constants).
+     * @param args     The command arguments.
+     * @return  {@code true} if the command was successful
+     * @throws IOException on error
+     */
+    public boolean doCommand(IMAPCommand command, String args) throws IOException
+    {
+<span class="nc" id="L361">        return IMAPReply.isSuccess(sendCommand(command, args));</span>
+    }
+
+    /**
+     * Sends a command with no arguments to the server and returns the
+     * reply code.
+     *
+     * @param command  The IMAP command to send
+     *                  (one of the IMAPCommand constants).
+     * @return  The server reply code (see IMAPReply).
+     * @throws IOException on error
+    **/
+    public int sendCommand(IMAPCommand command) throws IOException
+    {
+<span class="nc" id="L375">        return sendCommand(command, null);</span>
+    }
+
+    /**
+     * Sends a command to the server and return whether successful.
+     *
+     * @param command  The IMAP command to send
+     *                  (one of the IMAPCommand constants).
+     * @return  {@code true} if the command was successful
+     * @throws IOException on error
+     */
+    public boolean doCommand(IMAPCommand command) throws IOException
+    {
+<span class="nc" id="L388">        return IMAPReply.isSuccess(sendCommand(command));</span>
+    }
+
+    /**
+     * Sends data to the server and returns the reply code.
+     *
+     * @param command  The IMAP command to send.
+     * @return  The server reply code (see IMAPReply).
+     * @throws IOException on error
+     */
+    public int sendData(String command) throws IOException
+    {
+<span class="nc" id="L400">        return sendCommandWithID(null, command, null);</span>
+    }
+
+    /**
+     * Returns an array of lines received as a reply to the last command
+     * sent to the server.  The lines have end of lines truncated.
+     * @return The last server response.
+     */
+    public String[] getReplyStrings()
+    {
+<span class="nc" id="L410">        return _replyLines.toArray(new String[_replyLines.size()]);</span>
+    }
+
+    /**
+     * Returns the reply to the last command sent to the server.
+     * The value is a single string containing all the reply lines including
+     * newlines.
+     *
+     * @return The last server response.
+     */
+    public String getReplyString()
+    {
+<span class="nc" id="L422">        StringBuilder buffer = new StringBuilder(256);</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">        for (String s : _replyLines)</span>
+        {
+<span class="nc" id="L425">            buffer.append(s);</span>
+<span class="nc" id="L426">            buffer.append(SocketClient.NETASCII_EOL);</span>
+        }
+
+<span class="nc" id="L429">        return buffer.toString();</span>
+    }
+
+    /**
+     * Sets the current chunk listener.
+     * If a listener is registered and the implementation returns true,
+     * then any registered
+     * {@link org.apache.commons.net.PrintCommandListener PrintCommandListener}
+     * instances will be invoked with the partial response and a status of
+     * {@link IMAPReply#PARTIAL} to indicate that the final reply code is not yet known.
+     * @param listener the class to use, or {@code null} to disable
+     * @see #TRUE_CHUNK_LISTENER
+     * @since 3.4
+     */
+    public void setChunkListener(IMAPChunkListener listener) {
+<span class="nc" id="L444">        __chunkListener = listener;</span>
+<span class="nc" id="L445">    }</span>
+
+    /**
+     * Generates a new command ID (tag) for a command.
+     * @return a new command ID (tag) for an IMAP command.
+     */
+    protected String generateCommandID()
+    {
+<span class="fc" id="L453">        String res = new String (_initialID);</span>
+        // &quot;increase&quot; the ID for the next call
+<span class="fc" id="L455">        boolean carry = true; // want to increment initially</span>
+<span class="fc bfc" id="L456" title="All 4 branches covered.">        for (int i = _initialID.length-1; carry &amp;&amp; i&gt;=0; i--)</span>
+        {
+<span class="fc bfc" id="L458" title="All 2 branches covered.">            if (_initialID[i] == 'Z')</span>
+            {
+<span class="fc" id="L460">                _initialID[i] = 'A';</span>
+<span class="fc" id="L461">            }</span>
+            else
+            {
+<span class="fc" id="L464">                _initialID[i]++;</span>
+<span class="fc" id="L465">                carry = false; // did not wrap round</span>
+            }
+        }
+<span class="fc" id="L468">        return res;</span>
+    }
+}
+/* kate: indent-width 4; replace-tabs on; */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

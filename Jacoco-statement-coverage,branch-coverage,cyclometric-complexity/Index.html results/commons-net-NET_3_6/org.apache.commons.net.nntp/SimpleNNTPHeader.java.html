@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SimpleNNTPHeader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.nntp</a> &gt; <span class="el_source">SimpleNNTPHeader.java</span></div><h1>SimpleNNTPHeader.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.nntp;
+
+/***
+ * This class is used to construct the bare minimum
+ * acceptable header for most news readers.  To construct more
+ * complicated headers you should refer to RFC 822.  When the
+ * Java Mail API is finalized, you will be
+ * able to use it to compose fully compliant Internet text messages.
+ * &lt;p&gt;
+ * The main purpose of the class is to faciliatate the article posting
+ * process, by relieving the programmer from having to explicitly format
+ * an article header.  For example:
+ * &lt;pre&gt;
+ * writer = client.postArticle();
+ * if(writer == null) // failure
+ *   return false;
+ * header = new SimpleNNTPHeader(&quot;foobar@foo.com&quot;, &quot;Just testing&quot;);
+ * header.addNewsgroup(&quot;alt.test&quot;);
+ * header.addHeaderField(&quot;Organization&quot;, &quot;Foobar, Inc.&quot;);
+ * writer.write(header.toString());
+ * writer.write(&quot;This is just a test&quot;);
+ * writer.close();
+ * if(!client.completePendingCommand()) // failure
+ *   return false;
+ * &lt;/pre&gt;
+ *
+ * @see NNTPClient
+ ***/
+
+public class SimpleNNTPHeader
+{
+    private final String __subject, __from;
+    private final StringBuilder __newsgroups;
+    private final StringBuilder __headerFields;
+    private int __newsgroupCount;
+
+    /***
+     * Creates a new SimpleNNTPHeader instance initialized with the given
+     * from and subject header field values.
+     * &lt;p&gt;
+     * @param from  The value of the &lt;code&gt;From:&lt;/code&gt; header field.  This
+     *              should be the article poster's email address.
+     * @param subject  The value of the &lt;code&gt;Subject:&lt;/code&gt; header field.
+     *              This should be the subject of the article.
+     ***/
+<span class="nc" id="L63">    public SimpleNNTPHeader(String from, String subject)</span>
+    {
+<span class="nc" id="L65">        __from = from;</span>
+<span class="nc" id="L66">        __subject = subject;</span>
+<span class="nc" id="L67">        __newsgroups = new StringBuilder();</span>
+<span class="nc" id="L68">        __headerFields = new StringBuilder();</span>
+<span class="nc" id="L69">        __newsgroupCount = 0;</span>
+<span class="nc" id="L70">    }</span>
+
+    /***
+     * Adds a newsgroup to the article &lt;code&gt;Newsgroups:&lt;/code&gt; field.
+     * &lt;p&gt;
+     * @param newsgroup  The newsgroup to add to the article's newsgroup
+     *                   distribution list.
+     ***/
+    public void addNewsgroup(String newsgroup)
+    {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (__newsgroupCount++ &gt; 0) {</span>
+<span class="nc" id="L81">            __newsgroups.append(',');</span>
+        }
+<span class="nc" id="L83">        __newsgroups.append(newsgroup);</span>
+<span class="nc" id="L84">    }</span>
+
+    /***
+     * Adds an arbitrary header field with the given value to the article
+     * header.  These headers will be written after the From, Newsgroups,
+     * and Subject fields when the SimpleNNTPHeader is convertered to a string.
+     * An example use would be:
+     * &lt;pre&gt;
+     * header.addHeaderField(&quot;Organization&quot;, &quot;Foobar, Inc.&quot;);
+     * &lt;/pre&gt;
+     * &lt;p&gt;
+     * @param headerField  The header field to add, not including the colon.
+     * @param value  The value of the added header field.
+     ***/
+    public void addHeaderField(String headerField, String value)
+    {
+<span class="nc" id="L100">        __headerFields.append(headerField);</span>
+<span class="nc" id="L101">        __headerFields.append(&quot;: &quot;);</span>
+<span class="nc" id="L102">        __headerFields.append(value);</span>
+<span class="nc" id="L103">        __headerFields.append('\n');</span>
+<span class="nc" id="L104">    }</span>
+
+
+    /***
+     * Returns the address used in the &lt;code&gt; From: &lt;/code&gt; header field.
+     * &lt;p&gt;
+     * @return The from address.
+     ***/
+    public String getFromAddress()
+    {
+<span class="nc" id="L114">        return __from;</span>
+    }
+
+    /***
+     * Returns the subject used in the &lt;code&gt; Subject: &lt;/code&gt; header field.
+     * &lt;p&gt;
+     * @return The subject.
+     ***/
+    public String getSubject()
+    {
+<span class="nc" id="L124">        return __subject;</span>
+    }
+
+    /***
+     * Returns the contents of the &lt;code&gt; Newsgroups: &lt;/code&gt; header field.
+     * &lt;p&gt;
+     * @return The comma-separated list of newsgroups to which the article
+     *         is being posted.
+     ***/
+    public String getNewsgroups()
+    {
+<span class="nc" id="L135">        return __newsgroups.toString();</span>
+    }
+
+    /***
+     * Converts the SimpleNNTPHeader to a properly formatted header in
+     * the form of a String, including the blank line used to separate
+     * the header from the article body.
+     * &lt;p&gt;
+     * @return The article header in the form of a String.
+     ***/
+    @Override
+    public String toString()
+    {
+<span class="nc" id="L148">        StringBuilder header = new StringBuilder();</span>
+
+<span class="nc" id="L150">        header.append(&quot;From: &quot;);</span>
+<span class="nc" id="L151">        header.append(__from);</span>
+<span class="nc" id="L152">        header.append(&quot;\nNewsgroups: &quot;);</span>
+<span class="nc" id="L153">        header.append(__newsgroups.toString());</span>
+<span class="nc" id="L154">        header.append(&quot;\nSubject: &quot;);</span>
+<span class="nc" id="L155">        header.append(__subject);</span>
+<span class="nc" id="L156">        header.append('\n');</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (__headerFields.length() &gt; 0) {</span>
+<span class="nc" id="L158">            header.append(__headerFields.toString());</span>
+        }
+<span class="nc" id="L160">        header.append('\n');</span>
+
+<span class="nc" id="L162">        return header.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

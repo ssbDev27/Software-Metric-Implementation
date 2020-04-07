@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ListNewsgroups.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.nntp</a> &gt; <span class="el_source">ListNewsgroups.java</span></div><h1>ListNewsgroups.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.nntp;
+
+import java.io.IOException;
+import org.apache.commons.net.nntp.NNTPClient;
+import org.apache.commons.net.nntp.NewsgroupInfo;
+
+/***
+ * This is a trivial example using the NNTP package to approximate the
+ * Unix newsgroups command.  It merely connects to the specified news
+ * server and issues fetches the list of newsgroups stored by the server.
+ * On servers that store a lot of newsgroups, this command can take a very
+ * long time (listing upwards of 30,000 groups).
+ ***/
+
+<span class="nc" id="L32">public final class ListNewsgroups</span>
+{
+
+    public static void main(String[] args)
+    {
+<span class="nc bnc" id="L37" title="All 2 branches missed.">        if (args.length &lt; 1)</span>
+        {
+<span class="nc" id="L39">            System.err.println(&quot;Usage: newsgroups newsserver [pattern]&quot;);</span>
+<span class="nc" id="L40">            return;</span>
+        }
+
+<span class="nc" id="L43">        NNTPClient client = new NNTPClient();</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        String pattern = args.length &gt;= 2 ? args[1] : &quot;&quot;;</span>
+
+        try
+        {
+<span class="nc" id="L48">            client.connect(args[0]);</span>
+
+<span class="nc" id="L50">            int j = 0;</span>
+            try {
+<span class="nc bnc" id="L52" title="All 2 branches missed.">                for(String s : client.iterateNewsgroupListing(pattern)) {</span>
+<span class="nc" id="L53">                    j++;</span>
+<span class="nc" id="L54">                    System.out.println(s);</span>
+                }
+<span class="nc" id="L56">            } catch (IOException e1) {</span>
+<span class="nc" id="L57">                e1.printStackTrace();</span>
+            }
+<span class="nc" id="L59">            System.out.println(j);</span>
+
+<span class="nc" id="L61">            j = 0;</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">            for(NewsgroupInfo n : client.iterateNewsgroups(pattern)) {</span>
+<span class="nc" id="L63">                j++;</span>
+<span class="nc" id="L64">                System.out.println(n.getNewsgroup());</span>
+            }
+<span class="nc" id="L66">            System.out.println(j);</span>
+<span class="nc" id="L67">        }</span>
+<span class="nc" id="L68">        catch (IOException e)</span>
+        {
+<span class="nc" id="L70">            e.printStackTrace();</span>
+        }
+        finally
+        {
+            try
+            {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">                if (client.isConnected()) {</span>
+<span class="nc" id="L77">                    client.disconnect();</span>
+                }
+<span class="nc" id="L79">            }</span>
+<span class="nc" id="L80">            catch (IOException e)</span>
+            {
+<span class="nc" id="L82">                System.err.println(&quot;Error disconnecting from server.&quot;);</span>
+<span class="nc" id="L83">                e.printStackTrace();</span>
+<span class="nc" id="L84">                System.exit(1);</span>
+            }
+        }
+
+<span class="nc" id="L88">    }</span>
+
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

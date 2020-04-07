@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NTPUDPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ntp</a> &gt; <span class="el_source">NTPUDPClient.java</span></div><h1>NTPUDPClient.java</h1><pre class="source lang-java linenums">package org.apache.commons.net.ntp;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+
+import org.apache.commons.net.DatagramSocketClient;
+
+/***
+ * The NTPUDPClient class is a UDP implementation of a client for the
+ * Network Time Protocol (NTP) described in RFC 1305 as well as the
+ * Simple Network Time Protocol (SNTP) in RFC-2030. To use the class,
+ * merely open a local datagram socket with &lt;a href=&quot;#open&quot;&gt; open &lt;/a&gt;
+ * and call &lt;a href=&quot;#getTime&quot;&gt; getTime &lt;/a&gt; to retrieve the time. Then call
+ * &lt;a href=&quot;org.apache.commons.net.DatagramSocketClient.html#close&quot;&gt; close &lt;/a&gt;
+ * to close the connection properly.
+ * Successive calls to &lt;a href=&quot;#getTime&quot;&gt; getTime &lt;/a&gt; are permitted
+ * without re-establishing a connection.  That is because UDP is a
+ * connectionless protocol and the Network Time Protocol is stateless.
+ *
+ * @version $Revision$
+ ***/
+
+<span class="fc" id="L41">public final class NTPUDPClient extends DatagramSocketClient</span>
+{
+    /*** The default NTP port.  It is set to 123 according to RFC 1305. ***/
+    public static final int DEFAULT_PORT = 123;
+
+<span class="fc" id="L46">    private int _version = NtpV3Packet.VERSION_3;</span>
+
+    /***
+     * Retrieves the time information from the specified server and port and
+     * returns it. The time is the number of miliiseconds since
+     * 00:00 (midnight) 1 January 1900 UTC, as specified by RFC 1305.
+     * This method reads the raw NTP packet and constructs a &lt;i&gt;TimeInfo&lt;/i&gt;
+     * object that allows access to all the fields of the NTP message header.
+     * &lt;p&gt;
+     * @param host The address of the server.
+     * @param port The port of the service.
+     * @return The time value retrieved from the server.
+     * @throws IOException If an error occurs while retrieving the time.
+     ***/
+    public TimeInfo getTime(InetAddress host, int port) throws IOException
+    {
+        // if not connected then open to next available UDP port
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (!isOpen())</span>
+        {
+<span class="fc" id="L65">            open();</span>
+        }
+
+<span class="fc" id="L68">        NtpV3Packet message = new NtpV3Impl();</span>
+<span class="fc" id="L69">        message.setMode(NtpV3Packet.MODE_CLIENT);</span>
+<span class="fc" id="L70">        message.setVersion(_version);</span>
+<span class="fc" id="L71">        DatagramPacket sendPacket = message.getDatagramPacket();</span>
+<span class="fc" id="L72">        sendPacket.setAddress(host);</span>
+<span class="fc" id="L73">        sendPacket.setPort(port);</span>
+
+<span class="fc" id="L75">        NtpV3Packet recMessage = new NtpV3Impl();</span>
+<span class="fc" id="L76">        DatagramPacket receivePacket = recMessage.getDatagramPacket();</span>
+
+        /*
+         * Must minimize the time between getting the current time,
+         * timestamping the packet, and sending it out which
+         * introduces an error in the delay time.
+         * No extraneous logging and initializations here !!!
+         */
+<span class="fc" id="L84">        TimeStamp now = TimeStamp.getCurrentTime();</span>
+
+        // Note that if you do not set the transmit time field then originating time
+        // in server response is all 0's which is &quot;Thu Feb 07 01:28:16 EST 2036&quot;.
+<span class="fc" id="L88">        message.setTransmitTime(now);</span>
+
+<span class="fc" id="L90">        _socket_.send(sendPacket);</span>
+<span class="fc" id="L91">        _socket_.receive(receivePacket);</span>
+
+<span class="fc" id="L93">        long returnTime = System.currentTimeMillis();</span>
+        // create TimeInfo message container but don't pre-compute the details yet
+<span class="fc" id="L95">        TimeInfo info = new TimeInfo(recMessage, returnTime, false);</span>
+
+<span class="fc" id="L97">        return info;</span>
+    }
+
+    /***
+     * Retrieves the time information from the specified server on the
+     * default NTP port and returns it. The time is the number of miliiseconds
+     * since 00:00 (midnight) 1 January 1900 UTC, as specified by RFC 1305.
+     * This method reads the raw NTP packet and constructs a &lt;i&gt;TimeInfo&lt;/i&gt;
+     * object that allows access to all the fields of the NTP message header.
+     * &lt;p&gt;
+     * @param host The address of the server.
+     * @return The time value retrieved from the server.
+     * @throws IOException If an error occurs while retrieving the time.
+     ***/
+    public TimeInfo getTime(InetAddress host) throws IOException
+    {
+<span class="nc" id="L113">        return getTime(host, NtpV3Packet.NTP_PORT);</span>
+    }
+
+    /***
+     * Returns the NTP protocol version number that client sets on request packet
+     * that is sent to remote host (e.g. 3=NTP v3, 4=NTP v4, etc.)
+     *
+     * @return  the NTP protocol version number that client sets on request packet.
+     * @see #setVersion(int)
+     ***/
+    public int getVersion()
+    {
+<span class="nc" id="L125">        return _version;</span>
+    }
+
+    /***
+     * Sets the NTP protocol version number that client sets on request packet
+     * communicate with remote host.
+     *
+     * @param version the NTP protocol version number
+     ***/
+    public void setVersion(int version)
+    {
+<span class="nc" id="L136">        _version = version;</span>
+<span class="nc" id="L137">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RegexFTPFileEntryParserImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ftp.parser</a> &gt; <span class="el_source">RegexFTPFileEntryParserImpl.java</span></div><h1>RegexFTPFileEntryParserImpl.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+package org.apache.commons.net.ftp.parser;
+
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
+import org.apache.commons.net.ftp.FTPFileEntryParserImpl;
+
+/**
+ * This abstract class implements both the older FTPFileListParser and
+ * newer FTPFileEntryParser interfaces with default functionality.
+ * All the classes in the parser subpackage inherit from this.
+ *
+ * This is the base class for all regular expression based FTPFileEntryParser classes
+ */
+public abstract class RegexFTPFileEntryParserImpl extends
+        FTPFileEntryParserImpl {
+    /**
+     * internal pattern the matcher tries to match, representing a file
+     * entry
+     */
+<span class="fc" id="L41">    private Pattern pattern = null;</span>
+
+    /**
+     * internal match result used by the parser
+     */
+<span class="fc" id="L46">    private MatchResult result = null;</span>
+
+    /**
+     * Internal PatternMatcher object used by the parser.  It has protected
+     * scope in case subclasses want to make use of it for their own purposes.
+     */
+<span class="fc" id="L52">    protected Matcher _matcher_ = null;</span>
+
+    /**
+     * The constructor for a RegexFTPFileEntryParserImpl object.
+     * The expression is compiled with flags = 0.
+     *
+     * @param regex  The regular expression with which this object is
+     * initialized.
+     *
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen in
+     * normal conditions.  It it is seen, this is a sign that a subclass has
+     * been created with a bad regular expression.   Since the parser must be
+     * created before use, this means that any bad parser subclasses created
+     * from this will bomb very quickly,  leading to easy detection.
+     */
+
+    public RegexFTPFileEntryParserImpl(String regex) {
+<span class="fc" id="L70">        super();</span>
+<span class="fc" id="L71">        compileRegex(regex, 0);</span>
+<span class="fc" id="L72">    }</span>
+
+    /**
+     * The constructor for a RegexFTPFileEntryParserImpl object.
+     *
+     * @param regex  The regular expression with which this object is
+     * initialized.
+     * @param flags the flags to apply, see {@link Pattern#compile(String, int)}. Use 0 for none.
+     *
+     * @throws IllegalArgumentException
+     * Thrown if the regular expression is unparseable.  Should not be seen in
+     * normal conditions.  It it is seen, this is a sign that a subclass has
+     * been created with a bad regular expression.   Since the parser must be
+     * created before use, this means that any bad parser subclasses created
+     * from this will bomb very quickly,  leading to easy detection.
+     * @since 3.4
+     */
+    public RegexFTPFileEntryParserImpl(String regex, final int flags) {
+<span class="fc" id="L90">        super();</span>
+<span class="fc" id="L91">        compileRegex(regex, flags);</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Convenience method delegates to the internal MatchResult's matches()
+     * method.
+     *
+     * @param s the String to be matched
+     * @return true if s matches this object's regular expression.
+     */
+
+    public boolean matches(String s) {
+<span class="fc" id="L103">        this.result = null;</span>
+<span class="fc" id="L104">        _matcher_ = pattern.matcher(s);</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (_matcher_.matches()) {</span>
+<span class="fc" id="L106">            this.result = _matcher_.toMatchResult();</span>
+        }
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        return null != this.result;</span>
+    }
+
+    /**
+     * Convenience method
+     *
+     * @return the number of groups() in the internal MatchResult.
+     */
+
+    public int getGroupCnt() {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (this.result == null) {</span>
+<span class="nc" id="L119">            return 0;</span>
+        }
+<span class="nc" id="L121">        return this.result.groupCount();</span>
+    }
+
+    /**
+     * Convenience method delegates to the internal MatchResult's group()
+     * method.
+     *
+     * @param matchnum match group number to be retrieved
+     *
+     * @return the content of the &lt;code&gt;matchnum'th&lt;/code&gt; group of the internal
+     *         match or null if this method is called without a match having
+     *         been made.
+     */
+    public String group(int matchnum) {
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (this.result == null) {</span>
+<span class="nc" id="L136">            return null;</span>
+        }
+<span class="fc" id="L138">        return this.result.group(matchnum);</span>
+    }
+
+    /**
+     * For debugging purposes - returns a string shows each match group by
+     * number.
+     *
+     * @return a string shows each match group by number.
+     */
+
+    public String getGroupsAsString() {
+<span class="nc" id="L149">        StringBuilder b = new StringBuilder();</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        for (int i = 1; i &lt;= this.result.groupCount(); i++) {</span>
+<span class="nc" id="L151">            b.append(i).append(&quot;) &quot;).append(this.result.group(i)).append(</span>
+<span class="nc" id="L152">                    System.getProperty(&quot;line.separator&quot;));</span>
+        }
+<span class="nc" id="L154">        return b.toString();</span>
+    }
+
+    /**
+     * Alter the current regular expression being utilised for entry parsing
+     * and create a new {@link Pattern} instance.
+     * @param regex The new regular expression
+     * @return  true
+     * @since 2.0
+     * @throws IllegalArgumentException if the regex cannot be compiled
+     */
+    public boolean setRegex(final String regex) {
+<span class="fc" id="L166">        compileRegex(regex, 0);</span>
+<span class="fc" id="L167">        return true;</span>
+    }
+
+
+    /**
+     * Alter the current regular expression being utilised for entry parsing
+     * and create a new {@link Pattern} instance.
+     * @param regex The new regular expression
+     * @param flags the flags to apply, see {@link Pattern#compile(String, int)}. Use 0 for none.
+     * @return  true
+     * @since 3.4
+     * @throws IllegalArgumentException if the regex cannot be compiled
+     */
+    public boolean setRegex(final String regex, final int flags) {
+<span class="nc" id="L181">        compileRegex(regex, flags);</span>
+<span class="nc" id="L182">        return true;</span>
+    }
+
+    /**
+     * Compile the regex and store the {@link Pattern}.
+     *
+     * This is an internal method to do the work so the constructor does not
+     * have to call an overrideable method.
+     *
+     * @param regex the expression to compile
+     * @param flags the flags to apply, see {@link Pattern#compile(String, int)}. Use 0 for none.
+     * @throws IllegalArgumentException if the regex cannot be compiled
+     */
+    private void compileRegex(final String regex, final int flags) {
+        try {
+<span class="fc" id="L197">            pattern = Pattern.compile(regex, flags);</span>
+<span class="pc" id="L198">        } catch (PatternSyntaxException pse) {</span>
+<span class="nc" id="L199">            throw new IllegalArgumentException(&quot;Unparseable regex supplied: &quot; + regex);</span>
+        }
+<span class="fc" id="L201">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

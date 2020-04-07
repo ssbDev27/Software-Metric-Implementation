@@ -1,0 +1,1887 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NNTPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.nntp</a> &gt; <span class="el_source">NNTPClient.java</span></div><h1>NNTPClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.nntp;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Vector;
+
+import org.apache.commons.net.MalformedServerReplyException;
+import org.apache.commons.net.io.DotTerminatedMessageReader;
+import org.apache.commons.net.io.DotTerminatedMessageWriter;
+import org.apache.commons.net.io.Util;
+
+/***
+ * NNTPClient encapsulates all the functionality necessary to post and
+ * retrieve articles from an NNTP server.  As with all classes derived
+ * from {@link org.apache.commons.net.SocketClient},
+ * you must first connect to the server with
+ * {@link org.apache.commons.net.SocketClient#connect  connect }
+ * before doing anything, and finally
+ * {@link org.apache.commons.net.nntp.NNTP#disconnect  disconnect() }
+ * after you're completely finished interacting with the server.
+ * Remember that the
+ * {@link org.apache.commons.net.nntp.NNTP#isAllowedToPost isAllowedToPost()}
+ *  method is defined in
+ * {@link org.apache.commons.net.nntp.NNTP}.
+ * &lt;p&gt;
+ * You should keep in mind that the NNTP server may choose to prematurely
+ * close a connection if the client has been idle for longer than a
+ * given time period or if the server is being shutdown by the operator or
+ * some other reason.  The NNTP class will detect a
+ * premature NNTP server connection closing when it receives a
+ * {@link org.apache.commons.net.nntp.NNTPReply#SERVICE_DISCONTINUED NNTPReply.SERVICE_DISCONTINUED }
+ *  response to a command.
+ * When that occurs, the NNTP class method encountering that reply will throw
+ * an {@link org.apache.commons.net.nntp.NNTPConnectionClosedException}
+ * .
+ * &lt;code&gt;NNTPConectionClosedException&lt;/code&gt;
+ * is a subclass of &lt;code&gt; IOException &lt;/code&gt; and therefore need not be
+ * caught separately, but if you are going to catch it separately, its
+ * catch block must appear before the more general &lt;code&gt; IOException &lt;/code&gt;
+ * catch block.  When you encounter an
+ * {@link org.apache.commons.net.nntp.NNTPConnectionClosedException}
+ * , you must disconnect the connection with
+ * {@link org.apache.commons.net.nntp.NNTP#disconnect  disconnect() }
+ *  to properly clean up the
+ * system resources used by NNTP.  Before disconnecting, you may check the
+ * last reply code and text with
+ * {@link org.apache.commons.net.nntp.NNTP#getReplyCode  getReplyCode } and
+ * {@link org.apache.commons.net.nntp.NNTP#getReplyString  getReplyString }.
+ * &lt;p&gt;
+ * Rather than list it separately for each method, we mention here that
+ * every method communicating with the server and throwing an IOException
+ * can also throw a
+ * {@link org.apache.commons.net.MalformedServerReplyException}
+ * , which is a subclass
+ * of IOException.  A MalformedServerReplyException will be thrown when
+ * the reply received from the server deviates enough from the protocol
+ * specification that it cannot be interpreted in a useful manner despite
+ * attempts to be as lenient as possible.
+ *
+ * @see NNTP
+ * @see NNTPConnectionClosedException
+ * @see org.apache.commons.net.MalformedServerReplyException
+ ***/
+
+<span class="nc" id="L86">public class NNTPClient extends NNTP</span>
+{
+
+    /**
+     * Parse the reply and store the id and number in the pointer.
+     *
+     * @param reply the reply to parse &quot;22n nnn &lt;aaa&gt;&quot;
+     * @param pointer the pointer to update
+     *
+     * @throws MalformedServerReplyException if response could not be parsed
+     */
+    private void __parseArticlePointer(String reply, ArticleInfo pointer)
+    throws MalformedServerReplyException
+    {
+<span class="nc" id="L100">        String tokens[] = reply.split(&quot; &quot;);</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        if (tokens.length &gt;= 3) { // OK, we can parset the line</span>
+<span class="nc" id="L102">            int i = 1; // skip reply code</span>
+            try
+            {
+                // Get article number
+<span class="nc" id="L106">                pointer.articleNumber = Long.parseLong(tokens[i++]);</span>
+                // Get article id
+<span class="nc" id="L108">                pointer.articleId = tokens[i++];</span>
+<span class="nc" id="L109">                return; // done</span>
+            }
+<span class="nc" id="L111">            catch (NumberFormatException e)</span>
+            {
+                // drop through and raise exception
+            }
+        }
+<span class="nc" id="L116">        throw new MalformedServerReplyException(</span>
+<span class="nc" id="L117">            &quot;Could not parse article pointer.\nServer reply: &quot; + reply);</span>
+    }
+
+    /*
+     * 211 n f l s group selected
+     *     (n = estimated number of articles in group,
+     *     f = first article number in the group,
+     *     l = last article number in the group,
+     *     s = name of the group.)
+     */
+
+    private static void __parseGroupReply(String reply, NewsgroupInfo info)
+    throws MalformedServerReplyException
+    {
+<span class="nc" id="L131">        String tokens[] = reply.split(&quot; &quot;);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (tokens.length &gt;= 5) {</span>
+<span class="nc" id="L133">            int i = 1;  // Skip numeric response value</span>
+            try
+            {
+                // Get estimated article count
+<span class="nc" id="L137">                info._setArticleCount(Long.parseLong(tokens[i++]));</span>
+                // Get first article number
+<span class="nc" id="L139">                info._setFirstArticle(Long.parseLong(tokens[i++]));</span>
+                // Get last article number
+<span class="nc" id="L141">                info._setLastArticle(Long.parseLong(tokens[i++]));</span>
+                // Get newsgroup name
+<span class="nc" id="L143">                info._setNewsgroup(tokens[i++]);</span>
+
+<span class="nc" id="L145">                info._setPostingPermission(NewsgroupInfo.UNKNOWN_POSTING_PERMISSION);</span>
+<span class="nc" id="L146">                return ;</span>
+<span class="nc" id="L147">            } catch (NumberFormatException e)</span>
+            {
+               // drop through to report error
+            }
+        }
+
+<span class="nc" id="L153">        throw new MalformedServerReplyException(</span>
+<span class="nc" id="L154">            &quot;Could not parse newsgroup info.\nServer reply: &quot; + reply);</span>
+    }
+
+
+    // Format: group last first p
+    static NewsgroupInfo __parseNewsgroupListEntry(String entry)
+    {
+<span class="nc" id="L161">        String tokens[] = entry.split(&quot; &quot;);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (tokens.length &lt; 4) {</span>
+<span class="nc" id="L163">            return null;</span>
+        }
+<span class="nc" id="L165">        NewsgroupInfo result = new NewsgroupInfo();</span>
+
+<span class="nc" id="L167">        int i = 0;</span>
+
+<span class="nc" id="L169">        result._setNewsgroup(tokens[i++]);</span>
+
+        try
+        {
+<span class="nc" id="L173">            long lastNum = Long.parseLong(tokens[i++]);</span>
+<span class="nc" id="L174">            long firstNum = Long.parseLong(tokens[i++]);</span>
+<span class="nc" id="L175">            result._setFirstArticle(firstNum);</span>
+<span class="nc" id="L176">            result._setLastArticle(lastNum);</span>
+<span class="nc bnc" id="L177" title="All 4 branches missed.">            if ((firstNum == 0) &amp;&amp; (lastNum == 0)) {</span>
+<span class="nc" id="L178">                result._setArticleCount(0);</span>
+<span class="nc" id="L179">            } else {</span>
+<span class="nc" id="L180">                result._setArticleCount(lastNum - firstNum + 1);</span>
+            }
+<span class="nc" id="L182">        } catch (NumberFormatException e) {</span>
+<span class="nc" id="L183">            return null;</span>
+        }
+
+<span class="nc bnc" id="L186" title="All 4 branches missed.">        switch (tokens[i++].charAt(0))</span>
+        {
+        case 'y':
+        case 'Y':
+<span class="nc" id="L190">            result._setPostingPermission(</span>
+<span class="nc" id="L191">                NewsgroupInfo.PERMITTED_POSTING_PERMISSION);</span>
+<span class="nc" id="L192">            break;</span>
+        case 'n':
+        case 'N':
+<span class="nc" id="L195">            result._setPostingPermission(</span>
+<span class="nc" id="L196">                NewsgroupInfo.PROHIBITED_POSTING_PERMISSION);</span>
+<span class="nc" id="L197">            break;</span>
+        case 'm':
+        case 'M':
+<span class="nc" id="L200">            result._setPostingPermission(</span>
+<span class="nc" id="L201">                NewsgroupInfo.MODERATED_POSTING_PERMISSION);</span>
+<span class="nc" id="L202">            break;</span>
+        default:
+<span class="nc" id="L204">            result._setPostingPermission(</span>
+<span class="nc" id="L205">                NewsgroupInfo.UNKNOWN_POSTING_PERMISSION);</span>
+            break;
+        }
+
+<span class="nc" id="L209">        return result;</span>
+    }
+
+    /**
+     * Parse a response line from {@link #retrieveArticleInfo(long, long)}.
+     *
+     * @param line a response line
+     * @return the parsed {@link Article}, if unparseable then isDummy()
+     * will be true, and the subject will contain the raw info.
+     * @since 3.0
+     */
+    static Article __parseArticleEntry(String line) {
+        // Extract the article information
+        // Mandatory format (from NNTP RFC 2980) is :
+        // articleNumber\tSubject\tAuthor\tDate\tID\tReference(s)\tByte Count\tLine Count
+
+<span class="nc" id="L225">        Article article = new Article();</span>
+<span class="nc" id="L226">        article.setSubject(line); // in case parsing fails</span>
+<span class="nc" id="L227">        String parts[] = line.split(&quot;\t&quot;);</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (parts.length &gt; 6) {</span>
+<span class="nc" id="L229">            int i = 0;</span>
+            try {
+<span class="nc" id="L231">                article.setArticleNumber(Long.parseLong(parts[i++]));</span>
+<span class="nc" id="L232">                article.setSubject(parts[i++]);</span>
+<span class="nc" id="L233">                article.setFrom(parts[i++]);</span>
+<span class="nc" id="L234">                article.setDate(parts[i++]);</span>
+<span class="nc" id="L235">                article.setArticleId(parts[i++]);</span>
+<span class="nc" id="L236">                article.addReference(parts[i++]);</span>
+<span class="nc" id="L237">            } catch (NumberFormatException e) {</span>
+                // ignored, already handled
+            }
+        }
+<span class="nc" id="L241">        return article;</span>
+    }
+
+    private NewsgroupInfo[] __readNewsgroupListing() throws IOException
+    {
+
+<span class="nc" id="L247">        BufferedReader reader = new DotTerminatedMessageReader(_reader_);</span>
+        // Start of with a big vector because we may be reading a very large
+        // amount of groups.
+<span class="nc" id="L250">        Vector&lt;NewsgroupInfo&gt; list = new Vector&lt;NewsgroupInfo&gt;(2048);</span>
+
+        String line;
+        try {
+<span class="nc bnc" id="L254" title="All 2 branches missed.">            while ((line = reader.readLine()) != null) {</span>
+<span class="nc" id="L255">                NewsgroupInfo tmp = __parseNewsgroupListEntry(line);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">                if (tmp != null) {</span>
+<span class="nc" id="L257">                    list.addElement(tmp);</span>
+<span class="nc" id="L258">                } else {</span>
+<span class="nc" id="L259">                    throw new MalformedServerReplyException(line);</span>
+                }
+            }
+<span class="nc" id="L262">        } finally {</span>
+<span class="nc" id="L263">            reader.close();</span>
+        }
+        int size;
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        if ((size = list.size()) &lt; 1) {</span>
+<span class="nc" id="L267">            return new NewsgroupInfo[0];</span>
+        }
+
+<span class="nc" id="L270">        NewsgroupInfo[] info = new NewsgroupInfo[size];</span>
+<span class="nc" id="L271">        list.copyInto(info);</span>
+
+<span class="nc" id="L273">        return info;</span>
+    }
+
+
+    private BufferedReader __retrieve(int command, String articleId, ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc bnc" id="L280" title="All 2 branches missed.">        if (articleId != null)</span>
+        {
+<span class="nc bnc" id="L282" title="All 2 branches missed.">            if (!NNTPReply.isPositiveCompletion(sendCommand(command, articleId))) {</span>
+<span class="nc" id="L283">                return null;</span>
+            }
+        }
+        else
+        {
+<span class="nc bnc" id="L288" title="All 2 branches missed.">            if (!NNTPReply.isPositiveCompletion(sendCommand(command))) {</span>
+<span class="nc" id="L289">                return null;</span>
+            }
+        }
+
+
+<span class="nc bnc" id="L294" title="All 2 branches missed.">        if (pointer != null) {</span>
+<span class="nc" id="L295">            __parseArticlePointer(getReplyString(), pointer);</span>
+        }
+
+<span class="nc" id="L298">        return new DotTerminatedMessageReader(_reader_);</span>
+    }
+
+
+    private BufferedReader __retrieve(int command, long articleNumber, ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc" id="L305">        if (!NNTPReply.isPositiveCompletion(sendCommand(command,</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">                                            Long.toString(articleNumber)))) {</span>
+<span class="nc" id="L307">            return null;</span>
+        }
+
+<span class="nc bnc" id="L310" title="All 2 branches missed.">        if (pointer != null) {</span>
+<span class="nc" id="L311">            __parseArticlePointer(getReplyString(), pointer);</span>
+        }
+
+<span class="nc" id="L314">        return new DotTerminatedMessageReader(_reader_);</span>
+    }
+
+
+
+    /***
+     * Retrieves an article from the NNTP server.  The article is referenced
+     * by its unique article identifier (including the enclosing &amp;lt; and &amp;gt;).
+     * The article number and identifier contained in the server reply
+     * are returned through an ArticleInfo.  The &lt;code&gt; articleId &lt;/code&gt;
+     * field of the ArticleInfo cannot always be trusted because some
+     * NNTP servers do not correctly follow the RFC 977 reply format.
+     * &lt;p&gt;
+     * A DotTerminatedMessageReader is returned from which the article can
+     * be read.  If the article does not exist, null is returned.
+     * &lt;p&gt;
+     * You must not issue any commands to the NNTP server (i.e., call any
+     * other methods) until you finish reading the message from the returned
+     * BufferedReader instance.
+     * The NNTP protocol uses the same stream for issuing commands as it does
+     * for returning results.  Therefore the returned BufferedReader actually reads
+     * directly from the NNTP connection.  After the end of message has been
+     * reached, new commands can be executed and their replies read.  If
+     * you do not follow these requirements, your program will not work
+     * properly.
+     * &lt;p&gt;
+     * @param articleId  The unique article identifier of the article to
+     *     retrieve.  If this parameter is null, the currently selected
+     *     article is retrieved.
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  The articleId field cannot always be trusted
+     *   because of server deviations from RFC 977 reply formats.  You may
+     *   set this parameter to null if you do not desire to retrieve the
+     *   returned article information.
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         can be read.  null if the article does not exist.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public BufferedReader retrieveArticle(String articleId, ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc" id="L361">        return __retrieve(NNTPCommand.ARTICLE, articleId, pointer);</span>
+
+    }
+
+    /**
+     * Same as &lt;code&gt; retrieveArticle(articleId, (ArticleInfo) null) &lt;/code&gt;
+     * Note: the return can be cast to a {@link BufferedReader}
+     * @param articleId the article id to retrieve
+     * @return A DotTerminatedMessageReader instance from which the article can be read.
+     * null if the article does not exist.
+     * @throws IOException if an IO error occurs
+     */
+    public Reader retrieveArticle(String articleId) throws IOException
+    {
+<span class="nc" id="L375">        return retrieveArticle(articleId, (ArticleInfo) null);</span>
+    }
+
+    /**
+     * Same as &lt;code&gt; retrieveArticle((String) null) &lt;/code&gt;
+     * Note: the return can be cast to a {@link BufferedReader}
+     * @return A DotTerminatedMessageReader instance from which the article can be read.
+     * null if the article does not exist.
+     * @throws IOException if an IO error occurs
+     */
+    public Reader retrieveArticle() throws IOException
+    {
+<span class="nc" id="L387">        return retrieveArticle((String) null);</span>
+    }
+
+
+    /***
+     * Retrieves an article from the currently selected newsgroup.  The
+     * article is referenced by its article number.
+     * The article number and identifier contained in the server reply
+     * are returned through an ArticleInfo.  The &lt;code&gt; articleId &lt;/code&gt;
+     * field of the ArticleInfo cannot always be trusted because some
+     * NNTP servers do not correctly follow the RFC 977 reply format.
+     * &lt;p&gt;
+     * A DotTerminatedMessageReader is returned from which the article can
+     * be read.  If the article does not exist, null is returned.
+     * &lt;p&gt;
+     * You must not issue any commands to the NNTP server (i.e., call any
+     * other methods) until you finish reading the message from the returned
+     * BufferedReader instance.
+     * The NNTP protocol uses the same stream for issuing commands as it does
+     * for returning results.  Therefore the returned BufferedReader actually reads
+     * directly from the NNTP connection.  After the end of message has been
+     * reached, new commands can be executed and their replies read.  If
+     * you do not follow these requirements, your program will not work
+     * properly.
+     * &lt;p&gt;
+     * @param articleNumber  The number of the the article to
+     *     retrieve.
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  The articleId field cannot always be trusted
+     *   because of server deviations from RFC 977 reply formats.  You may
+     *   set this parameter to null if you do not desire to retrieve the
+     *   returned article information.
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         can be read.  null if the article does not exist.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public BufferedReader retrieveArticle(long articleNumber, ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc" id="L432">        return __retrieve(NNTPCommand.ARTICLE, articleNumber, pointer);</span>
+    }
+
+    /**
+     * Same as &lt;code&gt; retrieveArticle(articleNumber, null) &lt;/code&gt;
+     * @param articleNumber the article number to fetch
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         can be read.  null if the article does not exist.
+     * @throws IOException if an IO error occurs
+     */
+    public BufferedReader retrieveArticle(long articleNumber) throws IOException
+    {
+<span class="nc" id="L444">        return retrieveArticle(articleNumber, null);</span>
+    }
+
+
+
+    /***
+     * Retrieves an article header from the NNTP server.  The article is
+     * referenced
+     * by its unique article identifier (including the enclosing &amp;lt; and &amp;gt;).
+     * The article number and identifier contained in the server reply
+     * are returned through an ArticleInfo.  The &lt;code&gt; articleId &lt;/code&gt;
+     * field of the ArticleInfo cannot always be trusted because some
+     * NNTP servers do not correctly follow the RFC 977 reply format.
+     * &lt;p&gt;
+     * A DotTerminatedMessageReader is returned from which the article can
+     * be read.  If the article does not exist, null is returned.
+     * &lt;p&gt;
+     * You must not issue any commands to the NNTP server (i.e., call any
+     * other methods) until you finish reading the message from the returned
+     * BufferedReader instance.
+     * The NNTP protocol uses the same stream for issuing commands as it does
+     * for returning results.  Therefore the returned BufferedReader actually reads
+     * directly from the NNTP connection.  After the end of message has been
+     * reached, new commands can be executed and their replies read.  If
+     * you do not follow these requirements, your program will not work
+     * properly.
+     * &lt;p&gt;
+     * @param articleId  The unique article identifier of the article whose
+     *    header is being retrieved.  If this parameter is null, the
+     *    header of the currently selected article is retrieved.
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  The articleId field cannot always be trusted
+     *   because of server deviations from RFC 977 reply formats.  You may
+     *   set this parameter to null if you do not desire to retrieve the
+     *   returned article information.
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         header can be read.  null if the article does not exist.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public BufferedReader retrieveArticleHeader(String articleId, ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc" id="L492">        return __retrieve(NNTPCommand.HEAD, articleId, pointer);</span>
+
+    }
+
+    /**
+     * Same as &lt;code&gt; retrieveArticleHeader(articleId, (ArticleInfo) null) &lt;/code&gt;
+     *  Note: the return can be cast to a {@link BufferedReader}
+     * @param articleId the article id  to fetch
+     * @return the reader
+     * @throws IOException if an error occurs
+     */
+    public Reader retrieveArticleHeader(String articleId) throws IOException
+    {
+<span class="nc" id="L505">        return retrieveArticleHeader(articleId, (ArticleInfo) null);</span>
+    }
+
+    /**
+     * Same as &lt;code&gt; retrieveArticleHeader((String) null) &lt;/code&gt;
+     *  Note: the return can be cast to a {@link BufferedReader}
+     * @return the reader
+     * @throws IOException if an error occurs
+     */
+    public Reader retrieveArticleHeader() throws IOException
+    {
+<span class="nc" id="L516">        return retrieveArticleHeader((String) null);</span>
+    }
+
+
+    /***
+     * Retrieves an article header from the currently selected newsgroup.  The
+     * article is referenced by its article number.
+     * The article number and identifier contained in the server reply
+     * are returned through an ArticleInfo.  The &lt;code&gt; articleId &lt;/code&gt;
+     * field of the ArticleInfo cannot always be trusted because some
+     * NNTP servers do not correctly follow the RFC 977 reply format.
+     * &lt;p&gt;
+     * A DotTerminatedMessageReader is returned from which the article can
+     * be read.  If the article does not exist, null is returned.
+     * &lt;p&gt;
+     * You must not issue any commands to the NNTP server (i.e., call any
+     * other methods) until you finish reading the message from the returned
+     * BufferedReader instance.
+     * The NNTP protocol uses the same stream for issuing commands as it does
+     * for returning results.  Therefore the returned BufferedReader actually reads
+     * directly from the NNTP connection.  After the end of message has been
+     * reached, new commands can be executed and their replies read.  If
+     * you do not follow these requirements, your program will not work
+     * properly.
+     * &lt;p&gt;
+     * @param articleNumber  The number of the the article whose header is
+     *     being retrieved.
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  The articleId field cannot always be trusted
+     *   because of server deviations from RFC 977 reply formats.  You may
+     *   set this parameter to null if you do not desire to retrieve the
+     *   returned article information.
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         header can be read.  null if the article does not exist.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public BufferedReader retrieveArticleHeader(long articleNumber,
+                                        ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc" id="L562">        return __retrieve(NNTPCommand.HEAD, articleNumber, pointer);</span>
+    }
+
+
+    /**
+     * Same as &lt;code&gt; retrieveArticleHeader(articleNumber, null) &lt;/code&gt;
+     *
+     * @param articleNumber the article number
+     * @return the reader
+     * @throws IOException if an error occurs
+     */
+    public BufferedReader retrieveArticleHeader(long articleNumber) throws IOException
+    {
+<span class="nc" id="L575">        return retrieveArticleHeader(articleNumber, null);</span>
+    }
+
+
+
+    /***
+     * Retrieves an article body from the NNTP server.  The article is
+     * referenced
+     * by its unique article identifier (including the enclosing &amp;lt; and &amp;gt;).
+     * The article number and identifier contained in the server reply
+     * are returned through an ArticleInfo.  The &lt;code&gt; articleId &lt;/code&gt;
+     * field of the ArticleInfo cannot always be trusted because some
+     * NNTP servers do not correctly follow the RFC 977 reply format.
+     * &lt;p&gt;
+     * A DotTerminatedMessageReader is returned from which the article can
+     * be read.  If the article does not exist, null is returned.
+     * &lt;p&gt;
+     * You must not issue any commands to the NNTP server (i.e., call any
+     * other methods) until you finish reading the message from the returned
+     * BufferedReader instance.
+     * The NNTP protocol uses the same stream for issuing commands as it does
+     * for returning results.  Therefore the returned BufferedReader actually reads
+     * directly from the NNTP connection.  After the end of message has been
+     * reached, new commands can be executed and their replies read.  If
+     * you do not follow these requirements, your program will not work
+     * properly.
+     * &lt;p&gt;
+     * @param articleId  The unique article identifier of the article whose
+     *    body is being retrieved.  If this parameter is null, the
+     *    body of the currently selected article is retrieved.
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  The articleId field cannot always be trusted
+     *   because of server deviations from RFC 977 reply formats.  You may
+     *   set this parameter to null if you do not desire to retrieve the
+     *   returned article information.
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         body can be read.  null if the article does not exist.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public BufferedReader retrieveArticleBody(String articleId, ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc" id="L623">        return __retrieve(NNTPCommand.BODY, articleId, pointer);</span>
+
+    }
+
+    /**
+     * Same as &lt;code&gt; retrieveArticleBody(articleId, (ArticleInfo) null) &lt;/code&gt;
+     *  Note: the return can be cast to a {@link BufferedReader}
+     * @param articleId the article id
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         body can be read.  null if the article does not exist.
+     * @throws IOException if an error occurs
+     */
+    public Reader retrieveArticleBody(String articleId) throws IOException
+    {
+<span class="nc" id="L637">        return retrieveArticleBody(articleId, (ArticleInfo) null);</span>
+    }
+
+    /**
+     * Same as &lt;code&gt; retrieveArticleBody(null) &lt;/code&gt;
+     *  Note: the return can be cast to a {@link BufferedReader}
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         body can be read.  null if the article does not exist.
+     * @throws IOException if an error occurs
+     */
+    public Reader retrieveArticleBody() throws IOException
+    {
+<span class="nc" id="L649">        return retrieveArticleBody(null);</span>
+    }
+
+
+    /***
+     * Retrieves an article body from the currently selected newsgroup.  The
+     * article is referenced by its article number.
+     * The article number and identifier contained in the server reply
+     * are returned through an ArticleInfo.  The &lt;code&gt; articleId &lt;/code&gt;
+     * field of the ArticleInfo cannot always be trusted because some
+     * NNTP servers do not correctly follow the RFC 977 reply format.
+     * &lt;p&gt;
+     * A DotTerminatedMessageReader is returned from which the article can
+     * be read.  If the article does not exist, null is returned.
+     * &lt;p&gt;
+     * You must not issue any commands to the NNTP server (i.e., call any
+     * other methods) until you finish reading the message from the returned
+     * BufferedReader instance.
+     * The NNTP protocol uses the same stream for issuing commands as it does
+     * for returning results.  Therefore the returned BufferedReader actually reads
+     * directly from the NNTP connection.  After the end of message has been
+     * reached, new commands can be executed and their replies read.  If
+     * you do not follow these requirements, your program will not work
+     * properly.
+     * &lt;p&gt;
+     * @param articleNumber  The number of the the article whose body is
+     *     being retrieved.
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  The articleId field cannot always be trusted
+     *   because of server deviations from RFC 977 reply formats.  You may
+     *   set this parameter to null if you do not desire to retrieve the
+     *   returned article information.
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         body can be read.  null if the article does not exist.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public BufferedReader retrieveArticleBody(long articleNumber,
+                                      ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc" id="L695">        return __retrieve(NNTPCommand.BODY, articleNumber, pointer);</span>
+    }
+
+
+    /**
+     * Same as &lt;code&gt; retrieveArticleBody(articleNumber, null) &lt;/code&gt;
+     * @param articleNumber the article number
+     * @return the reader
+     * @throws IOException if an error occurs
+     */
+    public BufferedReader retrieveArticleBody(long articleNumber) throws IOException
+    {
+<span class="nc" id="L707">        return retrieveArticleBody(articleNumber, null);</span>
+    }
+
+
+    /***
+     * Select the specified newsgroup to be the target of for future article
+     * retrieval and posting operations.  Also return the newsgroup
+     * information contained in the server reply through the info parameter.
+     * &lt;p&gt;
+     * @param newsgroup  The newsgroup to select.
+     * @param info  A parameter through which the newsgroup information of
+     *      the selected newsgroup contained in the server reply is returned.
+     *      Set this to null if you do not desire this information.
+     * @return True if the newsgroup exists and was selected, false otherwise.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public boolean selectNewsgroup(String newsgroup, NewsgroupInfo info)
+    throws IOException
+    {
+<span class="nc bnc" id="L732" title="All 2 branches missed.">        if (!NNTPReply.isPositiveCompletion(group(newsgroup))) {</span>
+<span class="nc" id="L733">            return false;</span>
+        }
+
+<span class="nc bnc" id="L736" title="All 2 branches missed.">        if (info != null) {</span>
+<span class="nc" id="L737">            __parseGroupReply(getReplyString(), info);</span>
+        }
+
+<span class="nc" id="L740">        return true;</span>
+    }
+
+    /**
+     * Same as &lt;code&gt; selectNewsgroup(newsgroup, null) &lt;/code&gt;
+     * @param newsgroup the newsgroup name
+     * @return true if newsgroup exist and was selected
+     * @throws IOException if an error occurs
+     */
+    public boolean selectNewsgroup(String newsgroup) throws IOException
+    {
+<span class="nc" id="L751">        return selectNewsgroup(newsgroup, null);</span>
+    }
+
+    /***
+     * List the command help from the server.
+     * &lt;p&gt;
+     * @return The sever help information.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public String listHelp() throws IOException
+    {
+<span class="nc bnc" id="L768" title="All 2 branches missed.">        if (!NNTPReply.isInformational(help())) {</span>
+<span class="nc" id="L769">            return null;</span>
+        }
+
+<span class="nc" id="L772">        StringWriter help = new StringWriter();</span>
+<span class="nc" id="L773">        BufferedReader reader = new DotTerminatedMessageReader(_reader_);</span>
+<span class="nc" id="L774">        Util.copyReader(reader, help);</span>
+<span class="nc" id="L775">        reader.close();</span>
+<span class="nc" id="L776">        help.close();</span>
+<span class="nc" id="L777">        return help.toString();</span>
+    }
+
+    /**
+     * Send a &quot;LIST OVERVIEW.FMT&quot; command to the server.
+     *
+     * @return the contents of the Overview format, of {@code null} if the command failed
+     * @throws IOException on error
+     */
+    public String[] listOverviewFmt() throws IOException
+    {
+<span class="nc bnc" id="L788" title="All 2 branches missed.">        if (!NNTPReply.isPositiveCompletion(sendCommand(&quot;LIST&quot;, &quot;OVERVIEW.FMT&quot;))){</span>
+<span class="nc" id="L789">            return null;</span>
+        }
+
+<span class="nc" id="L792">        BufferedReader reader = new DotTerminatedMessageReader(_reader_);</span>
+        String line;
+<span class="nc" id="L794">        ArrayList&lt;String&gt; list = new ArrayList&lt;String&gt;();</span>
+<span class="nc bnc" id="L795" title="All 2 branches missed.">        while((line=reader.readLine()) != null) {</span>
+<span class="nc" id="L796">            list.add(line);</span>
+        }
+<span class="nc" id="L798">        reader.close();</span>
+<span class="nc" id="L799">        return list.toArray(new String[list.size()]);</span>
+    }
+
+    /***
+     * Select an article by its unique identifier (including enclosing
+     * &amp;lt; and &amp;gt;) and return its article number and id through the
+     * pointer parameter.  This is achieved through the STAT command.
+     * According to RFC 977, this will NOT set the current article pointer
+     * on the server.  To do that, you must reference the article by its
+     * number.
+     * &lt;p&gt;
+     * @param articleId  The unique article identifier of the article that
+     *    is being selectedd.  If this parameter is null, the
+     *    body of the current article is selected
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  The articleId field cannot always be trusted
+     *   because of server deviations from RFC 977 reply formats.  You may
+     *   set this parameter to null if you do not desire to retrieve the
+     *   returned article information.
+     * @return True if successful, false if not.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public boolean selectArticle(String articleId, ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc bnc" id="L830" title="All 2 branches missed.">        if (articleId != null) {</span>
+<span class="nc bnc" id="L831" title="All 2 branches missed.">            if (!NNTPReply.isPositiveCompletion(stat(articleId))) {</span>
+<span class="nc" id="L832">                return false;</span>
+            }
+        } else {
+<span class="nc bnc" id="L835" title="All 2 branches missed.">            if (!NNTPReply.isPositiveCompletion(stat())) {</span>
+<span class="nc" id="L836">                return false;</span>
+            }
+        }
+
+<span class="nc bnc" id="L840" title="All 2 branches missed.">        if (pointer != null) {</span>
+<span class="nc" id="L841">            __parseArticlePointer(getReplyString(), pointer);</span>
+        }
+
+<span class="nc" id="L844">        return true;</span>
+    }
+
+    /**
+     * Same as &lt;code&gt; selectArticle(articleId, (ArticleInfo) null) &lt;/code&gt;
+     * @param articleId the article Id
+     * @return true if successful
+     * @throws IOException on error
+     */
+    public boolean selectArticle(String articleId) throws IOException
+    {
+<span class="nc" id="L855">        return selectArticle(articleId, (ArticleInfo) null);</span>
+    }
+
+    /****
+     * Same as &lt;code&gt; selectArticle((String) null, articleId) &lt;/code&gt;.  Useful
+     * for retrieving the current article number.
+     * @param pointer to the article
+     * @return true if OK
+     * @throws IOException on error
+     ***/
+    public boolean selectArticle(ArticleInfo pointer) throws IOException
+    {
+<span class="nc" id="L867">        return selectArticle(null, pointer);</span>
+    }
+
+
+    /***
+     * Select an article in the currently selected newsgroup by its number.
+     * and return its article number and id through the
+     * pointer parameter.  This is achieved through the STAT command.
+     * According to RFC 977, this WILL set the current article pointer
+     * on the server.  Use this command to select an article before retrieving
+     * it, or to obtain an article's unique identifier given its number.
+     * &lt;p&gt;
+     * @param articleNumber The number of the article to select from the
+     *       currently selected newsgroup.
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  Although the articleId field cannot always
+     *   be trusted because of server deviations from RFC 977 reply formats,
+     *   we haven't found a server that misformats this information in response
+     *   to this particular command.  You may set this parameter to null if
+     *   you do not desire to retrieve the returned article information.
+     * @return True if successful, false if not.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public boolean selectArticle(long articleNumber, ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc bnc" id="L899" title="All 2 branches missed.">        if (!NNTPReply.isPositiveCompletion(stat(articleNumber))) {</span>
+<span class="nc" id="L900">            return false;</span>
+        }
+
+<span class="nc bnc" id="L903" title="All 2 branches missed.">        if (pointer != null) {</span>
+<span class="nc" id="L904">            __parseArticlePointer(getReplyString(), pointer);</span>
+        }
+
+<span class="nc" id="L907">        return true;</span>
+    }
+
+
+    /*** Same as &lt;code&gt; selectArticle(articleNumber, null) &lt;/code&gt;
+     * @param articleNumber the numger
+     * @return true if successful
+     * @throws IOException on error ***/
+    public boolean selectArticle(long articleNumber) throws IOException
+    {
+<span class="nc" id="L917">        return selectArticle(articleNumber, null);</span>
+    }
+
+
+    /***
+     * Select the article preceeding the currently selected article in the
+     * currently selected newsgroup and return its number and unique id
+     * through the pointer parameter.  Because of deviating server
+     * implementations, the articleId information cannot be trusted.  To
+     * obtain the article identifier, issue a
+     * &lt;code&gt; selectArticle(pointer.articleNumber, pointer) &lt;/code&gt; immediately
+     * afterward.
+     * &lt;p&gt;
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  The articleId field cannot always be trusted
+     *   because of server deviations from RFC 977 reply formats.  You may
+     *   set this parameter to null if you do not desire to retrieve the
+     *   returned article information.
+     * @return True if successful, false if not (e.g., there is no previous
+     *     article).
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public boolean selectPreviousArticle(ArticleInfo pointer)
+    throws IOException
+    {
+<span class="nc bnc" id="L948" title="All 2 branches missed.">        if (!NNTPReply.isPositiveCompletion(last())) {</span>
+<span class="nc" id="L949">            return false;</span>
+        }
+
+<span class="nc bnc" id="L952" title="All 2 branches missed.">        if (pointer != null) {</span>
+<span class="nc" id="L953">            __parseArticlePointer(getReplyString(), pointer);</span>
+        }
+
+<span class="nc" id="L956">        return true;</span>
+    }
+
+    /*** Same as &lt;code&gt; selectPreviousArticle((ArticleInfo) null) &lt;/code&gt;
+     * @return true if successful
+     * @throws IOException on error ***/
+    public boolean selectPreviousArticle() throws IOException
+    {
+<span class="nc" id="L964">        return selectPreviousArticle((ArticleInfo) null);</span>
+    }
+
+
+    /***
+     * Select the article following the currently selected article in the
+     * currently selected newsgroup and return its number and unique id
+     * through the pointer parameter.  Because of deviating server
+     * implementations, the articleId information cannot be trusted.  To
+     * obtain the article identifier, issue a
+     * &lt;code&gt; selectArticle(pointer.articleNumber, pointer) &lt;/code&gt; immediately
+     * afterward.
+     * &lt;p&gt;
+     * @param pointer    A parameter through which to return the article's
+     *   number and unique id.  The articleId field cannot always be trusted
+     *   because of server deviations from RFC 977 reply formats.  You may
+     *   set this parameter to null if you do not desire to retrieve the
+     *   returned article information.
+     * @return True if successful, false if not (e.g., there is no following
+     *         article).
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public boolean selectNextArticle(ArticleInfo pointer) throws IOException
+    {
+<span class="nc bnc" id="L994" title="All 2 branches missed.">        if (!NNTPReply.isPositiveCompletion(next())) {</span>
+<span class="nc" id="L995">            return false;</span>
+        }
+
+<span class="nc bnc" id="L998" title="All 2 branches missed.">        if (pointer != null) {</span>
+<span class="nc" id="L999">            __parseArticlePointer(getReplyString(), pointer);</span>
+        }
+
+<span class="nc" id="L1002">        return true;</span>
+    }
+
+
+    /*** Same as &lt;code&gt; selectNextArticle((ArticleInfo) null) &lt;/code&gt;
+     * @return true if successful
+     * @throws IOException on error ***/
+    public boolean selectNextArticle() throws IOException
+    {
+<span class="nc" id="L1011">        return selectNextArticle((ArticleInfo) null);</span>
+    }
+
+
+    /***
+     * List all newsgroups served by the NNTP server.  If no newsgroups
+     * are served, a zero length array will be returned.  If the command
+     * fails, null will be returned.
+     * The method uses the &quot;LIST&quot; command.
+     * &lt;p&gt;
+     * @return An array of NewsgroupInfo instances containing the information
+     *    for each newsgroup served by the NNTP server.   If no newsgroups
+     *    are served, a zero length array will be returned.  If the command
+     *    fails, null will be returned.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @see #iterateNewsgroupListing()
+     * @see #iterateNewsgroups()
+     ***/
+    public NewsgroupInfo[] listNewsgroups() throws IOException
+    {
+<span class="nc bnc" id="L1037" title="All 2 branches missed.">        if (!NNTPReply.isPositiveCompletion(list())) {</span>
+<span class="nc" id="L1038">            return null;</span>
+        }
+
+<span class="nc" id="L1041">        return __readNewsgroupListing();</span>
+    }
+
+    /**
+     * List all newsgroups served by the NNTP server.  If no newsgroups
+     * are served, no entries will be returned.
+     * The method uses the &quot;LIST&quot; command.
+     * &lt;p&gt;
+     * @return An iterable of NewsgroupInfo instances containing the information
+     *    for each newsgroup served by the NNTP server.   If no newsgroups
+     *    are served, no entries will be returned.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @since 3.0
+     */
+    public Iterable&lt;String&gt; iterateNewsgroupListing() throws IOException {
+<span class="nc bnc" id="L1062" title="All 2 branches missed.">        if (NNTPReply.isPositiveCompletion(list())) {</span>
+<span class="nc" id="L1063">            return new ReplyIterator(_reader_);</span>
+        }
+<span class="nc" id="L1065">        throw new IOException(&quot;LIST command failed: &quot;+getReplyString());</span>
+    }
+
+    /**
+     * List all newsgroups served by the NNTP server.  If no newsgroups
+     * are served, no entries will be returned.
+     * The method uses the &quot;LIST&quot; command.
+     * &lt;p&gt;
+     * @return An iterable of Strings containing the raw information
+     *    for each newsgroup served by the NNTP server.   If no newsgroups
+     *    are served, no entries will be returned.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @since 3.0
+     */
+    public Iterable&lt;NewsgroupInfo&gt; iterateNewsgroups() throws IOException {
+<span class="nc" id="L1086">        return new NewsgroupIterator(iterateNewsgroupListing());</span>
+    }
+
+    /**
+     * List the newsgroups that match a given pattern.
+     * Uses the &quot;LIST ACTIVE&quot; command.
+     * &lt;p&gt;
+     * @param wildmat a pseudo-regex pattern (cf. RFC 2980)
+     * @return An array of NewsgroupInfo instances containing the information
+     *    for each newsgroup served by the NNTP server corresponding to the
+     *    supplied pattern.   If no such newsgroups are served, a zero length
+     *    array will be returned.  If the command fails, null will be returned.
+     * @throws IOException on error
+     * @see #iterateNewsgroupListing(String)
+     * @see #iterateNewsgroups(String)
+     */
+    public NewsgroupInfo[] listNewsgroups(String wildmat) throws IOException
+    {
+<span class="nc bnc" id="L1104" title="All 2 branches missed.">        if(!NNTPReply.isPositiveCompletion(listActive(wildmat))) {</span>
+<span class="nc" id="L1105">            return null;</span>
+        }
+<span class="nc" id="L1107">        return __readNewsgroupListing();</span>
+    }
+
+
+    /**
+     * List the newsgroups that match a given pattern.
+     * Uses the &quot;LIST ACTIVE&quot; command.
+     * &lt;p&gt;
+     * @param wildmat a pseudo-regex pattern (cf. RFC 2980)
+     * @return An iterable of Strings containing the raw information
+     *    for each newsgroup served by the NNTP server corresponding to the
+     *    supplied pattern.   If no such newsgroups are served, no entries
+     *    will be returned.
+     * @throws IOException on error
+     * @since 3.0
+     */
+    public Iterable&lt;String&gt; iterateNewsgroupListing(String wildmat) throws IOException {
+<span class="nc bnc" id="L1124" title="All 2 branches missed.">        if(NNTPReply.isPositiveCompletion(listActive(wildmat))) {</span>
+<span class="nc" id="L1125">            return new ReplyIterator(_reader_);</span>
+        }
+<span class="nc" id="L1127">        throw new IOException(&quot;LIST ACTIVE &quot;+wildmat+&quot; command failed: &quot;+getReplyString());</span>
+    }
+
+    /**
+     * List the newsgroups that match a given pattern.
+     * Uses the &quot;LIST ACTIVE&quot; command.
+     * &lt;p&gt;
+     * @param wildmat a pseudo-regex pattern (cf. RFC 2980)
+     * @return An iterable NewsgroupInfo instances containing the information
+     *    for each newsgroup served by the NNTP server corresponding to the
+     *    supplied pattern.   If no such newsgroups are served, no entries
+     *    will be returned.
+     * @throws IOException on error
+     * @since 3.0
+     */
+    public Iterable&lt;NewsgroupInfo&gt; iterateNewsgroups(String wildmat) throws IOException {
+<span class="nc" id="L1143">        return new NewsgroupIterator(iterateNewsgroupListing(wildmat));</span>
+    }
+
+    /***
+     * List all new newsgroups added to the NNTP server since a particular
+     * date subject to the conditions of the specified query.  If no new
+     * newsgroups were added, a zero length array will be returned.  If the
+     * command fails, null will be returned.
+     * This uses the &quot;NEWGROUPS&quot; command.
+     * &lt;p&gt;
+     * @param query  The query restricting how to search for new newsgroups.
+     * @return An array of NewsgroupInfo instances containing the information
+     *    for each new newsgroup added to the NNTP server.   If no newsgroups
+     *    were added, a zero length array will be returned.  If the command
+     *    fails, null will be returned.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @see #iterateNewNewsgroups(NewGroupsOrNewsQuery)
+     * @see #iterateNewNewsgroupListing(NewGroupsOrNewsQuery)
+     ***/
+    public NewsgroupInfo[] listNewNewsgroups(NewGroupsOrNewsQuery query)
+    throws IOException
+    {
+<span class="nc" id="L1171">        if (!NNTPReply.isPositiveCompletion(newgroups(</span>
+<span class="nc" id="L1172">                                                query.getDate(), query.getTime(),</span>
+<span class="nc bnc" id="L1173" title="All 2 branches missed.">                                                query.isGMT(), query.getDistributions())))</span>
+        {
+<span class="nc" id="L1175">            return null;</span>
+        }
+
+<span class="nc" id="L1178">        return __readNewsgroupListing();</span>
+    }
+
+    /**
+     * List all new newsgroups added to the NNTP server since a particular
+     * date subject to the conditions of the specified query.  If no new
+     * newsgroups were added, no entries will be returned.
+     * This uses the &quot;NEWGROUPS&quot; command.
+     * &lt;p&gt;
+     * @param query  The query restricting how to search for new newsgroups.
+     * @return An iterable of Strings containing the raw information
+     *    for each new newsgroup added to the NNTP server.   If no newsgroups
+     *    were added, no entries will be returned.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @since 3.0
+     */
+    public Iterable&lt;String&gt; iterateNewNewsgroupListing(NewGroupsOrNewsQuery query) throws IOException {
+<span class="nc" id="L1201">        if (NNTPReply.isPositiveCompletion(newgroups(</span>
+<span class="nc" id="L1202">                query.getDate(), query.getTime(),</span>
+<span class="nc bnc" id="L1203" title="All 2 branches missed.">                query.isGMT(), query.getDistributions()))) {</span>
+<span class="nc" id="L1204">            return new ReplyIterator(_reader_);</span>
+        }
+<span class="nc" id="L1206">        throw new IOException(&quot;NEWGROUPS command failed: &quot;+getReplyString());</span>
+    }
+
+    /**
+     * List all new newsgroups added to the NNTP server since a particular
+     * date subject to the conditions of the specified query.  If no new
+     * newsgroups were added, no entries will be returned.
+     * This uses the &quot;NEWGROUPS&quot; command.
+     * &lt;p&gt;
+     * @param query  The query restricting how to search for new newsgroups.
+     * @return An iterable of NewsgroupInfo instances containing the information
+     *    for each new newsgroup added to the NNTP server.   If no newsgroups
+     *    were added, no entries will be returned.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @since 3.0
+     */
+    public Iterable&lt;NewsgroupInfo&gt; iterateNewNewsgroups(NewGroupsOrNewsQuery query) throws IOException {
+<span class="nc" id="L1229">        return new NewsgroupIterator(iterateNewNewsgroupListing(query));</span>
+    }
+
+    /***
+     * List all new articles added to the NNTP server since a particular
+     * date subject to the conditions of the specified query.  If no new
+     * new news is found, a zero length array will be returned.  If the
+     * command fails, null will be returned.  You must add at least one
+     * newsgroup to the query, else the command will fail.  Each String
+     * in the returned array is a unique message identifier including the
+     * enclosing &amp;lt; and &amp;gt;.
+     * This uses the &quot;NEWNEWS&quot; command.
+     * &lt;p&gt;
+     * @param query  The query restricting how to search for new news.  You
+     *    must add at least one newsgroup to the query.
+     * @return An array of String instances containing the unique message
+     *    identifiers for each new article added to the NNTP server.  If no
+     *    new news is found, a zero length array will be returned.  If the
+     *    command fails, null will be returned.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     *
+     * @see #iterateNewNews(NewGroupsOrNewsQuery)
+     ***/
+    public String[] listNewNews(NewGroupsOrNewsQuery query)
+    throws IOException
+    {
+<span class="nc" id="L1261">        if (!NNTPReply.isPositiveCompletion(</span>
+<span class="nc" id="L1262">                newnews(query.getNewsgroups(), query.getDate(), query.getTime(),</span>
+<span class="nc bnc" id="L1263" title="All 2 branches missed.">                        query.isGMT(), query.getDistributions()))) {</span>
+<span class="nc" id="L1264">            return null;</span>
+        }
+
+<span class="nc" id="L1267">        Vector&lt;String&gt; list = new Vector&lt;String&gt;();</span>
+<span class="nc" id="L1268">        BufferedReader reader = new DotTerminatedMessageReader(_reader_);</span>
+
+        String line;
+        try {
+<span class="nc bnc" id="L1272" title="All 2 branches missed.">            while ((line = reader.readLine()) != null) {</span>
+<span class="nc" id="L1273">                list.addElement(line);</span>
+            }
+<span class="nc" id="L1275">        } finally {</span>
+<span class="nc" id="L1276">            reader.close();</span>
+        }
+
+<span class="nc" id="L1279">        int size = list.size();</span>
+<span class="nc bnc" id="L1280" title="All 2 branches missed.">        if (size &lt; 1) {</span>
+<span class="nc" id="L1281">            return new String[0];</span>
+        }
+
+<span class="nc" id="L1284">        String[] result = new String[size];</span>
+<span class="nc" id="L1285">        list.copyInto(result);</span>
+
+<span class="nc" id="L1287">        return result;</span>
+    }
+
+    /**
+     * List all new articles added to the NNTP server since a particular
+     * date subject to the conditions of the specified query.  If no new
+     * new news is found, no entries will be returned.
+     * This uses the &quot;NEWNEWS&quot; command.
+     * You must add at least one newsgroup to the query, else the command will fail.
+     * Each String which is returned is a unique message identifier including the
+     * enclosing &amp;lt; and &amp;gt;.
+     * &lt;p&gt;
+     * @param query  The query restricting how to search for new news.  You
+     *    must add at least one newsgroup to the query.
+     * @return An iterator of String instances containing the unique message
+     *    identifiers for each new article added to the NNTP server.  If no
+     *    new news is found, no strings will be returned.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     * @since 3.0
+     */
+    public Iterable&lt;String&gt; iterateNewNews(NewGroupsOrNewsQuery query) throws IOException {
+<span class="nc" id="L1314">        if (NNTPReply.isPositiveCompletion(newnews(</span>
+<span class="nc" id="L1315">                query.getNewsgroups(), query.getDate(), query.getTime(),</span>
+<span class="nc bnc" id="L1316" title="All 2 branches missed.">                query.isGMT(), query.getDistributions()))) {</span>
+<span class="nc" id="L1317">            return new ReplyIterator(_reader_);</span>
+        }
+<span class="nc" id="L1319">        throw new IOException(&quot;NEWNEWS command failed: &quot;+getReplyString());</span>
+    }
+
+    /***
+     * There are a few NNTPClient methods that do not complete the
+     * entire sequence of NNTP commands to complete a transaction.  These
+     * commands require some action by the programmer after the reception
+     * of a positive preliminary command.  After the programmer's code
+     * completes its actions, it must call this method to receive
+     * the completion reply from the server and verify the success of the
+     * entire transaction.
+     * &lt;p&gt;
+     * For example
+     * &lt;pre&gt;
+     * writer = client.postArticle();
+     * if(writer == null) // failure
+     *   return false;
+     * header = new SimpleNNTPHeader(&quot;foobar@foo.com&quot;, &quot;Just testing&quot;);
+     * header.addNewsgroup(&quot;alt.test&quot;);
+     * writer.write(header.toString());
+     * writer.write(&quot;This is just a test&quot;);
+     * writer.close();
+     * if(!client.completePendingCommand()) // failure
+     *   return false;
+     * &lt;/pre&gt;
+     * &lt;p&gt;
+     * @return True if successfully completed, false if not.
+     * @throws NNTPConnectionClosedException
+     *      If the NNTP server prematurely closes the connection as a result
+     *      of the client being idle or some other reason causing the server
+     *      to send NNTP reply code 400.  This exception may be caught either
+     *      as an IOException or independently as itself.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public boolean completePendingCommand() throws IOException
+    {
+<span class="nc" id="L1356">        return NNTPReply.isPositiveCompletion(getReply());</span>
+    }
+
+    /***
+     * Post an article to the NNTP server.  This method returns a
+     * DotTerminatedMessageWriter instance to which the article can be
+     * written.  Null is returned if the posting attempt fails.  You
+     * should check {@link NNTP#isAllowedToPost isAllowedToPost() }
+     *  before trying to post.  However, a posting
+     * attempt can fail due to malformed headers.
+     * &lt;p&gt;
+     * You must not issue any commands to the NNTP server (i.e., call any
+     * (other methods) until you finish writing to the returned Writer
+     * instance and close it.  The NNTP protocol uses the same stream for
+     * issuing commands as it does for returning results.  Therefore the
+     * returned Writer actually writes directly to the NNTP connection.
+     * After you close the writer, you can execute new commands.  If you
+     * do not follow these requirements your program will not work properly.
+     * &lt;p&gt;
+     * Different NNTP servers will require different header formats, but
+     * you can use the provided
+     * {@link org.apache.commons.net.nntp.SimpleNNTPHeader}
+     * class to construct the bare minimum acceptable header for most
+     * news readers.  To construct more complicated headers you should
+     * refer to RFC 822.  When the Java Mail API is finalized, you will be
+     * able to use it to compose fully compliant Internet text messages.
+     * The DotTerminatedMessageWriter takes care of doubling line-leading
+     * dots and ending the message with a single dot upon closing, so all
+     * you have to worry about is writing the header and the message.
+     * &lt;p&gt;
+     * Upon closing the returned Writer, you need to call
+     * {@link #completePendingCommand  completePendingCommand() }
+     * to finalize the posting and verify its success or failure from
+     * the server reply.
+     * &lt;p&gt;
+     * @return A DotTerminatedMessageWriter to which the article (including
+     *      header) can be written.  Returns null if the command fails.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+
+    public Writer postArticle() throws IOException
+    {
+<span class="nc bnc" id="L1399" title="All 2 branches missed.">        if (!NNTPReply.isPositiveIntermediate(post())) {</span>
+<span class="nc" id="L1400">            return null;</span>
+        }
+
+<span class="nc" id="L1403">        return new DotTerminatedMessageWriter(_writer_);</span>
+    }
+
+
+    public Writer forwardArticle(String articleId) throws IOException
+    {
+<span class="nc bnc" id="L1409" title="All 2 branches missed.">        if (!NNTPReply.isPositiveIntermediate(ihave(articleId))) {</span>
+<span class="nc" id="L1410">            return null;</span>
+        }
+
+<span class="nc" id="L1413">        return new DotTerminatedMessageWriter(_writer_);</span>
+    }
+
+
+    /***
+     * Logs out of the news server gracefully by sending the QUIT command.
+     * However, you must still disconnect from the server before you can open
+     * a new connection.
+     * &lt;p&gt;
+     * @return True if successfully completed, false if not.
+     * @throws IOException  If an I/O error occurs while either sending a
+     *      command to the server or receiving a reply from the server.
+     ***/
+    public boolean logout() throws IOException
+    {
+<span class="nc" id="L1428">        return NNTPReply.isPositiveCompletion(quit());</span>
+    }
+
+
+    /**
+     * Log into a news server by sending the AUTHINFO USER/AUTHINFO
+     * PASS command sequence. This is usually sent in response to a
+     * 480 reply code from the NNTP server.
+     * &lt;p&gt;
+     * @param username a valid username
+     * @param password the corresponding password
+     * @return True for successful login, false for a failure
+     * @throws IOException on error
+     */
+    public boolean authenticate(String username, String password)
+        throws IOException
+    {
+<span class="nc" id="L1445">        int replyCode = authinfoUser(username);</span>
+
+<span class="nc bnc" id="L1447" title="All 2 branches missed.">        if (replyCode == NNTPReply.MORE_AUTH_INFO_REQUIRED)</span>
+            {
+<span class="nc" id="L1449">                replyCode = authinfoPass(password);</span>
+
+<span class="nc bnc" id="L1451" title="All 2 branches missed.">                if (replyCode == NNTPReply.AUTHENTICATION_ACCEPTED)</span>
+                    {
+<span class="nc" id="L1453">                        _isAllowedToPost = true;</span>
+<span class="nc" id="L1454">                        return true;</span>
+                    }
+            }
+<span class="nc" id="L1457">        return false;</span>
+    }
+
+    /***
+     * Private implementation of XOVER functionality.
+     *
+     * See {@link NNTP#xover}
+     * for legal agument formats. Alternatively, read RFC 2980 :-)
+     * &lt;p&gt;
+     * @param articleRange
+     * @return Returns a DotTerminatedMessageReader if successful, null
+     *         otherwise
+     * @throws IOException
+     */
+    private BufferedReader __retrieveArticleInfo(String articleRange)
+        throws IOException
+    {
+<span class="nc bnc" id="L1474" title="All 2 branches missed.">        if (!NNTPReply.isPositiveCompletion(xover(articleRange))) {</span>
+<span class="nc" id="L1475">            return null;</span>
+        }
+
+<span class="nc" id="L1478">        return new DotTerminatedMessageReader(_reader_);</span>
+    }
+
+    /**
+     * Return article headers for a specified post.
+     * &lt;p&gt;
+     * @param articleNumber the article to retrieve headers for
+     * @return a DotTerminatedReader if successful, null otherwise
+     * @throws IOException on error
+     */
+    public BufferedReader retrieveArticleInfo(long articleNumber) throws IOException
+    {
+<span class="nc" id="L1490">        return __retrieveArticleInfo(Long.toString(articleNumber));</span>
+    }
+
+    /**
+     * Return article headers for all articles between lowArticleNumber
+     * and highArticleNumber, inclusively. Uses the XOVER command.
+     * &lt;p&gt;
+     * @param lowArticleNumber low number
+     * @param highArticleNumber high number
+     * @return a DotTerminatedReader if successful, null otherwise
+     * @throws IOException on error
+     */
+    public BufferedReader retrieveArticleInfo(long lowArticleNumber,
+            long highArticleNumber)
+        throws IOException
+    {
+<span class="nc" id="L1506">        return</span>
+<span class="nc" id="L1507">            __retrieveArticleInfo(lowArticleNumber + &quot;-&quot; +</span>
+<span class="nc" id="L1508">                                             highArticleNumber);</span>
+    }
+
+    /**
+     * Return article headers for all articles between lowArticleNumber
+     * and highArticleNumber, inclusively, using the XOVER command.
+     * &lt;p&gt;
+     * @param lowArticleNumber low
+     * @param highArticleNumber high
+     * @return an Iterable of Articles
+     * @throws IOException if the command failed
+     * @since 3.0
+     */
+    public Iterable&lt;Article&gt; iterateArticleInfo(long lowArticleNumber, long highArticleNumber)
+        throws IOException
+    {
+<span class="nc" id="L1524">        BufferedReader info = retrieveArticleInfo(lowArticleNumber,highArticleNumber);</span>
+<span class="nc bnc" id="L1525" title="All 2 branches missed.">        if (info == null) {</span>
+<span class="nc" id="L1526">            throw new IOException(&quot;XOVER command failed: &quot;+getReplyString());</span>
+        }
+        // N.B. info is already DotTerminated, so don't rewrap
+<span class="nc" id="L1529">        return new ArticleIterator(new ReplyIterator(info, false));</span>
+    }
+
+    /***
+     * Private implementation of XHDR functionality.
+     *
+     * See {@link NNTP#xhdr}
+     * for legal agument formats. Alternatively, read RFC 1036.
+     * &lt;p&gt;
+     * @param header
+     * @param articleRange
+     * @return Returns a DotTerminatedMessageReader if successful, null
+     *         otherwise
+     * @throws IOException
+     */
+    private BufferedReader __retrieveHeader(String header, String articleRange)
+        throws IOException
+    {
+<span class="nc bnc" id="L1547" title="All 2 branches missed.">        if (!NNTPReply.isPositiveCompletion(xhdr(header, articleRange))) {</span>
+<span class="nc" id="L1548">            return null;</span>
+        }
+
+<span class="nc" id="L1551">        return new DotTerminatedMessageReader(_reader_);</span>
+    }
+
+    /**
+     * Return an article header for a specified post.
+     * &lt;p&gt;
+     * @param header the header to retrieve
+     * @param articleNumber the article to retrieve the header for
+     * @return a DotTerminatedReader if successful, null otherwise
+     * @throws IOException on error
+     */
+    public BufferedReader retrieveHeader(String header, long articleNumber)
+        throws IOException
+    {
+<span class="nc" id="L1565">        return __retrieveHeader(header, Long.toString(articleNumber));</span>
+    }
+
+    /**
+     * Return an article header for all articles between lowArticleNumber
+     * and highArticleNumber, inclusively.
+     * &lt;p&gt;
+     * @param header the header
+     * @param lowArticleNumber to fetch
+     * @param highArticleNumber to fetch
+     * @return a DotTerminatedReader if successful, null otherwise
+     * @throws IOException on error
+     */
+    public BufferedReader retrieveHeader(String header, long lowArticleNumber,
+                                 long highArticleNumber)
+        throws IOException
+    {
+<span class="nc" id="L1582">        return</span>
+<span class="nc" id="L1583">            __retrieveHeader(header,lowArticleNumber + &quot;-&quot; + highArticleNumber);</span>
+    }
+
+
+
+
+
+    // DEPRECATED METHODS - for API compatibility only - DO NOT USE
+    // ============================================================
+
+
+
+    /**
+     * @param header the header
+     * @param lowArticleNumber to fetch
+     * @param highArticleNumber to fetch
+     * @return a DotTerminatedReader if successful, null otherwise
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #retrieveHeader(String, long, long)} instead
+     */
+    @Deprecated
+    public Reader retrieveHeader(String header, int lowArticleNumber, int highArticleNumber)
+        throws IOException
+    {
+<span class="nc" id="L1607">        return retrieveHeader(header, (long) lowArticleNumber, (long) highArticleNumber);</span>
+    }
+
+    /**
+     * @param lowArticleNumber to fetch
+     * @param highArticleNumber to fetch
+     * @return a DotTerminatedReader if successful, null otherwise
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #retrieveArticleInfo(long, long)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticleInfo(int lowArticleNumber, int highArticleNumber) throws IOException {
+<span class="nc" id="L1619">        return retrieveArticleInfo((long) lowArticleNumber, (long) highArticleNumber);</span>
+    }
+
+    /**
+     * @param a tba
+     * @param b  tba
+     * @return  tba
+     * @throws IOException tba
+     * @deprecated 3.0 use {@link #retrieveHeader(String, long)} instead
+     */
+    @Deprecated
+    public Reader retrieveHeader(String a, int b) throws IOException {
+<span class="nc" id="L1631">        return retrieveHeader(a, (long) b);</span>
+    }
+
+    /**
+     * @param a  tba
+     * @param ap  tba
+     * @return  tba
+     * @throws IOException tba
+     * @deprecated 3.0 use {@link #selectArticle(long, ArticleInfo)} instead
+     */
+    @Deprecated
+    public boolean selectArticle(int a, ArticlePointer ap) throws IOException {
+<span class="nc" id="L1643">        ArticleInfo ai =  __ap2ai(ap);</span>
+<span class="nc" id="L1644">        boolean b = selectArticle(a, ai);</span>
+<span class="nc" id="L1645">        __ai2ap(ai, ap);</span>
+<span class="nc" id="L1646">        return b;</span>
+    }
+
+    /**
+     * @param lowArticleNumber to fetch
+     * @return a DotTerminatedReader if successful, null otherwise
+     * @throws IOException  tba
+     * @deprecated 3.0 use {@link #retrieveArticleInfo(long)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticleInfo(int lowArticleNumber) throws IOException {
+<span class="nc" id="L1657">        return retrieveArticleInfo((long) lowArticleNumber);</span>
+    }
+
+    /**
+     * @param a  tba
+     * @return  tba
+     * @throws IOException  tba
+     * @deprecated 3.0 use {@link #selectArticle(long)} instead
+     */
+    @Deprecated
+    public boolean selectArticle(int a) throws IOException {
+<span class="nc" id="L1668">        return selectArticle((long) a);</span>
+    }
+
+    /**
+     * @param a  tba
+     * @return  tba
+     * @throws IOException  tba
+     * @deprecated 3.0 use {@link #retrieveArticleHeader(long)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticleHeader(int a) throws IOException {
+<span class="nc" id="L1679">        return retrieveArticleHeader((long) a);</span>
+    }
+
+    /**
+     * @param a  tba
+     * @param ap  tba
+     * @return  tba
+     * @throws IOException  tba
+     * @deprecated 3.0 use {@link #retrieveArticleHeader(long, ArticleInfo)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticleHeader(int a, ArticlePointer ap) throws IOException {
+<span class="nc" id="L1691">        ArticleInfo ai =  __ap2ai(ap);</span>
+<span class="nc" id="L1692">        Reader rdr = retrieveArticleHeader(a, ai);</span>
+<span class="nc" id="L1693">        __ai2ap(ai, ap);</span>
+<span class="nc" id="L1694">        return rdr;</span>
+    }
+
+    /**
+     * @param a  tba
+     * @return  tba
+     * @throws IOException  tba
+     * @deprecated 3.0 use {@link #retrieveArticleBody(long)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticleBody(int a) throws IOException {
+<span class="nc" id="L1705">        return retrieveArticleBody((long) a);</span>
+    }
+
+    /**
+     * @param articleNumber  The number of the the article to retrieve.
+     * @param pointer A parameter through which to return the article's number and unique id
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         can be read.  null if the article does not exist.
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #retrieveArticle(long, ArticleInfo)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticle(int articleNumber, ArticlePointer pointer) throws IOException {
+<span class="nc" id="L1718">        ArticleInfo ai =  __ap2ai(pointer);</span>
+<span class="nc" id="L1719">        Reader rdr = retrieveArticle(articleNumber, ai);</span>
+<span class="nc" id="L1720">        __ai2ap(ai, pointer);</span>
+<span class="nc" id="L1721">        return rdr;</span>
+    }
+
+    /**
+     * @param articleNumber The number of the the article to retrieve
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         can be read.  null if the article does not exist.
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #retrieveArticle(long)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticle(int articleNumber) throws IOException {
+<span class="nc" id="L1733">        return retrieveArticle((long) articleNumber);</span>
+    }
+
+    /**
+     * @param a  tba
+     * @param ap  tba
+     * @return  tba
+     * @throws IOException  tba
+     * @deprecated 3.0 use {@link #retrieveArticleBody(long, ArticleInfo)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticleBody(int a, ArticlePointer ap) throws IOException {
+<span class="nc" id="L1745">        ArticleInfo ai =  __ap2ai(ap);</span>
+<span class="nc" id="L1746">        Reader rdr = retrieveArticleBody(a, ai);</span>
+<span class="nc" id="L1747">        __ai2ap(ai, ap);</span>
+<span class="nc" id="L1748">        return rdr;</span>
+    }
+
+    /**
+     * @param articleId The unique article identifier of the article to retrieve
+     * @param pointer A parameter through which to return the article's number and unique id
+     * @deprecated 3.0 use {@link #retrieveArticle(String, ArticleInfo)} instead
+     * @return A DotTerminatedMessageReader instance from which the article can be read.
+     * null if the article does not exist.
+     * @throws IOException on error
+     */
+    @Deprecated
+    public Reader retrieveArticle(String articleId, ArticlePointer pointer) throws IOException {
+<span class="nc" id="L1761">        ArticleInfo ai =  __ap2ai(pointer);</span>
+<span class="nc" id="L1762">        Reader rdr = retrieveArticle(articleId, ai);</span>
+<span class="nc" id="L1763">        __ai2ap(ai, pointer);</span>
+<span class="nc" id="L1764">        return rdr;</span>
+    }
+
+    /**
+     * @param articleId The unique article identifier of the article to retrieve
+     * @param pointer A parameter through which to return the article's number and unique id
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         body can be read.  null if the article does not exist.
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #retrieveArticleBody(String, ArticleInfo)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticleBody(String articleId, ArticlePointer pointer) throws IOException {
+<span class="nc" id="L1777">        ArticleInfo ai =  __ap2ai(pointer);</span>
+<span class="nc" id="L1778">        Reader rdr = retrieveArticleBody(articleId, ai);</span>
+<span class="nc" id="L1779">        __ai2ap(ai, pointer);</span>
+<span class="nc" id="L1780">        return rdr;</span>
+    }
+
+    /**
+     * @param articleId The unique article identifier of the article to retrieve
+     * @param pointer A parameter through which to return the article's number and unique id
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         body can be read.  null if the article does not exist.
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #retrieveArticleHeader(String, ArticleInfo)} instead
+     */
+    @Deprecated
+    public Reader retrieveArticleHeader(String articleId, ArticlePointer pointer) throws IOException {
+<span class="nc" id="L1793">        ArticleInfo ai =  __ap2ai(pointer);</span>
+<span class="nc" id="L1794">        Reader rdr = retrieveArticleHeader(articleId, ai);</span>
+<span class="nc" id="L1795">        __ai2ap(ai, pointer);</span>
+<span class="nc" id="L1796">        return rdr;</span>
+    }
+
+    /**
+     * @param articleId The unique article identifier of the article to retrieve
+     * @param pointer A parameter through which to return the article's number and unique id
+     * @return A DotTerminatedMessageReader instance from which the article
+     *         body can be read.  null if the article does not exist.
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #selectArticle(String, ArticleInfo)} instead
+     */
+    @Deprecated
+    public boolean selectArticle(String articleId, ArticlePointer pointer) throws IOException {
+<span class="nc" id="L1809">        ArticleInfo ai =  __ap2ai(pointer);</span>
+<span class="nc" id="L1810">        boolean b = selectArticle(articleId, ai);</span>
+<span class="nc" id="L1811">        __ai2ap(ai, pointer);</span>
+<span class="nc" id="L1812">        return b;</span>
+
+    }
+
+    /**
+     * @param pointer A parameter through which to return the article's number and unique id
+     * @return True if successful, false if not.
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #selectArticle(ArticleInfo)} instead
+     */
+    @Deprecated
+    public boolean selectArticle(ArticlePointer pointer) throws IOException {
+<span class="nc" id="L1824">        ArticleInfo ai =  __ap2ai(pointer);</span>
+<span class="nc" id="L1825">        boolean b = selectArticle(ai);</span>
+<span class="nc" id="L1826">        __ai2ap(ai, pointer);</span>
+<span class="nc" id="L1827">        return b;</span>
+
+    }
+
+    /**
+     * @param pointer A parameter through which to return the article's number and unique id
+     * @return True if successful, false if not.
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #selectNextArticle(ArticleInfo)} instead
+     */
+    @Deprecated
+    public boolean selectNextArticle(ArticlePointer pointer) throws IOException {
+<span class="nc" id="L1839">        ArticleInfo ai =  __ap2ai(pointer);</span>
+<span class="nc" id="L1840">        boolean b = selectNextArticle(ai);</span>
+<span class="nc" id="L1841">        __ai2ap(ai, pointer);</span>
+<span class="nc" id="L1842">        return b;</span>
+
+    }
+
+    /**
+     * @param pointer A parameter through which to return the article's number and unique id
+     * @return True if successful, false if not.
+     * @throws IOException on error
+     * @deprecated 3.0 use {@link #selectPreviousArticle(ArticleInfo)} instead
+     */
+    @Deprecated
+    public boolean selectPreviousArticle(ArticlePointer pointer) throws IOException {
+<span class="nc" id="L1854">        ArticleInfo ai =  __ap2ai(pointer);</span>
+<span class="nc" id="L1855">        boolean b = selectPreviousArticle(ai);</span>
+<span class="nc" id="L1856">        __ai2ap(ai, pointer);</span>
+<span class="nc" id="L1857">        return b;</span>
+    }
+
+   // Helper methods
+
+    private ArticleInfo __ap2ai(@SuppressWarnings(&quot;deprecation&quot;) ArticlePointer ap) {
+<span class="nc bnc" id="L1863" title="All 2 branches missed.">        if (ap == null) {</span>
+<span class="nc" id="L1864">            return null;</span>
+        }
+<span class="nc" id="L1866">        ArticleInfo ai = new ArticleInfo();</span>
+<span class="nc" id="L1867">        return ai;</span>
+    }
+
+    @SuppressWarnings(&quot;deprecation&quot;)
+    private void __ai2ap(ArticleInfo ai, ArticlePointer ap){
+<span class="nc bnc" id="L1872" title="All 2 branches missed.">        if (ap != null) { // ai cannot be null</span>
+<span class="nc" id="L1873">            ap.articleId = ai.articleId;</span>
+<span class="nc" id="L1874">            ap.articleNumber = (int) ai.articleNumber;</span>
+        }
+<span class="nc" id="L1876">    }</span>
+}
+
+
+/* Emacs configuration
+ * Local variables:        **
+ * mode:             java  **
+ * c-basic-offset:   4     **
+ * indent-tabs-mode: nil   **
+ * End:                    **
+ */
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

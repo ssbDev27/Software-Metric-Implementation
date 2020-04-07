@@ -1,0 +1,559 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FTPClientExample.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.ftp</a> &gt; <span class="el_source">FTPClientExample.java</span></div><h1>FTPClientExample.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.ftp;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+
+import org.apache.commons.net.PrintCommandListener;
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPHTTPClient;
+import org.apache.commons.net.ftp.FTPClientConfig;
+import org.apache.commons.net.ftp.FTPConnectionClosedException;
+import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.FTPReply;
+import org.apache.commons.net.ftp.FTPSClient;
+import org.apache.commons.net.io.CopyStreamEvent;
+import org.apache.commons.net.io.CopyStreamListener;
+import org.apache.commons.net.util.TrustManagerUtils;
+
+/**
+ * This is an example program demonstrating how to use the FTPClient class.
+ * This program connects to an FTP server and retrieves the specified
+ * file.  If the -s flag is used, it stores the local file at the FTP server.
+ * Just so you can see what's happening, all reply strings are printed.
+ * If the -b flag is used, a binary transfer is assumed (default is ASCII).
+ * See below for further options.
+ */
+<span class="nc" id="L51">public final class FTPClientExample</span>
+{
+
+    public static final String USAGE =
+        &quot;Expected Parameters: [options] &lt;hostname&gt; &lt;username&gt; &lt;password&gt; [&lt;remote file&gt; [&lt;local file&gt;]]\n&quot; +
+        &quot;\nDefault behavior is to download a file and use ASCII transfer mode.\n&quot; +
+        &quot;\t-a - use local active mode (default is local passive)\n&quot; +
+        &quot;\t-A - anonymous login (omit username and password parameters)\n&quot; +
+        &quot;\t-b - use binary transfer mode\n&quot; +
+        &quot;\t-c cmd - issue arbitrary command (remote is used as a parameter if provided) \n&quot; +
+        &quot;\t-d - list directory details using MLSD (remote is used as the pathname if provided)\n&quot; +
+        &quot;\t-e - use EPSV with IPv4 (default false)\n&quot; +
+        &quot;\t-E - encoding to use for control channel\n&quot; +
+        &quot;\t-f - issue FEAT command (remote and local files are ignored)\n&quot; +
+        &quot;\t-h - list hidden files (applies to -l and -n only)\n&quot; +
+        &quot;\t-k secs - use keep-alive timer (setControlKeepAliveTimeout)\n&quot; +
+        &quot;\t-l - list files using LIST (remote is used as the pathname if provided)\n&quot; +
+        &quot;\t     Files are listed twice: first in raw mode, then as the formatted parsed data.\n&quot; +
+        &quot;\t     N.B. if the wrong server-type is used, output may be lost. Use -U or -S as necessary.\n&quot; +
+        &quot;\t-L - use lenient future dates (server dates may be up to 1 day into future)\n&quot; +
+        &quot;\t-m - list file details using MDTM (remote is used as the pathname if provided)\n&quot; +
+        &quot;\t-n - list file names using NLST (remote is used as the pathname if provided)\n&quot; +
+        &quot;\t-p true|false|protocol[,true|false] - use FTPSClient with the specified protocol and/or isImplicit setting\n&quot; +
+        &quot;\t-s - store file on server (upload)\n&quot; +
+        &quot;\t-S - systemType set server system type (e.g. UNIX VMS WINDOWS)\n&quot; +
+        &quot;\t-t - list file details using MLST (remote is used as the pathname if provided)\n&quot; +
+        &quot;\t-U - save unparseable responses\n&quot; +
+        &quot;\t-w msec - wait time for keep-alive reply (setControlKeepAliveReplyTimeout)\n&quot; +
+        &quot;\t-T  all|valid|none - use one of the built-in TrustManager implementations (none = JVM default)\n&quot; +
+        &quot;\t-y format - set default date format string\n&quot; +
+        &quot;\t-Y format - set recent date format string\n&quot; +
+        &quot;\t-Z timezone - set the server timezone for parsing LIST responses\n&quot; +
+        &quot;\t-z timezone - set the timezone for displaying MDTM, LIST, MLSD, MLST responses\n&quot; +
+        &quot;\t-PrH server[:port] - HTTP Proxy host and optional port[80] \n&quot; +
+        &quot;\t-PrU user - HTTP Proxy server username\n&quot; +
+        &quot;\t-PrP password - HTTP Proxy server password\n&quot; +
+        &quot;\t-# - add hash display during transfers\n&quot;;
+
+    public static void main(String[] args) throws UnknownHostException
+    {
+<span class="nc" id="L91">        boolean storeFile = false, binaryTransfer = false, error = false, listFiles = false, listNames = false, hidden = false;</span>
+<span class="nc" id="L92">        boolean localActive = false, useEpsvWithIPv4 = false, feat = false, printHash = false;</span>
+<span class="nc" id="L93">        boolean mlst = false, mlsd = false, mdtm = false, saveUnparseable = false;</span>
+<span class="nc" id="L94">        boolean lenient = false;</span>
+<span class="nc" id="L95">        long keepAliveTimeout = -1;</span>
+<span class="nc" id="L96">        int controlKeepAliveReplyTimeout = -1;</span>
+<span class="nc" id="L97">        int minParams = 5; // listings require 3 params</span>
+<span class="nc" id="L98">        String protocol = null; // SSL protocol</span>
+<span class="nc" id="L99">        String doCommand = null;</span>
+<span class="nc" id="L100">        String trustmgr = null;</span>
+<span class="nc" id="L101">        String proxyHost = null;</span>
+<span class="nc" id="L102">        int proxyPort = 80;</span>
+<span class="nc" id="L103">        String proxyUser = null;</span>
+<span class="nc" id="L104">        String proxyPassword = null;</span>
+<span class="nc" id="L105">        String username = null;</span>
+<span class="nc" id="L106">        String password = null;</span>
+<span class="nc" id="L107">        String encoding = null;</span>
+<span class="nc" id="L108">        String serverTimeZoneId = null;</span>
+<span class="nc" id="L109">        String displayTimeZoneId = null;</span>
+<span class="nc" id="L110">        String serverType = null;</span>
+<span class="nc" id="L111">        String defaultDateFormat = null;</span>
+<span class="nc" id="L112">        String recentDateFormat = null;</span>
+
+
+<span class="nc" id="L115">        int base = 0;</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        for (base = 0; base &lt; args.length; base++)</span>
+        {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if (args[base].equals(&quot;-s&quot;)) {</span>
+<span class="nc" id="L119">                storeFile = true;</span>
+<span class="nc" id="L120">            }</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            else if (args[base].equals(&quot;-a&quot;)) {</span>
+<span class="nc" id="L122">                localActive = true;</span>
+<span class="nc" id="L123">            }</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            else if (args[base].equals(&quot;-A&quot;)) {</span>
+<span class="nc" id="L125">                username = &quot;anonymous&quot;;</span>
+<span class="nc" id="L126">                password = System.getProperty(&quot;user.name&quot;)+&quot;@&quot;+InetAddress.getLocalHost().getHostName();</span>
+<span class="nc" id="L127">            }</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            else if (args[base].equals(&quot;-b&quot;)) {</span>
+<span class="nc" id="L129">                binaryTransfer = true;</span>
+<span class="nc" id="L130">            }</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            else if (args[base].equals(&quot;-c&quot;)) {</span>
+<span class="nc" id="L132">                doCommand = args[++base];</span>
+<span class="nc" id="L133">                minParams = 3;</span>
+<span class="nc" id="L134">            }</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            else if (args[base].equals(&quot;-d&quot;)) {</span>
+<span class="nc" id="L136">                mlsd = true;</span>
+<span class="nc" id="L137">                minParams = 3;</span>
+<span class="nc" id="L138">            }</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">            else if (args[base].equals(&quot;-e&quot;)) {</span>
+<span class="nc" id="L140">                useEpsvWithIPv4 = true;</span>
+<span class="nc" id="L141">            }</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            else if (args[base].equals(&quot;-E&quot;)) {</span>
+<span class="nc" id="L143">                encoding = args[++base];</span>
+<span class="nc" id="L144">            }</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            else if (args[base].equals(&quot;-f&quot;)) {</span>
+<span class="nc" id="L146">                feat = true;</span>
+<span class="nc" id="L147">                minParams = 3;</span>
+<span class="nc" id="L148">            }</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">            else if (args[base].equals(&quot;-h&quot;)) {</span>
+<span class="nc" id="L150">                hidden = true;</span>
+<span class="nc" id="L151">            }</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            else if (args[base].equals(&quot;-k&quot;)) {</span>
+<span class="nc" id="L153">                keepAliveTimeout = Long.parseLong(args[++base]);</span>
+<span class="nc" id="L154">            }</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">            else if (args[base].equals(&quot;-l&quot;)) {</span>
+<span class="nc" id="L156">                listFiles = true;</span>
+<span class="nc" id="L157">                minParams = 3;</span>
+<span class="nc" id="L158">            }</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">            else if (args[base].equals(&quot;-m&quot;)) {</span>
+<span class="nc" id="L160">                mdtm = true;</span>
+<span class="nc" id="L161">                minParams = 3;</span>
+<span class="nc" id="L162">            }</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            else if (args[base].equals(&quot;-L&quot;)) {</span>
+<span class="nc" id="L164">                lenient = true;</span>
+<span class="nc" id="L165">            }</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">            else if (args[base].equals(&quot;-n&quot;)) {</span>
+<span class="nc" id="L167">                listNames = true;</span>
+<span class="nc" id="L168">                minParams = 3;</span>
+<span class="nc" id="L169">            }</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">            else if (args[base].equals(&quot;-p&quot;)) {</span>
+<span class="nc" id="L171">                protocol = args[++base];</span>
+<span class="nc" id="L172">            }</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">            else if (args[base].equals(&quot;-S&quot;)) {</span>
+<span class="nc" id="L174">                serverType = args[++base];</span>
+<span class="nc" id="L175">            }</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">            else if (args[base].equals(&quot;-t&quot;)) {</span>
+<span class="nc" id="L177">                mlst = true;</span>
+<span class="nc" id="L178">                minParams = 3;</span>
+<span class="nc" id="L179">            }</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">            else if (args[base].equals(&quot;-U&quot;)) {</span>
+<span class="nc" id="L181">                saveUnparseable = true;</span>
+<span class="nc" id="L182">            }</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">            else if (args[base].equals(&quot;-w&quot;)) {</span>
+<span class="nc" id="L184">                controlKeepAliveReplyTimeout = Integer.parseInt(args[++base]);</span>
+<span class="nc" id="L185">            }</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">            else if (args[base].equals(&quot;-T&quot;)) {</span>
+<span class="nc" id="L187">                trustmgr = args[++base];</span>
+<span class="nc" id="L188">            }</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            else if (args[base].equals(&quot;-y&quot;)) {</span>
+<span class="nc" id="L190">                defaultDateFormat = args[++base];</span>
+<span class="nc" id="L191">            }</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">            else if (args[base].equals(&quot;-Y&quot;)) {</span>
+<span class="nc" id="L193">                recentDateFormat = args[++base];</span>
+<span class="nc" id="L194">            }</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">            else if (args[base].equals(&quot;-Z&quot;)) {</span>
+<span class="nc" id="L196">                serverTimeZoneId = args[++base];</span>
+<span class="nc" id="L197">            }</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">            else if (args[base].equals(&quot;-z&quot;)) {</span>
+<span class="nc" id="L199">                displayTimeZoneId = args[++base];</span>
+<span class="nc" id="L200">            }</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">            else if (args[base].equals(&quot;-PrH&quot;)) {</span>
+<span class="nc" id="L202">                proxyHost = args[++base];</span>
+<span class="nc" id="L203">                String parts[] = proxyHost.split(&quot;:&quot;);</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">                if (parts.length == 2){</span>
+<span class="nc" id="L205">                    proxyHost=parts[0];</span>
+<span class="nc" id="L206">                    proxyPort=Integer.parseInt(parts[1]);</span>
+                }
+<span class="nc" id="L208">            }</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">            else if (args[base].equals(&quot;-PrU&quot;)) {</span>
+<span class="nc" id="L210">                proxyUser = args[++base];</span>
+<span class="nc" id="L211">            }</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            else if (args[base].equals(&quot;-PrP&quot;)) {</span>
+<span class="nc" id="L213">                proxyPassword = args[++base];</span>
+<span class="nc" id="L214">            }</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">            else if (args[base].equals(&quot;-#&quot;)) {</span>
+<span class="nc" id="L216">                printHash = true;</span>
+            }
+            else {
+                break;
+            }
+        }
+
+<span class="nc" id="L223">        int remain = args.length - base;</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        if (username != null) {</span>
+<span class="nc" id="L225">            minParams -= 2;</span>
+        }
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (remain &lt; minParams) // server, user, pass, remote, local [protocol]</span>
+        {
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            if (args.length &gt; 0) {</span>
+<span class="nc" id="L230">                System.err.println(&quot;Actual Parameters: &quot; + Arrays.toString(args));</span>
+            }
+<span class="nc" id="L232">            System.err.println(USAGE);</span>
+<span class="nc" id="L233">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L236">        String server = args[base++];</span>
+<span class="nc" id="L237">        int port = 0;</span>
+<span class="nc" id="L238">        String parts[] = server.split(&quot;:&quot;);</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">        if (parts.length == 2){</span>
+<span class="nc" id="L240">            server=parts[0];</span>
+<span class="nc" id="L241">            port=Integer.parseInt(parts[1]);</span>
+        }
+<span class="nc bnc" id="L243" title="All 2 branches missed.">        if (username == null) {</span>
+<span class="nc" id="L244">            username = args[base++];</span>
+<span class="nc" id="L245">            password = args[base++];</span>
+        }
+
+<span class="nc" id="L248">        String remote = null;</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        if (args.length - base &gt; 0) {</span>
+<span class="nc" id="L250">            remote = args[base++];</span>
+        }
+
+<span class="nc" id="L253">        String local = null;</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (args.length - base &gt; 0) {</span>
+<span class="nc" id="L255">            local = args[base++];</span>
+        }
+
+        final FTPClient ftp;
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (protocol == null ) {</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">            if(proxyHost !=null) {</span>
+<span class="nc" id="L261">                System.out.println(&quot;Using HTTP proxy server: &quot; + proxyHost);</span>
+<span class="nc" id="L262">                ftp = new FTPHTTPClient(proxyHost, proxyPort, proxyUser, proxyPassword);</span>
+<span class="nc" id="L263">            }</span>
+            else {
+<span class="nc" id="L265">                ftp = new FTPClient();</span>
+            }
+<span class="nc" id="L267">        } else {</span>
+            FTPSClient ftps;
+<span class="nc bnc" id="L269" title="All 2 branches missed.">            if (protocol.equals(&quot;true&quot;)) {</span>
+<span class="nc" id="L270">                ftps = new FTPSClient(true);</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">            } else if (protocol.equals(&quot;false&quot;)) {</span>
+<span class="nc" id="L272">                ftps = new FTPSClient(false);</span>
+<span class="nc" id="L273">            } else {</span>
+<span class="nc" id="L274">                String prot[] = protocol.split(&quot;,&quot;);</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">                if (prot.length == 1) { // Just protocol</span>
+<span class="nc" id="L276">                    ftps = new FTPSClient(protocol);</span>
+<span class="nc" id="L277">                } else { // protocol,true|false</span>
+<span class="nc" id="L278">                    ftps = new FTPSClient(prot[0], Boolean.parseBoolean(prot[1]));</span>
+                }
+            }
+<span class="nc" id="L281">            ftp = ftps;</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">            if (&quot;all&quot;.equals(trustmgr)) {</span>
+<span class="nc" id="L283">                ftps.setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">            } else if (&quot;valid&quot;.equals(trustmgr)) {</span>
+<span class="nc" id="L285">                ftps.setTrustManager(TrustManagerUtils.getValidateServerCertificateTrustManager());</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">            } else if (&quot;none&quot;.equals(trustmgr)) {</span>
+<span class="nc" id="L287">                ftps.setTrustManager(null);</span>
+            }
+        }
+
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        if (printHash) {</span>
+<span class="nc" id="L292">            ftp.setCopyStreamListener(createListener());</span>
+        }
+<span class="nc bnc" id="L294" title="All 2 branches missed.">        if (keepAliveTimeout &gt;= 0) {</span>
+<span class="nc" id="L295">            ftp.setControlKeepAliveTimeout(keepAliveTimeout);</span>
+        }
+<span class="nc bnc" id="L297" title="All 2 branches missed.">        if (controlKeepAliveReplyTimeout &gt;= 0) {</span>
+<span class="nc" id="L298">            ftp.setControlKeepAliveReplyTimeout(controlKeepAliveReplyTimeout);</span>
+        }
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        if (encoding != null) {</span>
+<span class="nc" id="L301">            ftp.setControlEncoding(encoding);</span>
+        }
+<span class="nc" id="L303">        ftp.setListHiddenFiles(hidden);</span>
+
+        // suppress login details
+<span class="nc" id="L306">        ftp.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out), true));</span>
+
+        final FTPClientConfig config;
+<span class="nc bnc" id="L309" title="All 2 branches missed.">        if (serverType != null) {</span>
+<span class="nc" id="L310">            config = new FTPClientConfig(serverType);</span>
+<span class="nc" id="L311">        } else {</span>
+<span class="nc" id="L312">            config = new FTPClientConfig();</span>
+        }
+<span class="nc" id="L314">        config.setUnparseableEntries(saveUnparseable);</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        if (defaultDateFormat != null) {</span>
+<span class="nc" id="L316">            config.setDefaultDateFormatStr(defaultDateFormat);</span>
+        }
+<span class="nc bnc" id="L318" title="All 2 branches missed.">        if (recentDateFormat != null) {</span>
+<span class="nc" id="L319">            config.setRecentDateFormatStr(recentDateFormat);</span>
+        }
+<span class="nc" id="L321">        ftp.configure(config);</span>
+
+        try
+        {
+            int reply;
+<span class="nc bnc" id="L326" title="All 2 branches missed.">            if (port &gt; 0) {</span>
+<span class="nc" id="L327">                ftp.connect(server, port);</span>
+<span class="nc" id="L328">            } else {</span>
+<span class="nc" id="L329">                ftp.connect(server);</span>
+            }
+<span class="nc bnc" id="L331" title="All 2 branches missed.">            System.out.println(&quot;Connected to &quot; + server + &quot; on &quot; + (port&gt;0 ? port : ftp.getDefaultPort()));</span>
+
+            // After connection attempt, you should check the reply code to verify
+            // success.
+<span class="nc" id="L335">            reply = ftp.getReplyCode();</span>
+
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            if (!FTPReply.isPositiveCompletion(reply))</span>
+            {
+<span class="nc" id="L339">                ftp.disconnect();</span>
+<span class="nc" id="L340">                System.err.println(&quot;FTP server refused connection.&quot;);</span>
+<span class="nc" id="L341">                System.exit(1);</span>
+            }
+<span class="nc" id="L343">        }</span>
+<span class="nc" id="L344">        catch (IOException e)</span>
+        {
+<span class="nc bnc" id="L346" title="All 2 branches missed.">            if (ftp.isConnected())</span>
+            {
+                try
+                {
+<span class="nc" id="L350">                    ftp.disconnect();</span>
+<span class="nc" id="L351">                }</span>
+<span class="nc" id="L352">                catch (IOException f)</span>
+                {
+                    // do nothing
+                }
+            }
+<span class="nc" id="L357">            System.err.println(&quot;Could not connect to server.&quot;);</span>
+<span class="nc" id="L358">            e.printStackTrace();</span>
+<span class="nc" id="L359">            System.exit(1);</span>
+        }
+
+__main:
+        try
+        {
+<span class="nc bnc" id="L365" title="All 2 branches missed.">            if (!ftp.login(username, password))</span>
+            {
+<span class="nc" id="L367">                ftp.logout();</span>
+<span class="nc" id="L368">                error = true;</span>
+                break __main;
+            }
+
+<span class="nc" id="L372">            System.out.println(&quot;Remote system is &quot; + ftp.getSystemType());</span>
+
+<span class="nc bnc" id="L374" title="All 2 branches missed.">            if (binaryTransfer) {</span>
+<span class="nc" id="L375">                ftp.setFileType(FTP.BINARY_FILE_TYPE);</span>
+<span class="nc" id="L376">            } else {</span>
+                // in theory this should not be necessary as servers should default to ASCII
+                // but they don't all do so - see NET-500
+<span class="nc" id="L379">                ftp.setFileType(FTP.ASCII_FILE_TYPE);</span>
+            }
+
+            // Use passive mode as default because most of us are
+            // behind firewalls these days.
+<span class="nc bnc" id="L384" title="All 2 branches missed.">            if (localActive) {</span>
+<span class="nc" id="L385">                ftp.enterLocalActiveMode();</span>
+<span class="nc" id="L386">            } else {</span>
+<span class="nc" id="L387">                ftp.enterLocalPassiveMode();</span>
+            }
+
+<span class="nc" id="L390">            ftp.setUseEPSVwithIPv4(useEpsvWithIPv4);</span>
+
+<span class="nc bnc" id="L392" title="All 2 branches missed.">            if (storeFile)</span>
+            {
+                InputStream input;
+
+<span class="nc" id="L396">                input = new FileInputStream(local);</span>
+
+<span class="nc" id="L398">                ftp.storeFile(remote, input);</span>
+
+<span class="nc" id="L400">                input.close();</span>
+<span class="nc" id="L401">            }</span>
+            // Allow multiple list types for single invocation
+<span class="nc bnc" id="L403" title="All 10 branches missed.">            else if (listFiles || mlsd || mdtm || mlst || listNames)</span>
+            {
+<span class="nc bnc" id="L405" title="All 2 branches missed.">                if (mlsd) {</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">                    for (FTPFile f : ftp.mlistDir(remote)) {</span>
+<span class="nc" id="L407">                        System.out.println(f.getRawListing());</span>
+<span class="nc" id="L408">                        System.out.println(f.toFormattedString(displayTimeZoneId));</span>
+                    }
+                }
+<span class="nc bnc" id="L411" title="All 2 branches missed.">                if (mdtm) {</span>
+<span class="nc" id="L412">                    FTPFile f = ftp.mdtmFile(remote);</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">                    if (f != null) {</span>
+<span class="nc" id="L414">                        System.out.println(f.getRawListing());</span>
+<span class="nc" id="L415">                        System.out.println(f.toFormattedString(displayTimeZoneId));</span>
+<span class="nc" id="L416">                    } else {</span>
+<span class="nc" id="L417">                        System.out.println(&quot;File not found&quot;);</span>
+                    }
+                }
+<span class="nc bnc" id="L420" title="All 2 branches missed.">                if (mlst) {</span>
+<span class="nc" id="L421">                    FTPFile f = ftp.mlistFile(remote);</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">                    if (f != null){</span>
+<span class="nc" id="L423">                        System.out.println(f.toFormattedString(displayTimeZoneId));</span>
+                    }
+                }
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                if (listNames) {</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">                    for (String s : ftp.listNames(remote)) {</span>
+<span class="nc" id="L428">                        System.out.println(s);</span>
+                    }
+                }
+                // Do this last because it changes the client
+<span class="nc bnc" id="L432" title="All 2 branches missed.">                if (listFiles) {</span>
+<span class="nc bnc" id="L433" title="All 4 branches missed.">                    if (lenient || serverTimeZoneId != null) {</span>
+<span class="nc" id="L434">                        config.setLenientFutureDates(lenient);</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">                        if (serverTimeZoneId != null) {</span>
+<span class="nc" id="L436">                            config.setServerTimeZoneId(serverTimeZoneId);</span>
+                        }
+<span class="nc" id="L438">                        ftp.configure(config );</span>
+                    }
+
+<span class="nc bnc" id="L441" title="All 2 branches missed.">                    for (FTPFile f : ftp.listFiles(remote)) {</span>
+<span class="nc" id="L442">                        System.out.println(f.getRawListing());</span>
+<span class="nc" id="L443">                        System.out.println(f.toFormattedString(displayTimeZoneId));</span>
+                    }
+                }
+<span class="nc" id="L446">            }</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">            else if (feat)</span>
+            {
+                // boolean feature check
+<span class="nc bnc" id="L450" title="All 2 branches missed.">                if (remote != null) { // See if the command is present</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">                    if (ftp.hasFeature(remote)) {</span>
+<span class="nc" id="L452">                        System.out.println(&quot;Has feature: &quot;+remote);</span>
+<span class="nc" id="L453">                    } else {</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">                        if (FTPReply.isPositiveCompletion(ftp.getReplyCode())) {</span>
+<span class="nc" id="L455">                            System.out.println(&quot;FEAT &quot;+remote+&quot; was not detected&quot;);</span>
+<span class="nc" id="L456">                        } else {</span>
+<span class="nc" id="L457">                            System.out.println(&quot;Command failed: &quot;+ftp.getReplyString());</span>
+                        }
+                    }
+
+                    // Strings feature check
+<span class="nc" id="L462">                    String []features = ftp.featureValues(remote);</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">                    if (features != null) {</span>
+<span class="nc bnc" id="L464" title="All 2 branches missed.">                        for(String f : features) {</span>
+<span class="nc" id="L465">                            System.out.println(&quot;FEAT &quot;+remote+&quot;=&quot;+f+&quot;.&quot;);</span>
+                        }
+<span class="nc" id="L467">                    } else {</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">                        if (FTPReply.isPositiveCompletion(ftp.getReplyCode())) {</span>
+<span class="nc" id="L469">                            System.out.println(&quot;FEAT &quot;+remote+&quot; is not present&quot;);</span>
+<span class="nc" id="L470">                        } else {</span>
+<span class="nc" id="L471">                            System.out.println(&quot;Command failed: &quot;+ftp.getReplyString());</span>
+                        }
+                    }
+<span class="nc" id="L474">                } else {</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">                    if (ftp.features()) {</span>
+//                        Command listener has already printed the output
+                    } else {
+<span class="nc" id="L478">                        System.out.println(&quot;Failed: &quot;+ftp.getReplyString());</span>
+                    }
+                }
+<span class="nc" id="L481">            }</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">            else if (doCommand != null)</span>
+            {
+<span class="nc bnc" id="L484" title="All 2 branches missed.">                if (ftp.doCommand(doCommand, remote)) {</span>
+//                  Command listener has already printed the output
+//                    for(String s : ftp.getReplyStrings()) {
+//                        System.out.println(s);
+//                    }
+                } else {
+<span class="nc" id="L490">                    System.out.println(&quot;Failed: &quot;+ftp.getReplyString());</span>
+                }
+<span class="nc" id="L492">            }</span>
+            else
+            {
+                OutputStream output;
+
+<span class="nc" id="L497">                output = new FileOutputStream(local);</span>
+
+<span class="nc" id="L499">                ftp.retrieveFile(remote, output);</span>
+
+<span class="nc" id="L501">                output.close();</span>
+            }
+
+<span class="nc" id="L504">            ftp.noop(); // check that control connection is working OK</span>
+
+<span class="nc" id="L506">            ftp.logout();</span>
+<span class="nc" id="L507">        }</span>
+<span class="nc" id="L508">        catch (FTPConnectionClosedException e)</span>
+        {
+<span class="nc" id="L510">            error = true;</span>
+<span class="nc" id="L511">            System.err.println(&quot;Server closed connection.&quot;);</span>
+<span class="nc" id="L512">            e.printStackTrace();</span>
+        }
+<span class="nc" id="L514">        catch (IOException e)</span>
+        {
+<span class="nc" id="L516">            error = true;</span>
+<span class="nc" id="L517">            e.printStackTrace();</span>
+        }
+        finally
+        {
+<span class="nc bnc" id="L521" title="All 2 branches missed.">            if (ftp.isConnected())</span>
+            {
+                try
+                {
+<span class="nc" id="L525">                    ftp.disconnect();</span>
+<span class="nc" id="L526">                }</span>
+<span class="nc" id="L527">                catch (IOException f)</span>
+                {
+                    // do nothing
+                }
+            }
+        }
+
+<span class="nc bnc" id="L534" title="All 2 branches missed.">        System.exit(error ? 1 : 0);</span>
+<span class="nc" id="L535">    } // end main</span>
+
+    private static CopyStreamListener createListener(){
+<span class="nc" id="L538">        return new CopyStreamListener(){</span>
+<span class="nc" id="L539">            private long megsTotal = 0;</span>
+
+            @Override
+            public void bytesTransferred(CopyStreamEvent event) {
+<span class="nc" id="L543">                bytesTransferred(event.getTotalBytesTransferred(), event.getBytesTransferred(), event.getStreamSize());</span>
+<span class="nc" id="L544">            }</span>
+
+            @Override
+            public void bytesTransferred(long totalBytesTransferred,
+                    int bytesTransferred, long streamSize) {
+<span class="nc" id="L549">                long megs = totalBytesTransferred / 1000000;</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">                for (long l = megsTotal; l &lt; megs; l++) {</span>
+<span class="nc" id="L551">                    System.err.print(&quot;#&quot;);</span>
+                }
+<span class="nc" id="L553">                megsTotal = megs;</span>
+<span class="nc" id="L554">            }</span>
+        };
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

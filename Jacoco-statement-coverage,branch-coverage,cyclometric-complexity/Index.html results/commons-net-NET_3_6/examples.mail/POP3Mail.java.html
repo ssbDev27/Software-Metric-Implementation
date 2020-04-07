@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>POP3Mail.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.mail</a> &gt; <span class="el_source">POP3Mail.java</span></div><h1>POP3Mail.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.mail;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Locale;
+
+import org.apache.commons.net.PrintCommandListener;
+import org.apache.commons.net.pop3.POP3Client;
+import org.apache.commons.net.pop3.POP3MessageInfo;
+import org.apache.commons.net.pop3.POP3SClient;
+
+/**
+ * This is an example program demonstrating how to use the POP3[S]Client class.
+ * This program connects to a POP3[S] server and retrieves the message
+ * headers of all the messages, printing the From: and Subject: header
+ * entries for each message.
+ * &lt;p&gt;
+ * See main() method for usage details
+ */
+<span class="nc" id="L38">public final class POP3Mail</span>
+{
+
+    public static final void printMessageInfo(BufferedReader reader, int id) throws IOException  {
+<span class="nc" id="L42">        String from = &quot;&quot;;</span>
+<span class="nc" id="L43">        String subject = &quot;&quot;;</span>
+        String line;
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        while ((line = reader.readLine()) != null)</span>
+        {
+<span class="nc" id="L47">            String lower = line.toLowerCase(Locale.ENGLISH);</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">            if (lower.startsWith(&quot;from: &quot;)) {</span>
+<span class="nc" id="L49">                from = line.substring(6).trim();</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            }  else if (lower.startsWith(&quot;subject: &quot;)) {</span>
+<span class="nc" id="L51">                subject = line.substring(9).trim();</span>
+            }
+        }
+
+<span class="nc" id="L55">        System.out.println(Integer.toString(id) + &quot; From: &quot; + from + &quot;  Subject: &quot; + subject);</span>
+<span class="nc" id="L56">    }</span>
+
+    public static void main(String[] args)
+    {
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (args.length &lt; 3)</span>
+        {
+<span class="nc" id="L62">            System.err.println(</span>
+<span class="nc" id="L63">                &quot;Usage: POP3Mail &lt;server[:port]&gt; &lt;username&gt; &lt;password|-|*|VARNAME&gt; [TLS [true=implicit]]&quot;);</span>
+<span class="nc" id="L64">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L67">        String arg0[] = args[0].split(&quot;:&quot;);</span>
+<span class="nc" id="L68">        String server=arg0[0];</span>
+<span class="nc" id="L69">        String username = args[1];</span>
+<span class="nc" id="L70">        String password = args[2];</span>
+        // prompt for the password if necessary
+        try {
+<span class="nc" id="L73">            password = Utils.getPassword(username, password);</span>
+<span class="nc" id="L74">        } catch (IOException e1) {</span>
+<span class="nc" id="L75">            System.err.println(&quot;Could not retrieve password: &quot; + e1.getMessage());</span>
+<span class="nc" id="L76">            return;</span>
+        }
+
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        String proto = args.length &gt; 3 ? args[3] : null;</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        boolean implicit = args.length &gt; 4 ? Boolean.parseBoolean(args[4]) : false;</span>
+
+        POP3Client pop3;
+
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (proto != null) {</span>
+<span class="nc" id="L85">            System.out.println(&quot;Using secure protocol: &quot;+proto);</span>
+<span class="nc" id="L86">            pop3 = new POP3SClient(proto, implicit);</span>
+<span class="nc" id="L87">        } else {</span>
+<span class="nc" id="L88">            pop3 = new POP3Client();</span>
+        }
+
+        int port;
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (arg0.length == 2) {</span>
+<span class="nc" id="L93">            port = Integer.parseInt(arg0[1]);</span>
+<span class="nc" id="L94">        } else {</span>
+<span class="nc" id="L95">            port = pop3.getDefaultPort();</span>
+        }
+<span class="nc" id="L97">        System.out.println(&quot;Connecting to server &quot;+server+&quot; on &quot;+port);</span>
+
+        // We want to timeout if a response takes longer than 60 seconds
+<span class="nc" id="L100">        pop3.setDefaultTimeout(60000);</span>
+
+        // suppress login details
+<span class="nc" id="L103">        pop3.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out), true));</span>
+
+        try
+        {
+<span class="nc" id="L107">            pop3.connect(server);</span>
+<span class="nc" id="L108">        }</span>
+<span class="nc" id="L109">        catch (IOException e)</span>
+        {
+<span class="nc" id="L111">            System.err.println(&quot;Could not connect to server.&quot;);</span>
+<span class="nc" id="L112">            e.printStackTrace();</span>
+<span class="nc" id="L113">            return;</span>
+        }
+
+        try
+        {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if (!pop3.login(username, password))</span>
+            {
+<span class="nc" id="L120">                System.err.println(&quot;Could not login to server.  Check password.&quot;);</span>
+<span class="nc" id="L121">                pop3.disconnect();</span>
+<span class="nc" id="L122">                return;</span>
+            }
+
+<span class="nc" id="L125">            POP3MessageInfo status = pop3.status();</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            if (status == null) {</span>
+<span class="nc" id="L127">                System.err.println(&quot;Could not retrieve status.&quot;);</span>
+<span class="nc" id="L128">                pop3.logout();</span>
+<span class="nc" id="L129">                pop3.disconnect();</span>
+<span class="nc" id="L130">                return;</span>
+            }
+
+<span class="nc" id="L133">            System.out.println(&quot;Status: &quot; + status);</span>
+
+<span class="nc" id="L135">            POP3MessageInfo[] messages = pop3.listMessages();</span>
+
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            if (messages == null)</span>
+            {
+<span class="nc" id="L139">                System.err.println(&quot;Could not retrieve message list.&quot;);</span>
+<span class="nc" id="L140">                pop3.logout();</span>
+<span class="nc" id="L141">                pop3.disconnect();</span>
+<span class="nc" id="L142">                return;</span>
+            }
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            else if (messages.length == 0)</span>
+            {
+<span class="nc" id="L146">                System.out.println(&quot;No messages&quot;);</span>
+<span class="nc" id="L147">                pop3.logout();</span>
+<span class="nc" id="L148">                pop3.disconnect();</span>
+<span class="nc" id="L149">                return;</span>
+            }
+
+<span class="nc" id="L152">            System.out.println(&quot;Message count: &quot; + messages.length);</span>
+
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            for (POP3MessageInfo msginfo : messages) {</span>
+<span class="nc" id="L155">                BufferedReader reader = (BufferedReader) pop3.retrieveMessageTop(msginfo.number, 0);</span>
+
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                if (reader == null) {</span>
+<span class="nc" id="L158">                    System.err.println(&quot;Could not retrieve message header.&quot;);</span>
+<span class="nc" id="L159">                    pop3.logout();</span>
+<span class="nc" id="L160">                    pop3.disconnect();</span>
+<span class="nc" id="L161">                    return;</span>
+                }
+<span class="nc" id="L163">                printMessageInfo(reader, msginfo.number);</span>
+            }
+
+<span class="nc" id="L166">            pop3.logout();</span>
+<span class="nc" id="L167">            pop3.disconnect();</span>
+<span class="nc" id="L168">        }</span>
+<span class="nc" id="L169">        catch (IOException e)</span>
+        {
+<span class="nc" id="L171">            e.printStackTrace();</span>
+<span class="nc" id="L172">            return;</span>
+        }
+<span class="nc" id="L174">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

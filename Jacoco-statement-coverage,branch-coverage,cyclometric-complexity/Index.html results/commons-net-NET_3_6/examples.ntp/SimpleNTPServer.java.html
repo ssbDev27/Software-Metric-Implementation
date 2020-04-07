@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SimpleNTPServer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.ntp</a> &gt; <span class="el_source">SimpleNTPServer.java</span></div><h1>SimpleNTPServer.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package examples.ntp;
+
+import org.apache.commons.net.ntp.NtpUtils;
+import org.apache.commons.net.ntp.NtpV3Impl;
+import org.apache.commons.net.ntp.NtpV3Packet;
+import org.apache.commons.net.ntp.TimeStamp;
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
+/**
+ * The SimpleNTPServer class is a UDP implementation of a server for the
+ * Network Time Protocol (NTP) version 3 as described in RFC 1305.
+ * It is a minimal NTP server that doesn't actually adjust the time but
+ * only responds to NTP datagram requests with response sent back to
+ * originating host with info filled out using the current clock time.
+ * To be used for debugging or testing.
+ *
+ * To prevent this from interfering with the actual NTP service it can be
+ * run from any local port.
+ */
+public class SimpleNTPServer implements Runnable {
+
+    private int port;
+
+    private volatile boolean running;
+    private boolean started;
+
+    private DatagramSocket socket;
+
+    /**
+     * Create SimpleNTPServer listening on default NTP port.
+     */
+    public SimpleNTPServer()
+    {
+<span class="nc" id="L53">        this(NtpV3Packet.NTP_PORT);</span>
+<span class="nc" id="L54">    }</span>
+
+    /**
+     * Create SimpleNTPServer.
+     *
+     * @param port the local port the server socket is bound to, or
+     *             &lt;code&gt;zero&lt;/code&gt; for a system selected free port.
+     * @throws IllegalArgumentException if port number less than 0
+     */
+<span class="fc" id="L63">    public SimpleNTPServer(int port)</span>
+    {
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (port &lt; 0) {</span>
+<span class="nc" id="L66">            throw new IllegalArgumentException();</span>
+        }
+<span class="fc" id="L68">        this.port = port;</span>
+<span class="fc" id="L69">    }</span>
+
+    public int getPort()
+    {
+<span class="fc" id="L73">        return port;</span>
+    }
+
+    /**
+     * Return state of whether time service is running.
+     *
+     * @return true if time service is running
+     */
+    public boolean isRunning()
+    {
+<span class="fc" id="L83">        return running;</span>
+    }
+
+    /**
+     * Return state of whether time service is running.
+     *
+     * @return true if time service is running
+     */
+    public boolean isStarted()
+    {
+<span class="fc" id="L93">        return started;</span>
+    }
+
+    /**
+     * Connect to server socket and listen for client connections.
+     *
+     * @throws IOException if an I/O error occurs when creating the socket.
+     */
+    public void connect() throws IOException
+    {
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (socket == null)</span>
+        {
+<span class="fc" id="L105">            socket = new DatagramSocket(port);</span>
+            // port = 0 is bound to available free port
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            if (port == 0) {</span>
+<span class="fc" id="L108">                port = socket.getLocalPort();</span>
+            }
+<span class="fc" id="L110">            System.out.println(&quot;Running NTP service on port &quot; + port + &quot;/UDP&quot;);</span>
+        }
+<span class="fc" id="L112">    }</span>
+
+    /**
+     * Start time service and provide time to client connections.
+     *
+     * @throws java.io.IOException if an I/O error occurs when creating the socket.
+     */
+    public void start() throws IOException
+    {
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (socket == null)</span>
+        {
+<span class="nc" id="L123">            connect();</span>
+        }
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (!started)</span>
+        {
+<span class="fc" id="L127">            started = true;</span>
+<span class="fc" id="L128">            new Thread(this).start();</span>
+        }
+<span class="fc" id="L130">    }</span>
+
+    /**
+     * main thread to service client connections.
+     */
+    @Override
+    public void run()
+    {
+<span class="fc" id="L138">        running = true;</span>
+<span class="fc" id="L139">        byte buffer[] = new byte[48];</span>
+<span class="fc" id="L140">        final DatagramPacket request = new DatagramPacket(buffer, buffer.length);</span>
+        do {
+            try {
+<span class="fc" id="L143">                socket.receive(request);</span>
+<span class="fc" id="L144">                final long rcvTime = System.currentTimeMillis();</span>
+<span class="fc" id="L145">                handlePacket(request, rcvTime);</span>
+<span class="fc" id="L146">            } catch (IOException e) {</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                if (running)</span>
+                {
+<span class="nc" id="L149">                    e.printStackTrace();</span>
+                }
+                // otherwise socket thrown exception during shutdown
+            }
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        } while (running);</span>
+<span class="fc" id="L154">    }</span>
+
+    /**
+     * Handle incoming packet. If NTP packet is client-mode then respond
+     * to that host with a NTP response packet otherwise ignore.
+     *
+     * @param request incoming DatagramPacket
+     * @param rcvTime time packet received
+     *
+     * @throws IOException  if an I/O error occurs.
+     */
+    protected void handlePacket(DatagramPacket request, long rcvTime) throws IOException
+    {
+<span class="fc" id="L167">        NtpV3Packet message = new NtpV3Impl();</span>
+<span class="fc" id="L168">        message.setDatagramPacket(request);</span>
+<span class="fc" id="L169">        System.out.printf(&quot;NTP packet from %s mode=%s%n&quot;, request.getAddress().getHostAddress(),</span>
+<span class="fc" id="L170">                NtpUtils.getModeName(message.getMode()));</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (message.getMode() == NtpV3Packet.MODE_CLIENT) {</span>
+<span class="fc" id="L172">            NtpV3Packet response = new NtpV3Impl();</span>
+
+<span class="fc" id="L174">            response.setStratum(1);</span>
+<span class="fc" id="L175">            response.setMode(NtpV3Packet.MODE_SERVER);</span>
+<span class="fc" id="L176">            response.setVersion(NtpV3Packet.VERSION_3);</span>
+<span class="fc" id="L177">            response.setPrecision(-20);</span>
+<span class="fc" id="L178">            response.setPoll(0);</span>
+<span class="fc" id="L179">            response.setRootDelay(62);</span>
+<span class="fc" id="L180">            response.setRootDispersion((int) (16.51 * 65.536));</span>
+
+            // originate time as defined in RFC-1305 (t1)
+<span class="fc" id="L183">            response.setOriginateTimeStamp(message.getTransmitTimeStamp());</span>
+            // Receive Time is time request received by server (t2)
+<span class="fc" id="L185">            response.setReceiveTimeStamp(TimeStamp.getNtpTime(rcvTime));</span>
+<span class="fc" id="L186">            response.setReferenceTime(response.getReceiveTimeStamp());</span>
+<span class="fc" id="L187">            response.setReferenceId(0x4C434C00); // LCL (Undisciplined Local Clock)</span>
+
+            // Transmit time is time reply sent by server (t3)
+<span class="fc" id="L190">            response.setTransmitTime(TimeStamp.getNtpTime(System.currentTimeMillis()));</span>
+
+<span class="fc" id="L192">            DatagramPacket dp = response.getDatagramPacket();</span>
+<span class="fc" id="L193">            dp.setPort(request.getPort());</span>
+<span class="fc" id="L194">            dp.setAddress(request.getAddress());</span>
+<span class="fc" id="L195">            socket.send(dp);</span>
+        }
+        // otherwise if received packet is other than CLIENT mode then ignore it
+<span class="fc" id="L198">    }</span>
+
+    /**
+     * Close server socket and stop listening.
+     */
+    public void stop()
+    {
+<span class="fc" id="L205">        running = false;</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if (socket != null)</span>
+        {
+<span class="fc" id="L208">            socket.close();  // force closing of the socket</span>
+<span class="fc" id="L209">            socket = null;</span>
+        }
+<span class="fc" id="L211">        started = false;</span>
+<span class="fc" id="L212">    }</span>
+
+    public static void main(String[] args)
+    {
+<span class="nc" id="L216">        int port = NtpV3Packet.NTP_PORT;</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (args.length != 0)</span>
+        {
+            try {
+<span class="nc" id="L220">                port = Integer.parseInt(args[0]);</span>
+<span class="nc" id="L221">            } catch (NumberFormatException nfe) {</span>
+<span class="nc" id="L222">                nfe.printStackTrace();</span>
+            }
+        }
+<span class="nc" id="L225">        SimpleNTPServer timeServer = new SimpleNTPServer(port);</span>
+        try {
+<span class="nc" id="L227">            timeServer.start();</span>
+<span class="nc" id="L228">        } catch (IOException e) {</span>
+<span class="nc" id="L229">            e.printStackTrace();</span>
+        }
+<span class="nc" id="L231">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

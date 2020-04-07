@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NTPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">examples.ntp</a> &gt; <span class="el_source">NTPClient.java</span></div><h1>NTPClient.java</h1><pre class="source lang-java linenums">package examples.ntp;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.text.NumberFormat;
+
+import org.apache.commons.net.ntp.NTPUDPClient;
+import org.apache.commons.net.ntp.NtpUtils;
+import org.apache.commons.net.ntp.NtpV3Packet;
+import org.apache.commons.net.ntp.TimeInfo;
+import org.apache.commons.net.ntp.TimeStamp;
+
+/***
+ * This is an example program demonstrating how to use the NTPUDPClient
+ * class. This program sends a Datagram client request packet to a
+ * Network time Protocol (NTP) service port on a specified server,
+ * retrieves the time, and prints it to standard output along with
+ * the fields from the NTP message header (e.g. stratum level, reference id,
+ * poll interval, root delay, mode, ...)
+ * See &lt;A HREF=&quot;ftp://ftp.rfc-editor.org/in-notes/rfc868.txt&quot;&gt; the spec &lt;/A&gt;
+ * for details.
+ * &lt;p&gt;
+ * Usage: NTPClient &lt;hostname-or-address-list&gt;
+ * &lt;br&gt;
+ * Example: NTPClient clock.psu.edu
+ *
+ ***/
+<span class="nc" id="L47">public final class NTPClient</span>
+{
+
+<span class="nc" id="L50">    private static final NumberFormat numberFormat = new java.text.DecimalFormat(&quot;0.00&quot;);</span>
+
+    /**
+     * Process &lt;code&gt;TimeInfo&lt;/code&gt; object and print its details.
+     * @param info &lt;code&gt;TimeInfo&lt;/code&gt; object.
+     */
+    public static void processResponse(TimeInfo info)
+    {
+<span class="nc" id="L58">        NtpV3Packet message = info.getMessage();</span>
+<span class="nc" id="L59">        int stratum = message.getStratum();</span>
+        String refType;
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (stratum &lt;= 0) {</span>
+<span class="nc" id="L62">            refType = &quot;(Unspecified or Unavailable)&quot;;</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        } else if (stratum == 1) {</span>
+<span class="nc" id="L64">            refType = &quot;(Primary Reference; e.g., GPS)&quot;; // GPS, radio clock, etc.</span>
+<span class="nc" id="L65">        } else {</span>
+<span class="nc" id="L66">            refType = &quot;(Secondary Reference; e.g. via NTP or SNTP)&quot;;</span>
+        }
+        // stratum should be 0..15...
+<span class="nc" id="L69">        System.out.println(&quot; Stratum: &quot; + stratum + &quot; &quot; + refType);</span>
+<span class="nc" id="L70">        int version = message.getVersion();</span>
+<span class="nc" id="L71">        int li = message.getLeapIndicator();</span>
+<span class="nc" id="L72">        System.out.println(&quot; leap=&quot; + li + &quot;, version=&quot;</span>
+<span class="nc" id="L73">                + version + &quot;, precision=&quot; + message.getPrecision());</span>
+
+<span class="nc" id="L75">        System.out.println(&quot; mode: &quot; + message.getModeName() + &quot; (&quot; + message.getMode() + &quot;)&quot;);</span>
+<span class="nc" id="L76">        int poll = message.getPoll();</span>
+        // poll value typically btwn MINPOLL (4) and MAXPOLL (14)
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        System.out.println(&quot; poll: &quot; + (poll &lt;= 0 ? 1 : (int) Math.pow(2, poll))</span>
+<span class="nc" id="L79">                + &quot; seconds&quot; + &quot; (2 ** &quot; + poll + &quot;)&quot;);</span>
+<span class="nc" id="L80">        double disp = message.getRootDispersionInMillisDouble();</span>
+<span class="nc" id="L81">        System.out.println(&quot; rootdelay=&quot; + numberFormat.format(message.getRootDelayInMillisDouble())</span>
+<span class="nc" id="L82">                + &quot;, rootdispersion(ms): &quot; + numberFormat.format(disp));</span>
+
+<span class="nc" id="L84">        int refId = message.getReferenceId();</span>
+<span class="nc" id="L85">        String refAddr = NtpUtils.getHostAddress(refId);</span>
+<span class="nc" id="L86">        String refName = null;</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (refId != 0) {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (refAddr.equals(&quot;127.127.1.0&quot;)) {</span>
+<span class="nc" id="L89">                refName = &quot;LOCAL&quot;; // This is the ref address for the Local Clock</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">            } else if (stratum &gt;= 2) {</span>
+                // If reference id has 127.127 prefix then it uses its own reference clock
+                // defined in the form 127.127.clock-type.unit-num (e.g. 127.127.8.0 mode 5
+                // for GENERIC DCF77 AM; see refclock.htm from the NTP software distribution.
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                if (!refAddr.startsWith(&quot;127.127&quot;)) {</span>
+                    try {
+<span class="nc" id="L96">                        InetAddress addr = InetAddress.getByName(refAddr);</span>
+<span class="nc" id="L97">                        String name = addr.getHostName();</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">                        if (name != null &amp;&amp; !name.equals(refAddr)) {</span>
+<span class="nc" id="L99">                            refName = name;</span>
+                        }
+<span class="nc" id="L101">                    } catch (UnknownHostException e) {</span>
+                        // some stratum-2 servers sync to ref clock device but fudge stratum level higher... (e.g. 2)
+                        // ref not valid host maybe it's a reference clock name?
+                        // otherwise just show the ref IP address.
+<span class="nc" id="L105">                        refName = NtpUtils.getReferenceClock(message);</span>
+                    }
+                }
+<span class="nc bnc" id="L108" title="All 6 branches missed.">            } else if (version &gt;= 3 &amp;&amp; (stratum == 0 || stratum == 1)) {</span>
+<span class="nc" id="L109">                refName = NtpUtils.getReferenceClock(message);</span>
+                // refname usually have at least 3 characters (e.g. GPS, WWV, LCL, etc.)
+            }
+            // otherwise give up on naming the beast...
+        }
+<span class="nc bnc" id="L114" title="All 4 branches missed.">        if (refName != null &amp;&amp; refName.length() &gt; 1) {</span>
+<span class="nc" id="L115">            refAddr += &quot; (&quot; + refName + &quot;)&quot;;</span>
+        }
+<span class="nc" id="L117">        System.out.println(&quot; Reference Identifier:\t&quot; + refAddr);</span>
+
+<span class="nc" id="L119">        TimeStamp refNtpTime = message.getReferenceTimeStamp();</span>
+<span class="nc" id="L120">        System.out.println(&quot; Reference Timestamp:\t&quot; + refNtpTime + &quot;  &quot; + refNtpTime.toDateString());</span>
+
+        // Originate Time is time request sent by client (t1)
+<span class="nc" id="L123">        TimeStamp origNtpTime = message.getOriginateTimeStamp();</span>
+<span class="nc" id="L124">        System.out.println(&quot; Originate Timestamp:\t&quot; + origNtpTime + &quot;  &quot; + origNtpTime.toDateString());</span>
+
+<span class="nc" id="L126">        long destTime = info.getReturnTime();</span>
+        // Receive Time is time request received by server (t2)
+<span class="nc" id="L128">        TimeStamp rcvNtpTime = message.getReceiveTimeStamp();</span>
+<span class="nc" id="L129">        System.out.println(&quot; Receive Timestamp:\t&quot; + rcvNtpTime + &quot;  &quot; + rcvNtpTime.toDateString());</span>
+
+        // Transmit time is time reply sent by server (t3)
+<span class="nc" id="L132">        TimeStamp xmitNtpTime = message.getTransmitTimeStamp();</span>
+<span class="nc" id="L133">        System.out.println(&quot; Transmit Timestamp:\t&quot; + xmitNtpTime + &quot;  &quot; + xmitNtpTime.toDateString());</span>
+
+        // Destination time is time reply received by client (t4)
+<span class="nc" id="L136">        TimeStamp destNtpTime = TimeStamp.getNtpTime(destTime);</span>
+<span class="nc" id="L137">        System.out.println(&quot; Destination Timestamp:\t&quot; + destNtpTime + &quot;  &quot; + destNtpTime.toDateString());</span>
+
+<span class="nc" id="L139">        info.computeDetails(); // compute offset/delay if not already done</span>
+<span class="nc" id="L140">        Long offsetValue = info.getOffset();</span>
+<span class="nc" id="L141">        Long delayValue = info.getDelay();</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        String delay = (delayValue == null) ? &quot;N/A&quot; : delayValue.toString();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        String offset = (offsetValue == null) ? &quot;N/A&quot; : offsetValue.toString();</span>
+
+<span class="nc" id="L145">        System.out.println(&quot; Roundtrip delay(ms)=&quot; + delay</span>
+<span class="nc" id="L146">                + &quot;, clock offset(ms)=&quot; + offset); // offset in ms</span>
+<span class="nc" id="L147">    }</span>
+
+    public static void main(String[] args)
+    {
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (args.length == 0) {</span>
+<span class="nc" id="L152">            System.err.println(&quot;Usage: NTPClient &lt;hostname-or-address-list&gt;&quot;);</span>
+<span class="nc" id="L153">            System.exit(1);</span>
+        }
+
+<span class="nc" id="L156">        NTPUDPClient client = new NTPUDPClient();</span>
+        // We want to timeout if a response takes longer than 10 seconds
+<span class="nc" id="L158">        client.setDefaultTimeout(10000);</span>
+        try {
+<span class="nc" id="L160">            client.open();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">            for (String arg : args)</span>
+            {
+<span class="nc" id="L163">                System.out.println();</span>
+                try {
+<span class="nc" id="L165">                    InetAddress hostAddr = InetAddress.getByName(arg);</span>
+<span class="nc" id="L166">                    System.out.println(&quot;&gt; &quot; + hostAddr.getHostName() + &quot;/&quot; + hostAddr.getHostAddress());</span>
+<span class="nc" id="L167">                    TimeInfo info = client.getTime(hostAddr);</span>
+<span class="nc" id="L168">                    processResponse(info);</span>
+<span class="nc" id="L169">                } catch (IOException ioe) {</span>
+<span class="nc" id="L170">                    ioe.printStackTrace();</span>
+                }
+            }
+<span class="nc" id="L173">        } catch (SocketException e) {</span>
+<span class="nc" id="L174">            e.printStackTrace();</span>
+        }
+
+<span class="nc" id="L177">        client.close();</span>
+<span class="nc" id="L178">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

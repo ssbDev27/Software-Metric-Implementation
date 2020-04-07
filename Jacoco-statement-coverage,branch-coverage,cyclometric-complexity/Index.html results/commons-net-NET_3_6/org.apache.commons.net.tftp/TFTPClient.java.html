@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TFTPClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.tftp</a> &gt; <span class="el_source">TFTPClient.java</span></div><h1>TFTPClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.tftp;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import org.apache.commons.net.io.FromNetASCIIOutputStream;
+import org.apache.commons.net.io.ToNetASCIIInputStream;
+
+/***
+ * The TFTPClient class encapsulates all the aspects of the TFTP protocol
+ * necessary to receive and send files through TFTP.  It is derived from
+ * the {@link org.apache.commons.net.tftp.TFTP} because
+ * it is more convenient than using aggregation, and as a result exposes
+ * the same set of methods to allow you to deal with the TFTP protocol
+ * directly.  However, almost every user should only be concerend with the
+ * the {@link org.apache.commons.net.DatagramSocketClient#open  open() },
+ * {@link org.apache.commons.net.DatagramSocketClient#close  close() },
+ * {@link #sendFile  sendFile() }, and
+ * {@link #receiveFile  receiveFile() } methods.  Additionally, the
+ * {@link #setMaxTimeouts  setMaxTimeouts() } and
+ * {@link org.apache.commons.net.DatagramSocketClient#setDefaultTimeout setDefaultTimeout() }
+ *  methods may be of importance for performance
+ * tuning.
+ * &lt;p&gt;
+ * Details regarding the TFTP protocol and the format of TFTP packets can
+ * be found in RFC 783.  But the point of these classes is to keep you
+ * from having to worry about the internals.
+ *
+ *
+ * @see TFTP
+ * @see TFTPPacket
+ * @see TFTPPacketException
+ ***/
+
+public class TFTPClient extends TFTP
+{
+    /***
+     * The default number of times a receive attempt is allowed to timeout
+     * before ending attempts to retry the receive and failing.  The default
+     * is 5 timeouts.
+     ***/
+    public static final int DEFAULT_MAX_TIMEOUTS = 5;
+
+    /*** The maximum number of timeouts allowed before failing. ***/
+    private int __maxTimeouts;
+
+    /*** The number of bytes received in the ongoing download. ***/
+<span class="fc" id="L69">    private long totalBytesReceived = 0;</span>
+
+    /*** The number of bytes sent in the ongoing upload. ***/
+<span class="fc" id="L72">    private long totalBytesSent = 0;</span>
+
+    /***
+     * Creates a TFTPClient instance with a default timeout of DEFAULT_TIMEOUT,
+     * maximum timeouts value of DEFAULT_MAX_TIMEOUTS, a null socket,
+     * and buffered operations disabled.
+     ***/
+<span class="fc" id="L79">    public TFTPClient()</span>
+    {
+<span class="fc" id="L81">        __maxTimeouts = DEFAULT_MAX_TIMEOUTS;</span>
+<span class="fc" id="L82">    }</span>
+
+    /***
+     * Sets the maximum number of times a receive attempt is allowed to
+     * timeout during a receiveFile() or sendFile() operation before ending
+     * attempts to retry the receive and failing.
+     * The default is DEFAULT_MAX_TIMEOUTS.
+     *
+     * @param numTimeouts  The maximum number of timeouts to allow.  Values
+     *        less than 1 should not be used, but if they are, they are
+     *        treated as 1.
+     ***/
+    public void setMaxTimeouts(int numTimeouts)
+    {
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        if (numTimeouts &lt; 1) {</span>
+<span class="nc" id="L97">            __maxTimeouts = 1;</span>
+<span class="nc" id="L98">        } else {</span>
+<span class="nc" id="L99">            __maxTimeouts = numTimeouts;</span>
+        }
+<span class="nc" id="L101">    }</span>
+
+    /***
+     * Returns the maximum number of times a receive attempt is allowed to
+     * timeout before ending attempts to retry the receive and failing.
+     *
+     * @return The maximum number of timeouts allowed.
+     ***/
+    public int getMaxTimeouts()
+    {
+<span class="nc" id="L111">        return __maxTimeouts;</span>
+    }
+
+
+    /**
+     * @return The number of bytes received in the ongoing download
+     */
+    public long getTotalBytesReceived() {
+<span class="nc" id="L119">        return totalBytesReceived;</span>
+    }
+
+    /**
+     * @return The number of bytes sent in the ongoing download
+     */
+    public long getTotalBytesSent() {
+<span class="nc" id="L126">        return totalBytesSent;</span>
+    }
+
+    /***
+     * Requests a named file from a remote host, writes the
+     * file to an OutputStream, closes the connection, and returns the number
+     * of bytes read.  A local UDP socket must first be created by
+     * {@link org.apache.commons.net.DatagramSocketClient#open open()} before
+     * invoking this method.  This method will not close the OutputStream
+     * containing the file; you must close it after the method invocation.
+     *
+     * @param filename  The name of the file to receive.
+     * @param mode   The TFTP mode of the transfer (one of the MODE constants).
+     * @param output The OutputStream to which the file should be written.
+     * @param host   The remote host serving the file.
+     * @param port   The port number of the remote TFTP server.
+     * @return number of bytes read
+     * @throws IOException If an I/O error occurs.  The nature of the
+     *            error will be reported in the message.
+     ***/
+    public int receiveFile(String filename, int mode, OutputStream output,
+                           InetAddress host, int port) throws IOException
+    {
+<span class="fc" id="L149">        int bytesRead = 0;</span>
+<span class="fc" id="L150">        int lastBlock = 0;</span>
+<span class="fc" id="L151">        int block = 1;</span>
+<span class="fc" id="L152">        int hostPort = 0;</span>
+<span class="fc" id="L153">        int dataLength = 0;</span>
+
+<span class="fc" id="L155">        totalBytesReceived = 0;</span>
+
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        if (mode == TFTP.ASCII_MODE) {</span>
+<span class="fc" id="L158">            output = new FromNetASCIIOutputStream(output);</span>
+        }
+
+<span class="fc" id="L161">        TFTPPacket sent = new TFTPReadRequestPacket(host, port, filename, mode);</span>
+<span class="fc" id="L162">        TFTPAckPacket ack = new TFTPAckPacket(host, port, 0);</span>
+
+<span class="fc" id="L164">        beginBufferedOps();</span>
+
+<span class="fc" id="L166">        boolean justStarted = true;</span>
+        try {
+            do { // while more data to fetch
+<span class="fc" id="L169">                bufferedSend(sent); // start the fetch/send an ack</span>
+<span class="fc" id="L170">                boolean wantReply = true;</span>
+<span class="fc" id="L171">                int timeouts = 0;</span>
+                do { // until successful response
+                    try {
+<span class="fc" id="L174">                        TFTPPacket received = bufferedReceive();</span>
+                        // The first time we receive we get the port number and
+                        // answering host address (for hosts with multiple IPs)
+<span class="fc" id="L177">                        final int recdPort = received.getPort();</span>
+<span class="fc" id="L178">                        final InetAddress recdAddress = received.getAddress();</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">                        if (justStarted) {</span>
+<span class="fc" id="L180">                            justStarted = false;</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">                            if (recdPort == port) { // must not use the control port here</span>
+<span class="nc" id="L182">                                TFTPErrorPacket error = new TFTPErrorPacket(recdAddress,</span>
+<span class="nc" id="L183">                                        recdPort, TFTPErrorPacket.UNKNOWN_TID,</span>
+<span class="nc" id="L184">                                        &quot;INCORRECT SOURCE PORT&quot;);</span>
+<span class="nc" id="L185">                                bufferedSend(error);</span>
+<span class="nc" id="L186">                                throw new IOException(&quot;Incorrect source port (&quot;+recdPort+&quot;) in request reply.&quot;);</span>
+                            }
+<span class="fc" id="L188">                            hostPort = recdPort;</span>
+<span class="fc" id="L189">                            ack.setPort(hostPort);</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">                            if(!host.equals(recdAddress))</span>
+                            {
+<span class="nc" id="L192">                                host = recdAddress;</span>
+<span class="nc" id="L193">                                ack.setAddress(host);</span>
+<span class="nc" id="L194">                                sent.setAddress(host);</span>
+                            }
+                        }
+                        // Comply with RFC 783 indication that an error acknowledgment
+                        // should be sent to originator if unexpected TID or host.
+<span class="pc bpc" id="L199" title="2 of 4 branches missed.">                        if (host.equals(recdAddress) &amp;&amp; recdPort == hostPort) {</span>
+<span class="pc bpc" id="L200" title="1 of 3 branches missed.">                            switch (received.getType()) {</span>
+
+                            case TFTPPacket.ERROR:
+<span class="fc" id="L203">                                TFTPErrorPacket error = (TFTPErrorPacket)received;</span>
+<span class="fc" id="L204">                                throw new IOException(&quot;Error code &quot; + error.getError() +</span>
+<span class="fc" id="L205">                                                      &quot; received: &quot; + error.getMessage());</span>
+                            case TFTPPacket.DATA:
+<span class="fc" id="L207">                                TFTPDataPacket data = (TFTPDataPacket)received;</span>
+<span class="fc" id="L208">                                dataLength = data.getDataLength();</span>
+<span class="fc" id="L209">                                lastBlock = data.getBlockNumber();</span>
+
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">                                if (lastBlock == block) { // is the next block number?</span>
+                                    try {
+<span class="fc" id="L213">                                        output.write(data.getData(), data.getDataOffset(), dataLength);</span>
+<span class="pc" id="L214">                                    } catch (IOException e) {</span>
+<span class="nc" id="L215">                                        error = new TFTPErrorPacket(host, hostPort,</span>
+<span class="nc" id="L216">                                                                    TFTPErrorPacket.OUT_OF_SPACE,</span>
+<span class="nc" id="L217">                                                                    &quot;File write failed.&quot;);</span>
+<span class="nc" id="L218">                                        bufferedSend(error);</span>
+<span class="nc" id="L219">                                        throw e;</span>
+                                    }
+<span class="fc" id="L221">                                    ++block;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">                                    if (block &gt; 65535) {</span>
+                                        // wrap the block number
+<span class="fc" id="L224">                                        block = 0;</span>
+                                    }
+<span class="fc" id="L226">                                    wantReply = false; // got the next block, drop out to ack it</span>
+<span class="fc" id="L227">                                } else { // unexpected block number</span>
+<span class="nc" id="L228">                                    discardPackets();</span>
+<span class="nc bnc" id="L229" title="All 4 branches missed.">                                    if (lastBlock == (block == 0 ? 65535 : (block - 1))) {</span>
+<span class="nc" id="L230">                                        wantReply = false; // Resend last acknowledgemen</span>
+                                    }
+                                }
+<span class="nc" id="L233">                                break;</span>
+
+                            default:
+<span class="nc" id="L236">                                throw new IOException(&quot;Received unexpected packet type (&quot; + received.getType() + &quot;)&quot;);</span>
+                            }
+<span class="nc" id="L238">                        } else { // incorrect host or TID</span>
+<span class="nc" id="L239">                            TFTPErrorPacket error = new TFTPErrorPacket(recdAddress, recdPort,</span>
+<span class="nc" id="L240">                                    TFTPErrorPacket.UNKNOWN_TID,</span>
+<span class="nc" id="L241">                                    &quot;Unexpected host or port.&quot;);</span>
+<span class="nc" id="L242">                            bufferedSend(error);</span>
+                        }
+<span class="nc" id="L244">                    } catch (SocketException e) {</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">                        if (++timeouts &gt;= __maxTimeouts) {</span>
+<span class="nc" id="L246">                            throw new IOException(&quot;Connection timed out.&quot;);</span>
+                        }
+<span class="nc" id="L248">                    } catch (InterruptedIOException e) {</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">                        if (++timeouts &gt;= __maxTimeouts) {</span>
+<span class="nc" id="L250">                            throw new IOException(&quot;Connection timed out.&quot;);</span>
+                        }
+<span class="nc" id="L252">                    } catch (TFTPPacketException e) {</span>
+<span class="nc" id="L253">                        throw new IOException(&quot;Bad packet: &quot; + e.getMessage());</span>
+                    }
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">                } while(wantReply); // waiting for response</span>
+
+<span class="fc" id="L257">                ack.setBlockNumber(lastBlock);</span>
+<span class="fc" id="L258">                sent = ack;</span>
+<span class="fc" id="L259">                bytesRead += dataLength;</span>
+<span class="fc" id="L260">                totalBytesReceived += dataLength;</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">            } while (dataLength == TFTPPacket.SEGMENT_SIZE); // not eof</span>
+<span class="fc" id="L262">            bufferedSend(sent); // send the final ack</span>
+<span class="fc" id="L263">        } finally {</span>
+<span class="fc" id="L264">            endBufferedOps();</span>
+        }
+<span class="fc" id="L266">        return bytesRead;</span>
+    }
+
+
+    /***
+     * Requests a named file from a remote host, writes the
+     * file to an OutputStream, closes the connection, and returns the number
+     * of bytes read.  A local UDP socket must first be created by
+     * {@link org.apache.commons.net.DatagramSocketClient#open open()} before
+     * invoking this method.  This method will not close the OutputStream
+     * containing the file; you must close it after the method invocation.
+     *
+     * @param filename The name of the file to receive.
+     * @param mode     The TFTP mode of the transfer (one of the MODE constants).
+     * @param output   The OutputStream to which the file should be written.
+     * @param hostname The name of the remote host serving the file.
+     * @param port     The port number of the remote TFTP server.
+     * @return number of bytes read
+     * @throws IOException If an I/O error occurs.  The nature of the
+     *            error will be reported in the message.
+     * @throws UnknownHostException  If the hostname cannot be resolved.
+     ***/
+    public int receiveFile(String filename, int mode, OutputStream output,
+                           String hostname, int port)
+    throws UnknownHostException, IOException
+    {
+<span class="fc" id="L292">        return receiveFile(filename, mode, output, InetAddress.getByName(hostname),</span>
+<span class="fc" id="L293">                           port);</span>
+    }
+
+
+    /***
+     * Same as calling receiveFile(filename, mode, output, host, TFTP.DEFAULT_PORT).
+     *
+     * @param filename The name of the file to receive.
+     * @param mode     The TFTP mode of the transfer (one of the MODE constants).
+     * @param output   The OutputStream to which the file should be written.
+     * @param host     The remote host serving the file.
+     * @return number of bytes read
+     * @throws IOException If an I/O error occurs.  The nature of the
+     *            error will be reported in the message.
+     ***/
+    public int receiveFile(String filename, int mode, OutputStream output,
+                           InetAddress host)
+    throws IOException
+    {
+<span class="nc" id="L312">        return receiveFile(filename, mode, output, host, DEFAULT_PORT);</span>
+    }
+
+    /***
+     * Same as calling receiveFile(filename, mode, output, hostname, TFTP.DEFAULT_PORT).
+     *
+     * @param filename The name of the file to receive.
+     * @param mode     The TFTP mode of the transfer (one of the MODE constants).
+     * @param output   The OutputStream to which the file should be written.
+     * @param hostname The name of the remote host serving the file.
+     * @return number of bytes read
+     * @throws IOException If an I/O error occurs.  The nature of the
+     *            error will be reported in the message.
+     * @throws UnknownHostException  If the hostname cannot be resolved.
+     ***/
+    public int receiveFile(String filename, int mode, OutputStream output,
+                           String hostname)
+    throws UnknownHostException, IOException
+    {
+<span class="nc" id="L331">        return receiveFile(filename, mode, output, InetAddress.getByName(hostname),</span>
+<span class="nc" id="L332">                           DEFAULT_PORT);</span>
+    }
+
+
+    /***
+     * Requests to send a file to a remote host, reads the file from an
+     * InputStream, sends the file to the remote host, and closes the
+     * connection.  A local UDP socket must first be created by
+     * {@link org.apache.commons.net.DatagramSocketClient#open open()} before
+     * invoking this method.  This method will not close the InputStream
+     * containing the file; you must close it after the method invocation.
+     *
+     * @param filename The name the remote server should use when creating
+     *        the file on its file system.
+     * @param mode     The TFTP mode of the transfer (one of the MODE constants).
+     * @param input the input stream containing the data to be sent
+     * @param host     The remote host receiving the file.
+     * @param port     The port number of the remote TFTP server.
+     * @throws IOException If an I/O error occurs.  The nature of the
+     *            error will be reported in the message.
+     ***/
+    public void sendFile(String filename, int mode, InputStream input,
+                         InetAddress host, int port) throws IOException
+    {
+<span class="fc" id="L356">        int block = 0;</span>
+<span class="fc" id="L357">        int hostPort = 0;</span>
+<span class="fc" id="L358">        boolean justStarted = true;</span>
+<span class="fc" id="L359">        boolean lastAckWait = false;</span>
+
+<span class="fc" id="L361">        totalBytesSent = 0L;</span>
+
+<span class="fc bfc" id="L363" title="All 2 branches covered.">        if (mode == TFTP.ASCII_MODE) {</span>
+<span class="fc" id="L364">            input = new ToNetASCIIInputStream(input);</span>
+        }
+
+<span class="fc" id="L367">        TFTPPacket sent = new TFTPWriteRequestPacket(host, port, filename, mode);</span>
+<span class="fc" id="L368">        TFTPDataPacket data = new TFTPDataPacket(host, port, 0, _sendBuffer, 4, 0);</span>
+
+<span class="fc" id="L370">        beginBufferedOps();</span>
+
+        try {
+            do { // until eof
+                // first time: block is 0, lastBlock is 0, send a request packet.
+                // subsequent: block is integer starting at 1, send data packet.
+<span class="fc" id="L376">                bufferedSend(sent);</span>
+<span class="fc" id="L377">                boolean wantReply = true;</span>
+<span class="fc" id="L378">                int timeouts = 0;</span>
+                do {
+                    try {
+<span class="fc" id="L381">                        TFTPPacket received = bufferedReceive();</span>
+<span class="fc" id="L382">                        final InetAddress recdAddress = received.getAddress();</span>
+<span class="fc" id="L383">                        final int recdPort = received.getPort();</span>
+                        // The first time we receive we get the port number and
+                        // answering host address (for hosts with multiple IPs)
+<span class="fc bfc" id="L386" title="All 2 branches covered.">                        if (justStarted) {</span>
+<span class="fc" id="L387">                            justStarted = false;</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">                            if (recdPort == port) { // must not use the control port here</span>
+<span class="nc" id="L389">                                TFTPErrorPacket error = new TFTPErrorPacket(recdAddress,</span>
+<span class="nc" id="L390">                                        recdPort, TFTPErrorPacket.UNKNOWN_TID,</span>
+<span class="nc" id="L391">                                        &quot;INCORRECT SOURCE PORT&quot;);</span>
+<span class="nc" id="L392">                                bufferedSend(error);</span>
+<span class="nc" id="L393">                                throw new IOException(&quot;Incorrect source port (&quot;+recdPort+&quot;) in request reply.&quot;);</span>
+                            }
+<span class="fc" id="L395">                            hostPort = recdPort;</span>
+<span class="fc" id="L396">                            data.setPort(hostPort);</span>
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">                            if (!host.equals(recdAddress)) {</span>
+<span class="nc" id="L398">                                host = recdAddress;</span>
+<span class="nc" id="L399">                                data.setAddress(host);</span>
+<span class="nc" id="L400">                                sent.setAddress(host);</span>
+                            }
+                        }
+                        // Comply with RFC 783 indication that an error acknowledgment
+                        // should be sent to originator if unexpected TID or host.
+<span class="pc bpc" id="L405" title="2 of 4 branches missed.">                        if (host.equals(recdAddress) &amp;&amp; recdPort == hostPort) {</span>
+
+<span class="pc bpc" id="L407" title="1 of 3 branches missed.">                            switch (received.getType()) {</span>
+                            case TFTPPacket.ERROR:
+<span class="fc" id="L409">                                TFTPErrorPacket error = (TFTPErrorPacket)received;</span>
+<span class="fc" id="L410">                                throw new IOException(&quot;Error code &quot; + error.getError() +</span>
+<span class="fc" id="L411">                                                      &quot; received: &quot; + error.getMessage());</span>
+                            case TFTPPacket.ACKNOWLEDGEMENT:
+
+<span class="fc" id="L414">                                int lastBlock = ((TFTPAckPacket)received).getBlockNumber();</span>
+
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">                                if (lastBlock == block) {</span>
+<span class="fc" id="L417">                                    ++block;</span>
+<span class="fc bfc" id="L418" title="All 2 branches covered.">                                    if (block &gt; 65535) {</span>
+                                        // wrap the block number
+<span class="fc" id="L420">                                        block = 0;</span>
+                                    }
+<span class="fc" id="L422">                                    wantReply = false; // got the ack we want</span>
+<span class="fc" id="L423">                                } else {</span>
+<span class="nc" id="L424">                                    discardPackets();</span>
+                                }
+<span class="nc" id="L426">                                break;</span>
+                            default:
+<span class="nc" id="L428">                                throw new IOException(&quot;Received unexpected packet type.&quot;);</span>
+                            }
+<span class="nc" id="L430">                        } else { // wrong host or TID; send error</span>
+<span class="nc" id="L431">                            TFTPErrorPacket error = new TFTPErrorPacket(recdAddress,</span>
+<span class="nc" id="L432">                                                        recdPort,</span>
+<span class="nc" id="L433">                                                        TFTPErrorPacket.UNKNOWN_TID,</span>
+<span class="nc" id="L434">                                                        &quot;Unexpected host or port.&quot;);</span>
+<span class="nc" id="L435">                            bufferedSend(error);</span>
+                        }
+<span class="nc" id="L437">                    } catch (SocketException e) {</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">                        if (++timeouts &gt;= __maxTimeouts) {</span>
+<span class="nc" id="L439">                            throw new IOException(&quot;Connection timed out.&quot;);</span>
+                        }
+<span class="nc" id="L441">                    } catch (InterruptedIOException e) {</span>
+<span class="nc bnc" id="L442" title="All 2 branches missed.">                        if (++timeouts &gt;= __maxTimeouts) {</span>
+<span class="nc" id="L443">                            throw new IOException(&quot;Connection timed out.&quot;);</span>
+                        }
+<span class="nc" id="L445">                    } catch (TFTPPacketException e) {</span>
+<span class="nc" id="L446">                        throw new IOException(&quot;Bad packet: &quot; + e.getMessage());</span>
+                    }
+                    // retry until a good ack
+<span class="pc bpc" id="L449" title="1 of 2 branches missed.">                } while(wantReply);</span>
+
+<span class="fc bfc" id="L451" title="All 2 branches covered.">                if (lastAckWait) {</span>
+<span class="fc" id="L452">                    break; // we were waiting for this; now all done</span>
+                }
+
+<span class="fc" id="L455">                int dataLength = TFTPPacket.SEGMENT_SIZE;</span>
+<span class="fc" id="L456">                int offset = 4;</span>
+<span class="fc" id="L457">                int totalThisPacket = 0;</span>
+<span class="fc" id="L458">                int bytesRead = 0;</span>
+<span class="fc bfc" id="L459" title="All 4 branches covered.">                while (dataLength &gt; 0 &amp;&amp;</span>
+<span class="fc" id="L460">                        (bytesRead = input.read(_sendBuffer, offset, dataLength)) &gt; 0) {</span>
+<span class="fc" id="L461">                    offset += bytesRead;</span>
+<span class="fc" id="L462">                    dataLength -= bytesRead;</span>
+<span class="fc" id="L463">                    totalThisPacket += bytesRead;</span>
+                }
+<span class="fc bfc" id="L465" title="All 2 branches covered.">                if( totalThisPacket &lt; TFTPPacket.SEGMENT_SIZE ) {</span>
+                    /* this will be our last packet -- send, wait for ack, stop */
+<span class="fc" id="L467">                    lastAckWait = true;</span>
+                }
+<span class="fc" id="L469">                data.setBlockNumber(block);</span>
+<span class="fc" id="L470">                data.setData(_sendBuffer, 4, totalThisPacket);</span>
+<span class="fc" id="L471">                sent = data;</span>
+<span class="fc" id="L472">                totalBytesSent += totalThisPacket;</span>
+<span class="fc" id="L473">            } while (true); // loops until after lastAckWait is set</span>
+        } finally {
+<span class="fc" id="L475">            endBufferedOps();</span>
+        }
+<span class="fc" id="L477">    }</span>
+
+
+    /***
+     * Requests to send a file to a remote host, reads the file from an
+     * InputStream, sends the file to the remote host, and closes the
+     * connection.  A local UDP socket must first be created by
+     * {@link org.apache.commons.net.DatagramSocketClient#open open()} before
+     * invoking this method.  This method will not close the InputStream
+     * containing the file; you must close it after the method invocation.
+     *
+     * @param filename The name the remote server should use when creating
+     *        the file on its file system.
+     * @param mode     The TFTP mode of the transfer (one of the MODE constants).
+     * @param input the input stream containing the data to be sent
+     * @param hostname The name of the remote host receiving the file.
+     * @param port     The port number of the remote TFTP server.
+     * @throws IOException If an I/O error occurs.  The nature of the
+     *            error will be reported in the message.
+     * @throws UnknownHostException  If the hostname cannot be resolved.
+     ***/
+    public void sendFile(String filename, int mode, InputStream input,
+                         String hostname, int port)
+    throws UnknownHostException, IOException
+    {
+<span class="fc" id="L502">        sendFile(filename, mode, input, InetAddress.getByName(hostname), port);</span>
+<span class="fc" id="L503">    }</span>
+
+
+    /***
+     * Same as calling sendFile(filename, mode, input, host, TFTP.DEFAULT_PORT).
+     *
+     * @param filename The name the remote server should use when creating
+     *        the file on its file system.
+     * @param mode     The TFTP mode of the transfer (one of the MODE constants).
+     * @param input the input stream containing the data to be sent
+     * @param host     The name of the remote host receiving the file.
+     * @throws IOException If an I/O error occurs.  The nature of the
+     *            error will be reported in the message.
+     * @throws UnknownHostException  If the hostname cannot be resolved.
+     ***/
+    public void sendFile(String filename, int mode, InputStream input,
+                         InetAddress host)
+    throws IOException
+    {
+<span class="nc" id="L522">        sendFile(filename, mode, input, host, DEFAULT_PORT);</span>
+<span class="nc" id="L523">    }</span>
+
+    /***
+     * Same as calling sendFile(filename, mode, input, hostname, TFTP.DEFAULT_PORT).
+     *
+     * @param filename The name the remote server should use when creating
+     *        the file on its file system.
+     * @param mode     The TFTP mode of the transfer (one of the MODE constants).
+     * @param input the input stream containing the data to be sent
+     * @param hostname The name of the remote host receiving the file.
+     * @throws IOException If an I/O error occurs.  The nature of the
+     *            error will be reported in the message.
+     * @throws UnknownHostException  If the hostname cannot be resolved.
+     ***/
+    public void sendFile(String filename, int mode, InputStream input,
+                         String hostname)
+    throws UnknownHostException, IOException
+    {
+<span class="nc" id="L541">        sendFile(filename, mode, input, InetAddress.getByName(hostname),</span>
+<span class="nc" id="L542">                 DEFAULT_PORT);</span>
+<span class="nc" id="L543">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

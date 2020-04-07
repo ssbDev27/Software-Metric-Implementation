@@ -1,0 +1,700 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NtpV3Impl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.ntp</a> &gt; <span class="el_source">NtpV3Impl.java</span></div><h1>NtpV3Impl.java</h1><pre class="source lang-java linenums">package org.apache.commons.net.ntp;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.net.DatagramPacket;
+
+/***
+ * Implementation of NtpV3Packet with methods converting Java objects to/from
+ * the Network Time Protocol (NTP) data message header format described in RFC-1305.
+ *
+ * @version $Revision$
+ */
+public class NtpV3Impl implements NtpV3Packet
+{
+
+    private static final int MODE_INDEX = 0;
+    private static final int MODE_SHIFT = 0;
+
+    private static final int VERSION_INDEX = 0;
+    private static final int VERSION_SHIFT = 3;
+
+    private static final int LI_INDEX = 0;
+    private static final int LI_SHIFT = 6;
+
+    private static final int STRATUM_INDEX = 1;
+    private static final int POLL_INDEX = 2;
+    private static final int PRECISION_INDEX = 3;
+
+    private static final int ROOT_DELAY_INDEX = 4;
+    private static final int ROOT_DISPERSION_INDEX = 8;
+    private static final int REFERENCE_ID_INDEX = 12;
+
+    private static final int REFERENCE_TIMESTAMP_INDEX = 16;
+    private static final int ORIGINATE_TIMESTAMP_INDEX = 24;
+    private static final int RECEIVE_TIMESTAMP_INDEX = 32;
+    private static final int TRANSMIT_TIMESTAMP_INDEX = 40;
+
+//    private static final int KEY_IDENTIFIER_INDEX = 48;
+//    private static final int MESSAGE_DIGEST = 54; /* len 16 bytes */
+
+<span class="fc" id="L55">    private final byte[] buf = new byte[48];</span>
+
+    private volatile DatagramPacket dp;
+
+    /** Creates a new instance of NtpV3Impl */
+<span class="fc" id="L60">    public NtpV3Impl()</span>
+    {
+<span class="fc" id="L62">    }</span>
+
+    /***
+     * Returns mode as defined in RFC-1305 which is a 3-bit integer
+     * whose value is indicated by the MODE_xxx parameters.
+     *
+     * @return mode as defined in RFC-1305.
+     */
+    @Override
+    public int getMode()
+    {
+<span class="fc" id="L73">        return (ui(buf[MODE_INDEX]) &gt;&gt; MODE_SHIFT) &amp; 0x7;</span>
+    }
+
+    /***
+     * Return human-readable name of message mode type as described in
+     * RFC 1305.
+     * @return mode name as string.
+     */
+    @Override
+    public String getModeName()
+    {
+<span class="fc" id="L84">        return NtpUtils.getModeName(getMode());</span>
+    }
+
+    /***
+     * Set mode as defined in RFC-1305.
+     *
+     * @param mode the mode to set
+     */
+    @Override
+    public void setMode(int mode)
+    {
+<span class="fc" id="L95">        buf[MODE_INDEX] = (byte) (buf[MODE_INDEX] &amp; 0xF8 | mode &amp; 0x7);</span>
+<span class="fc" id="L96">    }</span>
+
+    /***
+     * Returns leap indicator as defined in RFC-1305 which is a two-bit code:
+     *  0=no warning
+     *  1=last minute has 61 seconds
+     *  2=last minute has 59 seconds
+     *  3=alarm condition (clock not synchronized)
+     *
+     * @return leap indicator as defined in RFC-1305.
+     */
+    @Override
+    public int getLeapIndicator()
+    {
+<span class="fc" id="L110">        return (ui(buf[LI_INDEX]) &gt;&gt; LI_SHIFT) &amp; 0x3;</span>
+    }
+
+    /***
+     * Set leap indicator as defined in RFC-1305.
+     *
+     * @param li leap indicator.
+     */
+    @Override
+    public void setLeapIndicator(int li)
+    {
+<span class="fc" id="L121">        buf[LI_INDEX] = (byte) (buf[LI_INDEX] &amp; 0x3F | ((li &amp; 0x3) &lt;&lt; LI_SHIFT));</span>
+<span class="fc" id="L122">    }</span>
+
+    /***
+     * Returns poll interval as defined in RFC-1305, which is an eight-bit
+     * signed integer indicating the maximum interval between successive
+     * messages, in seconds to the nearest power of two (e.g. value of six
+     * indicates an interval of 64 seconds. The values that can appear in
+     * this field range from NTP_MINPOLL to NTP_MAXPOLL inclusive.
+     *
+     * @return poll interval as defined in RFC-1305.
+     */
+    @Override
+    public int getPoll()
+    {
+<span class="fc" id="L136">        return buf[POLL_INDEX];</span>
+    }
+
+    /***
+     * Set poll interval as defined in RFC-1305.
+     *
+     * @param poll poll interval.
+     */
+    @Override
+    public void setPoll(int poll)
+    {
+<span class="fc" id="L147">        buf[POLL_INDEX] = (byte) (poll &amp; 0xFF);</span>
+<span class="fc" id="L148">    }</span>
+
+    /***
+     * Returns precision as defined in RFC-1305 encoded as an 8-bit signed
+     * integer (seconds to nearest power of two).
+     * Values normally range from -6 to -20.
+     *
+     * @return precision as defined in RFC-1305.
+     */
+    @Override
+    public int getPrecision()
+    {
+<span class="fc" id="L160">        return buf[PRECISION_INDEX];</span>
+    }
+
+    /***
+     * Set precision as defined in RFC-1305.
+     * @param precision the precision to set
+     * @since 3.4
+     */
+    @Override
+    public void setPrecision(int precision)
+    {
+<span class="fc" id="L171">        buf[PRECISION_INDEX] = (byte) (precision &amp; 0xFF);</span>
+<span class="fc" id="L172">    }</span>
+
+    /***
+     * Returns NTP version number as defined in RFC-1305.
+     *
+     * @return NTP version number.
+     */
+    @Override
+    public int getVersion()
+    {
+<span class="fc" id="L182">        return (ui(buf[VERSION_INDEX]) &gt;&gt; VERSION_SHIFT) &amp; 0x7;</span>
+    }
+
+    /***
+     * Set NTP version as defined in RFC-1305.
+     *
+     * @param version NTP version.
+     */
+    @Override
+    public void setVersion(int version)
+    {
+<span class="fc" id="L193">        buf[VERSION_INDEX] = (byte) (buf[VERSION_INDEX] &amp; 0xC7 | ((version &amp; 0x7) &lt;&lt; VERSION_SHIFT));</span>
+<span class="fc" id="L194">    }</span>
+
+    /***
+     * Returns Stratum as defined in RFC-1305, which indicates the stratum level
+     * of the local clock, with values defined as follows: 0=unspecified,
+     * 1=primary ref clock, and all others a secondary reference (via NTP).
+     *
+     * @return Stratum level as defined in RFC-1305.
+     */
+    @Override
+    public int getStratum()
+    {
+<span class="fc" id="L206">        return ui(buf[STRATUM_INDEX]);</span>
+    }
+
+    /***
+     * Set stratum level as defined in RFC-1305.
+     *
+     * @param stratum stratum level.
+     */
+    @Override
+    public void setStratum(int stratum)
+    {
+<span class="fc" id="L217">        buf[STRATUM_INDEX] = (byte) (stratum &amp; 0xFF);</span>
+<span class="fc" id="L218">    }</span>
+
+    /***
+     * Return root delay as defined in RFC-1305, which is the total roundtrip delay
+     * to the primary reference source, in seconds. Values can take positive and
+     * negative values, depending on clock precision and skew.
+     *
+     * @return root delay as defined in RFC-1305.
+     */
+    @Override
+    public int getRootDelay()
+    {
+<span class="fc" id="L230">        return getInt(ROOT_DELAY_INDEX);</span>
+    }
+
+    /***
+     * Set root delay as defined in RFC-1305.
+     *
+     * @param delay root delay
+     * @since 3.4
+     */
+    @Override
+    public void setRootDelay(int delay)
+    {
+<span class="fc" id="L242">        setInt(ROOT_DELAY_INDEX, delay);</span>
+<span class="fc" id="L243">    }</span>
+
+    /**
+     * Return root delay as defined in RFC-1305 in milliseconds, which is
+     * the total roundtrip delay to the primary reference source, in
+     * seconds. Values can take positive and negative values, depending
+     * on clock precision and skew.
+     *
+     * @return root delay in milliseconds
+     */
+    @Override
+    public double getRootDelayInMillisDouble()
+    {
+<span class="fc" id="L256">        double l = getRootDelay();</span>
+<span class="fc" id="L257">        return l / 65.536;</span>
+    }
+
+    /***
+     * Returns root dispersion as defined in RFC-1305.
+     * @return root dispersion.
+     */
+    @Override
+    public int getRootDispersion()
+    {
+<span class="fc" id="L267">        return getInt(ROOT_DISPERSION_INDEX);</span>
+    }
+
+    /***
+     * Set root dispersion as defined in RFC-1305.
+     *
+     * @param dispersion root dispersion
+     * @since 3.4
+     */
+    @Override
+    public void setRootDispersion(int dispersion)
+    {
+<span class="fc" id="L279">        setInt(ROOT_DISPERSION_INDEX, dispersion);</span>
+<span class="fc" id="L280">    }</span>
+
+    /***
+     * Returns root dispersion (as defined in RFC-1305) in milliseconds.
+     *
+     * @return root dispersion in milliseconds
+     */
+    @Override
+    public long getRootDispersionInMillis()
+    {
+<span class="fc" id="L290">        long l = getRootDispersion();</span>
+<span class="fc" id="L291">        return (l * 1000) / 65536L;</span>
+    }
+
+    /***
+     * Returns root dispersion (as defined in RFC-1305) in milliseconds
+     * as double precision value.
+     *
+     * @return root dispersion in milliseconds
+     */
+    @Override
+    public double getRootDispersionInMillisDouble()
+    {
+<span class="fc" id="L303">        double l = getRootDispersion();</span>
+<span class="fc" id="L304">        return l / 65.536;</span>
+    }
+
+    /***
+     * Set reference clock identifier field with 32-bit unsigned integer value.
+     * See RFC-1305 for description.
+     *
+     * @param refId reference clock identifier.
+     */
+    @Override
+    public void setReferenceId(int refId)
+    {
+<span class="fc" id="L316">        setInt(REFERENCE_ID_INDEX, refId);</span>
+<span class="fc" id="L317">    }</span>
+
+    /***
+     * Returns the reference id as defined in RFC-1305, which is
+     * a 32-bit integer whose value is dependent on several criteria.
+     *
+     * @return the reference id as defined in RFC-1305.
+     */
+    @Override
+    public int getReferenceId()
+    {
+<span class="fc" id="L328">        return getInt(REFERENCE_ID_INDEX);</span>
+    }
+
+    /***
+     * Returns the reference id string. String cannot be null but
+     * value is dependent on the version of the NTP spec supported
+     * and stratum level. Value can be an empty string, clock type string,
+     * IP address, or a hex string.
+     *
+     * @return the reference id string.
+     */
+    @Override
+    public String getReferenceIdString()
+    {
+<span class="fc" id="L342">        int version = getVersion();</span>
+<span class="fc" id="L343">        int stratum = getStratum();</span>
+<span class="pc bpc" id="L344" title="1 of 4 branches missed.">        if (version == VERSION_3 || version == VERSION_4) {</span>
+<span class="pc bpc" id="L345" title="1 of 4 branches missed.">            if (stratum == 0 || stratum == 1) {</span>
+<span class="fc" id="L346">                return idAsString(); // 4-character ASCII string (e.g. GPS, USNO)</span>
+            }
+            // in NTPv4 servers this is latest transmit timestamp of ref source
+<span class="fc bfc" id="L349" title="All 2 branches covered.">            if (version == VERSION_4) {</span>
+<span class="fc" id="L350">                return idAsHex();</span>
+            }
+        }
+
+        // Stratum 2 and higher this is a four-octet IPv4 address
+        // of the primary reference host.
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">        if (stratum &gt;= 2) {</span>
+<span class="fc" id="L357">            return idAsIPAddress();</span>
+        }
+<span class="nc" id="L359">        return idAsHex();</span>
+    }
+
+    /***
+     * Returns Reference id as dotted IP address.
+     * @return refId as IP address string.
+     */
+    private String idAsIPAddress()
+    {
+<span class="fc" id="L368">        return ui(buf[REFERENCE_ID_INDEX]) + &quot;.&quot; +</span>
+<span class="fc" id="L369">                ui(buf[REFERENCE_ID_INDEX + 1]) + &quot;.&quot; +</span>
+<span class="fc" id="L370">                ui(buf[REFERENCE_ID_INDEX + 2]) + &quot;.&quot; +</span>
+<span class="fc" id="L371">                ui(buf[REFERENCE_ID_INDEX + 3]);</span>
+    }
+
+    private String idAsString()
+    {
+<span class="fc" id="L376">        StringBuilder id = new StringBuilder();</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        for (int i = 0; i &lt;= 3; i++) {</span>
+<span class="fc" id="L378">            char c = (char) buf[REFERENCE_ID_INDEX + i];</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">            if (c == 0) {  // 0-terminated string</span>
+<span class="fc" id="L380">                break;</span>
+            }
+<span class="fc" id="L382">            id.append(c);</span>
+        }
+<span class="fc" id="L384">        return id.toString();</span>
+    }
+
+    private String idAsHex()
+    {
+<span class="fc" id="L389">        return Integer.toHexString(getReferenceId());</span>
+    }
+
+    /***
+     * Returns the transmit timestamp as defined in RFC-1305.
+     *
+     * @return the transmit timestamp as defined in RFC-1305.
+     * Never returns a null object.
+     */
+    @Override
+    public TimeStamp getTransmitTimeStamp()
+    {
+<span class="fc" id="L401">        return getTimestamp(TRANSMIT_TIMESTAMP_INDEX);</span>
+    }
+
+    /***
+     * Set transmit time with NTP timestamp.
+     * If &lt;code&gt;ts&lt;/code&gt; is null then zero time is used.
+     *
+     * @param ts NTP timestamp
+     */
+    @Override
+    public void setTransmitTime(TimeStamp ts)
+    {
+<span class="fc" id="L413">        setTimestamp(TRANSMIT_TIMESTAMP_INDEX, ts);</span>
+<span class="fc" id="L414">    }</span>
+
+    /***
+     * Set originate timestamp given NTP TimeStamp object.
+     * If &lt;code&gt;ts&lt;/code&gt; is null then zero time is used.
+     *
+     * @param ts NTP timestamp
+     */
+    @Override
+    public void setOriginateTimeStamp(TimeStamp ts)
+    {
+<span class="fc" id="L425">        setTimestamp(ORIGINATE_TIMESTAMP_INDEX, ts);</span>
+<span class="fc" id="L426">    }</span>
+
+    /***
+     * Returns the originate time as defined in RFC-1305.
+     *
+     * @return the originate time.
+     * Never returns null.
+     */
+    @Override
+    public TimeStamp getOriginateTimeStamp()
+    {
+<span class="fc" id="L437">        return getTimestamp(ORIGINATE_TIMESTAMP_INDEX);</span>
+    }
+
+    /***
+     * Returns the reference time as defined in RFC-1305.
+     *
+     * @return the reference time as &lt;code&gt;TimeStamp&lt;/code&gt; object.
+     * Never returns null.
+     */
+    @Override
+    public TimeStamp getReferenceTimeStamp()
+    {
+<span class="fc" id="L449">        return getTimestamp(REFERENCE_TIMESTAMP_INDEX);</span>
+    }
+
+    /***
+     * Set Reference time with NTP timestamp. If &lt;code&gt;ts&lt;/code&gt; is null
+     * then zero time is used.
+     *
+     * @param ts NTP timestamp
+     */
+    @Override
+    public void setReferenceTime(TimeStamp ts)
+    {
+<span class="fc" id="L461">        setTimestamp(REFERENCE_TIMESTAMP_INDEX, ts);</span>
+<span class="fc" id="L462">    }</span>
+
+    /***
+     * Returns receive timestamp as defined in RFC-1305.
+     *
+     * @return the receive time.
+     * Never returns null.
+     */
+    @Override
+    public TimeStamp getReceiveTimeStamp()
+    {
+<span class="fc" id="L473">        return getTimestamp(RECEIVE_TIMESTAMP_INDEX);</span>
+    }
+
+    /***
+     * Set receive timestamp given NTP TimeStamp object.
+     * If &lt;code&gt;ts&lt;/code&gt; is null then zero time is used.
+     *
+     * @param ts timestamp
+     */
+    @Override
+    public void setReceiveTimeStamp(TimeStamp ts)
+    {
+<span class="fc" id="L485">        setTimestamp(RECEIVE_TIMESTAMP_INDEX, ts);</span>
+<span class="fc" id="L486">    }</span>
+
+    /***
+     * Return type of time packet. The values (e.g. NTP, TIME, ICMP, ...)
+     * correspond to the protocol used to obtain the timing information.
+     *
+     * @return packet type string identifier which in this case is &quot;NTP&quot;.
+     */
+    @Override
+    public String getType()
+    {
+<span class="fc" id="L497">        return &quot;NTP&quot;;</span>
+    }
+
+    /***
+     * @return 4 bytes as 32-bit int
+     */
+    private int getInt(int index)
+    {
+<span class="fc" id="L505">        int i = ui(buf[index]) &lt;&lt; 24 |</span>
+<span class="fc" id="L506">                ui(buf[index + 1]) &lt;&lt; 16 |</span>
+<span class="fc" id="L507">                ui(buf[index + 2]) &lt;&lt; 8 |</span>
+<span class="fc" id="L508">                ui(buf[index + 3]);</span>
+
+<span class="fc" id="L510">        return i;</span>
+    }
+
+    /***
+     * Set integer value at index position.
+     *
+     * @param idx index position
+     * @param value 32-bit int value
+     */
+    private void setInt(int idx, int value)
+    {
+<span class="fc bfc" id="L521" title="All 2 branches covered.">        for (int i=3; i &gt;= 0; i--) {</span>
+<span class="fc" id="L522">            buf[idx + i] = (byte) (value &amp; 0xff);</span>
+<span class="fc" id="L523">            value &gt;&gt;&gt;= 8; // shift right one-byte</span>
+        }
+<span class="fc" id="L525">    }</span>
+
+    /**
+     * Get NTP Timestamp at specified starting index.
+     *
+     * @param index index into data array
+     * @return TimeStamp object for 64 bits starting at index
+     */
+    private TimeStamp getTimestamp(int index)
+    {
+<span class="fc" id="L535">        return new TimeStamp(getLong(index));</span>
+    }
+
+    /***
+     * Get Long value represented by bits starting at specified index.
+     *
+     * @return 8 bytes as 64-bit long
+     */
+    private long getLong(int index)
+    {
+<span class="fc" id="L545">        long i = ul(buf[index]) &lt;&lt; 56 |</span>
+<span class="fc" id="L546">                ul(buf[index + 1]) &lt;&lt; 48 |</span>
+<span class="fc" id="L547">                ul(buf[index + 2]) &lt;&lt; 40 |</span>
+<span class="fc" id="L548">                ul(buf[index + 3]) &lt;&lt; 32 |</span>
+<span class="fc" id="L549">                ul(buf[index + 4]) &lt;&lt; 24 |</span>
+<span class="fc" id="L550">                ul(buf[index + 5]) &lt;&lt; 16 |</span>
+<span class="fc" id="L551">                ul(buf[index + 6]) &lt;&lt; 8 |</span>
+<span class="fc" id="L552">                ul(buf[index + 7]);</span>
+<span class="fc" id="L553">        return i;</span>
+    }
+
+    /***
+     * Sets the NTP timestamp at the given array index.
+     *
+     * @param index index into the byte array.
+     * @param t TimeStamp.
+     */
+    private void setTimestamp(int index, TimeStamp t)
+    {
+<span class="pc bpc" id="L564" title="1 of 2 branches missed.">        long ntpTime = (t == null) ? 0 : t.ntpValue();</span>
+        // copy 64-bits from Long value into 8 x 8-bit bytes of array
+        // one byte at a time shifting 8-bits for each position.
+<span class="fc bfc" id="L567" title="All 2 branches covered.">        for (int i = 7; i &gt;= 0; i--) {</span>
+<span class="fc" id="L568">            buf[index + i] = (byte) (ntpTime &amp; 0xFF);</span>
+<span class="fc" id="L569">            ntpTime &gt;&gt;&gt;= 8; // shift to next byte</span>
+        }
+        // buf[index] |= 0x80;  // only set if 1900 baseline....
+<span class="fc" id="L572">    }</span>
+
+    /***
+     * Returns the datagram packet with the NTP details already filled in.
+     *
+     * @return a datagram packet.
+     */
+    @Override
+    public synchronized DatagramPacket getDatagramPacket()
+    {
+<span class="fc bfc" id="L582" title="All 2 branches covered.">        if (dp == null) {</span>
+<span class="fc" id="L583">            dp = new DatagramPacket(buf, buf.length);</span>
+<span class="fc" id="L584">            dp.setPort(NTP_PORT);</span>
+        }
+<span class="fc" id="L586">        return dp;</span>
+    }
+
+    /***
+     * Set the contents of this object from source datagram packet.
+     *
+     * @param srcDp source DatagramPacket to copy contents from, never null.
+     * @throws IllegalArgumentException if srcDp is null or byte length is less than minimum length of 48 bytes
+     */
+    @Override
+    public void setDatagramPacket(DatagramPacket srcDp)
+    {
+<span class="fc bfc" id="L598" title="All 4 branches covered.">        if (srcDp == null || srcDp.getLength() &lt; buf.length) {</span>
+<span class="fc" id="L599">            throw new IllegalArgumentException();</span>
+        }
+<span class="fc" id="L601">        byte[] incomingBuf = srcDp.getData();</span>
+<span class="fc" id="L602">        int len = srcDp.getLength();</span>
+<span class="pc bpc" id="L603" title="1 of 2 branches missed.">        if (len &gt; buf.length) {</span>
+<span class="nc" id="L604">            len = buf.length;</span>
+        }
+<span class="fc" id="L606">        System.arraycopy(incomingBuf, 0, buf, 0, len);</span>
+<span class="fc" id="L607">        DatagramPacket dp = getDatagramPacket();</span>
+<span class="fc" id="L608">        dp.setAddress(srcDp.getAddress());</span>
+<span class="fc" id="L609">        int port = srcDp.getPort();</span>
+<span class="fc bfc" id="L610" title="All 2 branches covered.">        dp.setPort(port &gt; 0 ? port : NTP_PORT);</span>
+<span class="fc" id="L611">        dp.setData(buf);</span>
+<span class="fc" id="L612">    }</span>
+
+    /***
+     * Compares this object against the specified object.
+     * The result is &lt;code&gt;true&lt;/code&gt; if and only if the argument is
+     * not &lt;code&gt;null&lt;/code&gt; and is a &lt;code&gt;NtpV3Impl&lt;/code&gt; object that
+     * contains the same values as this object.
+     *
+     * @param   obj   the object to compare with.
+     * @return  &lt;code&gt;true&lt;/code&gt; if the objects are the same;
+     *          &lt;code&gt;false&lt;/code&gt; otherwise.
+     * @since 3.4
+     */
+    @Override
+    public boolean equals(Object obj)
+    {
+<span class="fc bfc" id="L628" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L629">            return true;</span>
+        }
+<span class="pc bpc" id="L631" title="1 of 4 branches missed.">        if (obj == null || getClass() != obj.getClass()) {</span>
+<span class="fc" id="L632">            return false;</span>
+        }
+<span class="fc" id="L634">        NtpV3Impl other = (NtpV3Impl) obj;</span>
+<span class="fc" id="L635">        return java.util.Arrays.equals(buf, other.buf);</span>
+    }
+
+    /***
+     * Computes a hashcode for this object. The result is the exclusive
+     * OR of the values of this object stored as a byte array.
+     *
+     * @return  a hash code value for this object.
+     * @since 3.4
+     */
+    @Override
+    public int hashCode()
+    {
+<span class="fc" id="L648">        return java.util.Arrays.hashCode(buf);</span>
+    }
+
+    /***
+     * Convert byte to unsigned integer.
+     * Java only has signed types so we have to do
+     * more work to get unsigned ops.
+     *
+     * @param b input byte
+     * @return unsigned int value of byte
+     */
+    protected static final int ui(byte b)
+    {
+<span class="fc" id="L661">        int i = b &amp; 0xFF;</span>
+<span class="fc" id="L662">        return i;</span>
+    }
+
+    /***
+     * Convert byte to unsigned long.
+     * Java only has signed types so we have to do
+     * more work to get unsigned ops
+     *
+     * @param b input byte
+     * @return unsigned long value of byte
+     */
+    protected static final long ul(byte b)
+    {
+<span class="fc" id="L675">        long i = b &amp; 0xFF;</span>
+<span class="fc" id="L676">        return i;</span>
+    }
+
+    /***
+     * Returns details of NTP packet as a string.
+     *
+     * @return details of NTP packet as a string.
+     */
+    @Override
+    public String toString()
+    {
+<span class="fc" id="L687">        return &quot;[&quot; +</span>
+<span class="fc" id="L688">                &quot;version:&quot; + getVersion() +</span>
+<span class="fc" id="L689">                &quot;, mode:&quot; + getMode() +</span>
+<span class="fc" id="L690">                &quot;, poll:&quot; + getPoll() +</span>
+<span class="fc" id="L691">                &quot;, precision:&quot; + getPrecision() +</span>
+<span class="fc" id="L692">                &quot;, delay:&quot; + getRootDelay() +</span>
+<span class="fc" id="L693">                &quot;, dispersion(ms):&quot; + getRootDispersionInMillisDouble() +</span>
+<span class="fc" id="L694">                &quot;, id:&quot; + getReferenceIdString() +</span>
+<span class="fc" id="L695">                &quot;, xmitTime:&quot; + getTransmitTimeStamp().toDateString() +</span>
+<span class="fc" id="L696">                &quot; ]&quot;;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

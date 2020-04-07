@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DotTerminatedMessageReader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.io</a> &gt; <span class="el_source">DotTerminatedMessageReader.java</span></div><h1>DotTerminatedMessageReader.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.io;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+
+/**
+ * DotTerminatedMessageReader is a class used to read messages from a
+ * server that are terminated by a single dot followed by a
+ * &amp;lt;CR&amp;gt;&amp;lt;LF&amp;gt;
+ * sequence and with double dots appearing at the begining of lines which
+ * do not signal end of message yet start with a dot.  Various Internet
+ * protocols such as NNTP and POP3 produce messages of this type.
+ * &lt;p&gt;
+ * This class handles stripping of the duplicate period at the beginning
+ * of lines starting with a period, and ensures you cannot read past the end of the message.
+ * &lt;p&gt;
+ * Note: versions since 3.0 extend BufferedReader rather than Reader,
+ * and no longer change the CRLF into the local EOL. Also only DOT CR LF
+ * acts as EOF.
+ * @version $Id$
+ */
+public final class DotTerminatedMessageReader extends BufferedReader
+{
+    private static final char LF = '\n';
+    private static final char CR = '\r';
+    private static final int DOT = '.';
+
+    private boolean atBeginning;
+    private boolean eof;
+    private boolean seenCR; // was last character CR?
+
+    /**
+     * Creates a DotTerminatedMessageReader that wraps an existing Reader
+     * input source.
+     * @param reader  The Reader input source containing the message.
+     */
+    public DotTerminatedMessageReader(Reader reader)
+    {
+<span class="fc" id="L57">        super(reader);</span>
+        // Assumes input is at start of message
+<span class="fc" id="L59">        atBeginning = true;</span>
+<span class="fc" id="L60">        eof = false;</span>
+<span class="fc" id="L61">    }</span>
+
+    /**
+     * Reads and returns the next character in the message.  If the end of the
+     * message has been reached, returns -1.  Note that a call to this method
+     * may result in multiple reads from the underlying input stream to decode
+     * the message properly (removing doubled dots and so on).  All of
+     * this is transparent to the programmer and is only mentioned for
+     * completeness.
+     * @return The next character in the message. Returns -1 if the end of the
+     *          message has been reached.
+     * @throws IOException If an error occurs while reading the underlying
+     *            stream.
+     */
+    @Override
+    public int read() throws IOException {
+<span class="fc" id="L77">        synchronized (lock) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            if (eof) {</span>
+<span class="fc" id="L79">                return -1; // Don't allow read past EOF</span>
+            }
+<span class="fc" id="L81">            int chint = super.read();</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">            if (chint == -1) { // True EOF</span>
+<span class="nc" id="L83">                eof = true;</span>
+<span class="nc" id="L84">                return -1;</span>
+            }
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            if (atBeginning) {</span>
+<span class="fc" id="L87">                atBeginning = false;</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">                if (chint == DOT) { // Have DOT</span>
+<span class="fc" id="L89">                    mark(2); // need to check for CR LF or DOT</span>
+<span class="fc" id="L90">                    chint = super.read();</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">                    if (chint == -1) { // Should not happen</span>
+                        // new Throwable(&quot;Trailing DOT&quot;).printStackTrace();
+<span class="nc" id="L93">                        eof = true;</span>
+<span class="nc" id="L94">                        return DOT; // return the trailing DOT</span>
+                    }
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                    if (chint == DOT) { // Have DOT DOT</span>
+                        // no need to reset as we want to lose the first DOT
+<span class="fc" id="L98">                        return chint; // i.e. DOT</span>
+                    }
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                    if (chint == CR) { // Have DOT CR</span>
+<span class="fc" id="L101">                        chint = super.read();</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">                        if (chint == -1) { // Still only DOT CR - should not happen</span>
+                            //new Throwable(&quot;Trailing DOT CR&quot;).printStackTrace();
+<span class="nc" id="L104">                            reset(); // So CR is picked up next time</span>
+<span class="nc" id="L105">                            return DOT; // return the trailing DOT</span>
+                        }
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                        if (chint == LF) { // DOT CR LF</span>
+<span class="fc" id="L108">                            atBeginning = true;</span>
+<span class="fc" id="L109">                            eof = true;</span>
+                            // Do we need to clear the mark somehow?
+<span class="fc" id="L111">                            return -1;</span>
+                        }
+                    }
+                    // Should not happen - lone DOT at beginning
+                    //new Throwable(&quot;Lone DOT followed by &quot;+(char)chint).printStackTrace();
+<span class="fc" id="L116">                    reset();</span>
+<span class="fc" id="L117">                    return DOT;</span>
+                } // have DOT
+            } // atBeginning
+
+            // Handle CRLF in normal flow
+<span class="fc bfc" id="L122" title="All 2 branches covered.">            if (seenCR) {</span>
+<span class="fc" id="L123">                seenCR = false;</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                if (chint == LF) {</span>
+<span class="fc" id="L125">                    atBeginning = true;</span>
+                }
+            }
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            if (chint == CR) {</span>
+<span class="fc" id="L129">                seenCR = true;</span>
+            }
+<span class="fc" id="L131">            return chint;</span>
+        }
+    }
+
+
+    /**
+     * Reads the next characters from the message into an array and
+     * returns the number of characters read.  Returns -1 if the end of the
+     * message has been reached.
+     * @param buffer  The character array in which to store the characters.
+     * @return The number of characters read. Returns -1 if the
+     *          end of the message has been reached.
+     * @throws IOException If an error occurs in reading the underlying
+     *            stream.
+     */
+    @Override
+    public int read(char[] buffer) throws IOException
+    {
+<span class="fc" id="L149">        return read(buffer, 0, buffer.length);</span>
+    }
+
+    /**
+     * Reads the next characters from the message into an array and
+     * returns the number of characters read.  Returns -1 if the end of the
+     * message has been reached.  The characters are stored in the array
+     * starting from the given offset and up to the length specified.
+     * @param buffer  The character array in which to store the characters.
+     * @param offset   The offset into the array at which to start storing
+     *              characters.
+     * @param length   The number of characters to read.
+     * @return The number of characters read. Returns -1 if the
+     *          end of the message has been reached.
+     * @throws IOException If an error occurs in reading the underlying
+     *            stream.
+     */
+    @Override
+    public int read(char[] buffer, int offset, int length) throws IOException
+    {
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (length &lt; 1)</span>
+        {
+<span class="nc" id="L171">            return 0;</span>
+        }
+        int ch;
+<span class="fc" id="L174">        synchronized (lock)</span>
+        {
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            if ((ch = read()) == -1)</span>
+            {
+<span class="fc" id="L178">                return -1;</span>
+            }
+
+<span class="fc" id="L181">            int off = offset;</span>
+
+            do
+            {
+<span class="fc" id="L185">                buffer[offset++] = (char) ch;</span>
+            }
+<span class="pc bpc" id="L187" title="1 of 4 branches missed.">            while (--length &gt; 0 &amp;&amp; (ch = read()) != -1);</span>
+
+<span class="fc" id="L189">            return (offset - off);</span>
+        }
+    }
+
+    /**
+     * Closes the message for reading.  This doesn't actually close the
+     * underlying stream.  The underlying stream may still be used for
+     * communicating with the server and therefore is not closed.
+     * &lt;p&gt;
+     * If the end of the message has not yet been reached, this method
+     * will read the remainder of the message until it reaches the end,
+     * so that the underlying stream may continue to be used properly
+     * for communicating with the server.  If you do not fully read
+     * a message, you MUST close it, otherwise your program will likely
+     * hang or behave improperly.
+     * @throws IOException  If an error occurs while reading the
+     *            underlying stream.
+     */
+    @Override
+    public void close() throws IOException
+    {
+<span class="nc" id="L210">        synchronized (lock)</span>
+        {
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (!eof)</span>
+            {
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                while (read() != -1)</span>
+                {
+                    // read to EOF
+                }
+            }
+<span class="nc" id="L219">            eof = true;</span>
+<span class="nc" id="L220">            atBeginning = false;</span>
+        }
+<span class="nc" id="L222">    }</span>
+
+    /**
+     * Read a line of text.
+     * A line is considered to be terminated by carriage return followed immediately by a linefeed.
+     * This contrasts with BufferedReader which also allows other combinations.
+     * @since 3.0
+     */
+    @Override
+    public String readLine() throws IOException {
+<span class="fc" id="L232">        StringBuilder sb = new StringBuilder();</span>
+        int intch;
+<span class="fc" id="L234">        synchronized(lock) { // make thread-safe (hopefully!)</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">            while((intch = read()) != -1)</span>
+            {
+<span class="fc bfc" id="L237" title="All 4 branches covered.">                if (intch == LF &amp;&amp; atBeginning) {</span>
+<span class="fc" id="L238">                    return sb.substring(0, sb.length()-1);</span>
+                }
+<span class="fc" id="L240">                sb.append((char) intch);</span>
+            }
+        }
+<span class="fc" id="L243">        String string = sb.toString();</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">        if (string.length() == 0) { // immediate EOF</span>
+<span class="fc" id="L245">            return null;</span>
+        }
+        // Should not happen - EOF without CRLF
+        //new Throwable(string).printStackTrace();
+<span class="nc" id="L249">        return string;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RCommandClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Apache Commons Net</a> &gt; <a href="index.source.html" class="el_package">org.apache.commons.net.bsd</a> &gt; <span class="el_source">RCommandClient.java</span></div><h1>RCommandClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.commons.net.bsd;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.BindException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+
+import org.apache.commons.net.io.SocketInputStream;
+
+/***
+ * RCommandClient is very similar to
+ * {@link org.apache.commons.net.bsd.RExecClient},
+ * from which it is derived, and implements the rcmd() facility that
+ * first appeared in 4.2BSD Unix.  rcmd() is the facility used by the rsh
+ * (rshell) and other commands to execute a command on another machine
+ * from a trusted host without issuing a password.  The trust relationship
+ * between two machines is established by the contents of a machine's
+ * /etc/hosts.equiv file and a user's .rhosts file.  These files specify
+ * from which hosts and accounts on those hosts rcmd() requests will be
+ * accepted.  The only additional measure for establishing trust is that
+ * all client connections must originate from a port between 512 and 1023.
+ * Consequently, there is an upper limit to the number of rcmd connections
+ * that can be running simultaneously.   The required ports are reserved
+ * ports on Unix systems, and can only be bound by a
+ * process running with root permissions (to accomplish this rsh, rlogin,
+ * and related commands usualy have the suid bit set).  Therefore, on a
+ * Unix system, you will only be able to successfully use the RCommandClient
+ * class if the process runs as root.  However, there is no such restriction
+ * on Windows95 and some other systems.  The security risks are obvious.
+ * However, when carefully used, rcmd() can be very useful when used behind
+ * a firewall.
+ * &lt;p&gt;
+ * As with virtually all of the client classes in org.apache.commons.net, this
+ * class derives from SocketClient.  But it overrides most of its connection
+ * methods so that the local Socket will originate from an acceptable
+ * rshell port.  The way to use RCommandClient is to first connect
+ * to the server, call the {@link #rcommand  rcommand() } method,
+ * and then
+ * fetch the connection's input, output, and optionally error streams.
+ * Interaction with the remote command is controlled entirely through the
+ * I/O streams.  Once you have finished processing the streams, you should
+ * invoke {@link org.apache.commons.net.bsd.RExecClient#disconnect disconnect() }
+ *  to clean up properly.
+ * &lt;p&gt;
+ * By default the standard output and standard error streams of the
+ * remote process are transmitted over the same connection, readable
+ * from the input stream returned by
+ * {@link org.apache.commons.net.bsd.RExecClient#getInputStream getInputStream() }
+ * .  However, it is
+ * possible to tell the rshd daemon to return the standard error
+ * stream over a separate connection, readable from the input stream
+ * returned by {@link org.apache.commons.net.bsd.RExecClient#getErrorStream getErrorStream() }
+ * .  You
+ * can specify that a separate connection should be created for standard
+ * error by setting the boolean &lt;code&gt; separateErrorStream &lt;/code&gt;
+ * parameter of {@link #rcommand  rcommand() } to &lt;code&gt; true &lt;/code&gt;.
+ * The standard input of the remote process can be written to through
+ * the output stream returned by
+ * {@link org.apache.commons.net.bsd.RExecClient#getOutputStream getOutputStream() }
+ * .
+ * @see org.apache.commons.net.SocketClient
+ * @see RExecClient
+ * @see RLoginClient
+ ***/
+
+public class RCommandClient extends RExecClient
+{
+    /***
+     * The default rshell port.  Set to 514 in BSD Unix.
+     ***/
+    public static final int DEFAULT_PORT = 514;
+
+    /***
+     * The smallest port number an rcmd client may use.  By BSD convention
+     * this number is 512.
+     ***/
+    public static final int MIN_CLIENT_PORT = 512;
+
+    /***
+     * The largest port number an rcmd client may use.  By BSD convention
+     * this number is 1023.
+     ***/
+    public static final int MAX_CLIENT_PORT = 1023;
+
+    // Overrides method in RExecClient in order to implement proper
+    // port number limitations.
+    @Override
+    InputStream _createErrorStream() throws IOException
+    {
+        int localPort;
+        ServerSocket server;
+        Socket socket;
+
+<span class="nc" id="L115">        localPort = MAX_CLIENT_PORT;</span>
+<span class="nc" id="L116">        server = null; // Keep compiler from barfing</span>
+
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        for (localPort = MAX_CLIENT_PORT; localPort &gt;= MIN_CLIENT_PORT; --localPort)</span>
+        {
+            try
+            {
+<span class="nc" id="L122">                server = _serverSocketFactory_.createServerSocket(localPort, 1,</span>
+<span class="nc" id="L123">                         getLocalAddress());</span>
+<span class="nc" id="L124">                break; // got a socket</span>
+            }
+<span class="nc" id="L126">            catch (SocketException e)</span>
+            {
+                continue;
+            }
+        }
+
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (server == null) {</span>
+<span class="nc" id="L133">            throw new BindException(&quot;All ports in use.&quot;);</span>
+        }
+
+<span class="nc" id="L136">        _output_.write(Integer.toString(server.getLocalPort()).getBytes(&quot;UTF-8&quot;)); // $NON-NLS</span>
+<span class="nc" id="L137">        _output_.write(NULL_CHAR);</span>
+<span class="nc" id="L138">        _output_.flush();</span>
+
+<span class="nc" id="L140">        socket = server.accept();</span>
+<span class="nc" id="L141">        server.close();</span>
+
+<span class="nc bnc" id="L143" title="All 4 branches missed.">        if (isRemoteVerificationEnabled() &amp;&amp; !verifyRemote(socket))</span>
+        {
+<span class="nc" id="L145">            socket.close();</span>
+<span class="nc" id="L146">            throw new IOException(</span>
+<span class="nc" id="L147">                &quot;Security violation: unexpected connection attempt by &quot; +</span>
+<span class="nc" id="L148">                socket.getInetAddress().getHostAddress());</span>
+        }
+
+<span class="nc" id="L151">        return (new SocketInputStream(socket, socket.getInputStream()));</span>
+    }
+
+    /***
+     * The default RCommandClient constructor.  Initializes the
+     * default port to &lt;code&gt; DEFAULT_PORT &lt;/code&gt;.
+     ***/
+<span class="nc" id="L158">    public RCommandClient()</span>
+    {
+<span class="nc" id="L160">        setDefaultPort(DEFAULT_PORT);</span>
+<span class="nc" id="L161">    }</span>
+
+
+    /***
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the specified local address using a port in a range
+     * acceptable to the BSD rshell daemon.
+     * Before returning, {@link org.apache.commons.net.SocketClient#_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     *
+     * @param host  The remote host.
+     * @param port  The port to connect to on the remote host.
+     * @param localAddr  The local address to use.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws BindException If all acceptable rshell ports are in use.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     ***/
+    public void connect(InetAddress host, int port, InetAddress localAddr)
+    throws SocketException, BindException, IOException
+    {
+        int localPort;
+
+<span class="nc" id="L185">        localPort = MAX_CLIENT_PORT;</span>
+
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        for (localPort = MAX_CLIENT_PORT; localPort &gt;= MIN_CLIENT_PORT; --localPort)</span>
+        {
+            try
+            {
+<span class="nc" id="L191">                _socket_ =</span>
+<span class="nc" id="L192">                    _socketFactory_.createSocket(host, port, localAddr, localPort);</span>
+<span class="nc" id="L193">            }</span>
+<span class="nc" id="L194">            catch (BindException be) {</span>
+<span class="nc" id="L195">                continue;</span>
+            }
+<span class="nc" id="L197">            catch (SocketException e)</span>
+            {
+                continue;
+            }
+            break;
+        }
+
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (localPort &lt; MIN_CLIENT_PORT) {</span>
+<span class="nc" id="L205">            throw new BindException(&quot;All ports in use or insufficient permssion.&quot;);</span>
+        }
+
+<span class="nc" id="L208">        _connectAction_();</span>
+<span class="nc" id="L209">    }</span>
+
+
+
+    /***
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the current host at a port in a range acceptable
+     * to the BSD rshell daemon.
+     * Before returning, {@link org.apache.commons.net.SocketClient#_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     *
+     * @param host  The remote host.
+     * @param port  The port to connect to on the remote host.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws BindException If all acceptable rshell ports are in use.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     ***/
+    @Override
+    public void connect(InetAddress host, int port)
+    throws SocketException, IOException
+    {
+<span class="nc" id="L232">        connect(host, port, InetAddress.getLocalHost());</span>
+<span class="nc" id="L233">    }</span>
+
+
+    /***
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the current host at a port in a range acceptable
+     * to the BSD rshell daemon.
+     * Before returning, {@link org.apache.commons.net.SocketClient#_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     *
+     * @param hostname  The name of the remote host.
+     * @param port  The port to connect to on the remote host.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws BindException If all acceptable rshell ports are in use.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     * @throws UnknownHostException If the hostname cannot be resolved.
+     ***/
+    @Override
+    public void connect(String hostname, int port)
+    throws SocketException, IOException, UnknownHostException
+    {
+<span class="nc" id="L256">        connect(InetAddress.getByName(hostname), port, InetAddress.getLocalHost());</span>
+<span class="nc" id="L257">    }</span>
+
+
+    /***
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the specified local address using a port in a range
+     * acceptable to the BSD rshell daemon.
+     * Before returning, {@link org.apache.commons.net.SocketClient#_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     *
+     * @param hostname  The remote host.
+     * @param port  The port to connect to on the remote host.
+     * @param localAddr  The local address to use.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws BindException If all acceptable rshell ports are in use.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     ***/
+    public void connect(String hostname, int port, InetAddress localAddr)
+    throws SocketException, IOException
+    {
+<span class="nc" id="L279">        connect(InetAddress.getByName(hostname), port, localAddr);</span>
+<span class="nc" id="L280">    }</span>
+
+
+    /***
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the specified local address and port. The
+     * local port must lie between &lt;code&gt; MIN_CLIENT_PORT &lt;/code&gt; and
+     * &lt;code&gt; MAX_CLIENT_PORT &lt;/code&gt; or an IllegalArgumentException will
+     * be thrown.
+     * Before returning, {@link org.apache.commons.net.SocketClient#_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     *
+     * @param host  The remote host.
+     * @param port  The port to connect to on the remote host.
+     * @param localAddr  The local address to use.
+     * @param localPort  The local port to use.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     * @throws IllegalArgumentException If an invalid local port number
+     *            is specified.
+     ***/
+    @Override
+    public void connect(InetAddress host, int port,
+                        InetAddress localAddr, int localPort)
+    throws SocketException, IOException, IllegalArgumentException
+    {
+<span class="nc bnc" id="L308" title="All 4 branches missed.">        if (localPort &lt; MIN_CLIENT_PORT || localPort &gt; MAX_CLIENT_PORT) {</span>
+<span class="nc" id="L309">            throw new IllegalArgumentException(&quot;Invalid port number &quot; + localPort);</span>
+        }
+<span class="nc" id="L311">        super.connect(host, port, localAddr, localPort);</span>
+<span class="nc" id="L312">    }</span>
+
+
+    /***
+     * Opens a Socket connected to a remote host at the specified port and
+     * originating from the specified local address and port. The
+     * local port must lie between &lt;code&gt; MIN_CLIENT_PORT &lt;/code&gt; and
+     * &lt;code&gt; MAX_CLIENT_PORT &lt;/code&gt; or an IllegalArgumentException will
+     * be thrown.
+     * Before returning, {@link org.apache.commons.net.SocketClient#_connectAction_  _connectAction_() }
+     * is called to perform connection initialization actions.
+     *
+     * @param hostname  The name of the remote host.
+     * @param port  The port to connect to on the remote host.
+     * @param localAddr  The local address to use.
+     * @param localPort  The local port to use.
+     * @throws SocketException If the socket timeout could not be set.
+     * @throws IOException If the socket could not be opened.  In most
+     *  cases you will only want to catch IOException since SocketException is
+     *  derived from it.
+     * @throws UnknownHostException If the hostname cannot be resolved.
+     * @throws IllegalArgumentException If an invalid local port number
+     *            is specified.
+     ***/
+    @Override
+    public void connect(String hostname, int port,
+                        InetAddress localAddr, int localPort)
+    throws SocketException, IOException, IllegalArgumentException, UnknownHostException
+    {
+<span class="nc bnc" id="L341" title="All 4 branches missed.">        if (localPort &lt; MIN_CLIENT_PORT || localPort &gt; MAX_CLIENT_PORT) {</span>
+<span class="nc" id="L342">            throw new IllegalArgumentException(&quot;Invalid port number &quot; + localPort);</span>
+        }
+<span class="nc" id="L344">        super.connect(hostname, port, localAddr, localPort);</span>
+<span class="nc" id="L345">    }</span>
+
+
+    /***
+     * Remotely executes a command through the rshd daemon on the server
+     * to which the RCommandClient is connected.  After calling this method,
+     * you may interact with the remote process through its standard input,
+     * output, and error streams.  You will typically be able to detect
+     * the termination of the remote process after reaching end of file
+     * on its standard output (accessible through
+     * {@link #getInputStream  getInputStream() }.  Disconnecting
+     * from the server or closing the process streams before reaching
+     * end of file will not necessarily terminate the remote process.
+     * &lt;p&gt;
+     * If a separate error stream is requested, the remote server will
+     * connect to a local socket opened by RCommandClient, providing an
+     * independent stream through which standard error will be transmitted.
+     * The local socket must originate from a secure port (512 - 1023),
+     * and rcommand() ensures that this will be so.
+     * RCommandClient will also do a simple security check when it accepts a
+     * connection for this error stream.  If the connection does not originate
+     * from the remote server, an IOException will be thrown.  This serves as
+     * a simple protection against possible hijacking of the error stream by
+     * an attacker monitoring the rexec() negotiation.  You may disable this
+     * behavior with
+     * {@link org.apache.commons.net.bsd.RExecClient#setRemoteVerificationEnabled setRemoteVerificationEnabled()}
+     * .
+     * &lt;p&gt;
+     * @param localUsername  The user account on the local machine that is
+     *        requesting the command execution.
+     * @param remoteUsername  The account name on the server through which to
+     *        execute the command.
+     * @param command   The command, including any arguments, to execute.
+     * @param separateErrorStream True if you would like the standard error
+     *        to be transmitted through a different stream than standard output.
+     *        False if not.
+     * @throws IOException If the rcommand() attempt fails.  The exception
+     *            will contain a message indicating the nature of the failure.
+     ***/
+    public void rcommand(String localUsername, String remoteUsername,
+                         String command, boolean separateErrorStream)
+    throws IOException
+    {
+<span class="nc" id="L388">        rexec(localUsername, remoteUsername, command, separateErrorStream);</span>
+<span class="nc" id="L389">    }</span>
+
+
+    /***
+     * Same as
+     * &lt;code&gt; rcommand(localUsername, remoteUsername, command, false); &lt;/code&gt;
+     * @param localUsername the local user
+     * @param remoteUsername the remote user
+     * @param command the command
+     * @throws IOException on error
+     ***/
+    public void rcommand(String localUsername, String remoteUsername,
+                         String command)
+    throws IOException
+    {
+<span class="nc" id="L404">        rcommand(localUsername, remoteUsername, command, false);</span>
+<span class="nc" id="L405">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

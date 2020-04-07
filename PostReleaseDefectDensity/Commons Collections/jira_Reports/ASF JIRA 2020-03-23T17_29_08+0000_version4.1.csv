@@ -1,0 +1,862 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Fix Version/s,Component/s,Due Date,Votes,Labels,Labels,Labels,Description,Environment,Log Work,Log Work,Log Work,Original Estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Attachment,Custom field (Affects version (Component)),Custom field (Attachment count),Custom field (Blog - New Blog Administrators),Custom field (Blog - New Blog PMC),Custom field (Blog - Write access),Custom field (Blog Administrator?),Custom field (Blogs - Admin for blog),Custom field (Blogs - Email Address),Custom field (Blogs - Existing Blog Access Level),Custom field (Blogs - Existing Blog Name),Custom field (Blogs - New Blog Write Access),Custom field (Blogs - Username),Custom field (Bug Category),Custom field (Bugzilla - Email Notification Address),Custom field (Bugzilla - List of usernames),Custom field (Bugzilla - PMC Name),Custom field (Bugzilla - Project Name),Custom field (Bugzilla Id),Custom field (Bugzilla Id),Custom field (Change Category),Custom field (Complexity),Custom field (Date of First Response),Custom field (Discovered By),Custom field (Docs Text),Custom field (Enable Automatic Patch Review),Custom field (Epic Link),Custom field (Estimated Complexity),Custom field (Evidence Of Open Source Adoption),Custom field (Evidence Of Registration),Custom field (Evidence Of Use On World Wide Web),Custom field (Existing GitBox Approval),Custom field (External issue ID),Custom field (External issue URL),Custom field (Fix version (Component)),Custom field (Flags),Custom field (Git Notification Mailing List),Custom field (Git Repository Import Path),Custom field (Git Repository Name),Custom field (Git Repository Type),Custom field (GitHub Options),Custom field (Github Integration),Custom field (Github Integrations - Other),Custom field (Global Rank),Custom field (INFRA - Subversion Repository Path),Custom field (Initial Confluence Contributors),Custom field (Last public comment date),Custom field (Level of effort),Custom field (Machine Readable Info),Custom field (New-TLP-TLPName),Custom field (Priority),Custom field (Project),Custom field (Protected Branch),Custom field (Rank),Custom field (Rank (Obsolete)),Custom field (Review Date),Custom field (Reviewer),Custom field (Severity),Custom field (Severity),Custom field (Skill Level),Custom field (Skill Level),Custom field (Source Control Link),Custom field (Space Description),Custom field (Space Key),Custom field (Space Name),Custom field (Tags),Custom field (Test and Documentation Plan),Custom field (Testcase included),Custom field (Tester),Custom field (Workaround),Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment
+"""union"" method is resulting in data loss",COLLECTIONS-657,13103306,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Critical,Invalid,,kibertoad,kibertoad,19/Sep/17 18:12,19/Sep/17 18:38,23/Mar/20 17:28,19/Sep/17 18:38,4.1,,,,,,0,,,,"Create 2 instances of StringReader from strings (1 and 2), put them into a list A.
+Create empty list B.
+Call CollectionUtils.union(A, B);
+
+Expected result: [1, 2]
+Actual result: [1, 1].",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Sep 19 18:38:45 UTC 2017,,,,,,,"0|i3k8wv:",9223372036854775807,,,,,,,,,,,,,,,,"19/Sep/17 18:38;kibertoad;After digging in further to create a reproduction test, figured out it's actually an issue with how equals is implemented in Drools library.",,,,,,,
+IteratorUtils.chainedIterator() Performance Degrades,COLLECTIONS-722,13241952,Bug,Open,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,,,dragonmacher,dragonmacher,27/Jun/19 14:10,01/Nov/19 22:17,23/Mar/20 17:29,,4.1,,,,,,0,,,,"IteratorUtils.chainedIterator() performance degrades when chaining iterators with chained iterators.   The slowdown appears to be exponential, based upon the number of chains created.  The attached test shows the issue.  
+
+As a reference, the same test below works as expected using Google's Guava Iterator.concat() functionality.   It is possible I am misusing the API, but the javadoc did not indicate as much.
+
+ ",,,,,,,,,,,,,"27/Jun/19 14:09;dragonmacher;IteratorUtilsTest.java;https://issues.apache.org/jira/secure/attachment/12973087/IteratorUtilsTest.java",,1.0,,,,,,,,,,,,,,,,,,,,2019-11-01 09:07:39.478,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Nov 01 22:17:55 UTC 2019,,,,,,,"0|z045w8:",9223372036854775807,,,,,,,,,,,,,,,,"01/Nov/19 09:07;Guoping1;hi [~dragonmacher]， I think you misusing the API in testcase ,cause IteratorUtils.chainedIterator(iterator, next) will create a new object ,so if you create 50 times , that you will get a 50 deepth object .
+
+below is a new test
+{code:java}
+//代码占位符
+@Test
+public void testIteratorUtils_ChainedIteartorPerformance() {
+
+    Map<Integer, List<Integer>> source = new HashMap<>();
+    for (int i = 0; i < 50; i++) {
+        source.put(i, Arrays.asList(1, 2, 3));
+    }
+
+
+    Iterator<Integer> iterator = IteratorUtils.emptyIterator();
+    IteratorChain iteratorChain = (IteratorChain)IteratorUtils.chainedIterator(iterator);
+    Set<Entry<Integer, List<Integer>>> entries = source.entrySet();
+    for (Entry<Integer, List<Integer>> entry : entries) {
+        Iterator<Integer> next = entry.getValue().iterator();
+        iteratorChain.addIterator(next);
+    }
+
+    while (iteratorChain.hasNext()) {
+        System.out.println(iteratorChain.next());
+    }
+}
+{code}","01/Nov/19 22:17;dragonmacher;Hey [~Guoping1],
+
+ 
+
+Your example shows one way to use the IteratorChain more efficiently.
+
+I am no longer using the API.  The issue for me is that tried to use the API via the IteratorUtils chainedIterator method, which returns an Iterator.   Since it returns an iterator, my natural inclination was to chain that iterator with any future iterators.  I'm sure the IteratorUtils can be updated to work as expected.   If it cannot for some reason, then the javadocs should be updated to indicate the correct way to use the API.  At least that is how I would handle it.",,,,,,
+functors.InvokerTransformer backward incompatibility bug,COLLECTIONS-721,13239832,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Not A Bug,,lingchao,lingchao,16/Jun/19 21:48,24/Jul/19 18:57,23/Mar/20 17:29,24/Jul/19 18:56,4.1,4.2,4.3,,,,0,performance,,,"The following code snippets throw a NotSerializableException. It works well before commons-collections4 4.0 and commons-collection3. When I update it to 4.1 or newer versions, it failed.
+
+
+{code:java}
+	@Test
+	public void Demo() throws IOException{
+		InvokerTransformer transformer = new InvokerTransformer(""toString"", new Class[]{}, new Object[]{});
+        Queue priorityQueue = new PriorityQueue(2, new TransformingComparator(transformer));
+        priorityQueue.add(1);
+        
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bout);
+        out.writeObject(priorityQueue);
+		
+		}
+{code}
+",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-07-24 03:20:46.377,,,false,,,,,,,,,,Important,,,,,,,,9223372036854775807,,,Wed Jul 24 18:57:00 UTC 2019,,,,,,,"0|z03suo:",9223372036854775807,,,,,,,,,,,,,,,,"24/Jul/19 03:20;oota;InvokerTransformerクラスから﻿﻿Serializableの実装を外したことが原因です。
+JavaDocコメントでは脆弱性対応のためとあります。","24/Jul/19 03:33;oota;The documents translated into English at the translation site are as follows:
+It is caused by removing the implementation of Serializable from the InvokerTransformer class.
+JavaDoc comments are for vulnerability support.","24/Jul/19 18:57;ggregory;Serializable was removed for -COLLECTIONS-580.-",,,,,
+ObjectInputFilter REJECTED: class org.apache.commons.collections.functors.InstantiateFactory,COLLECTIONS-717,13234318,Bug,Open,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,,,kirubakaran,kirubakaran,20/May/19 13:31,05/Jul/19 15:24,23/Mar/20 17:29,,4.1,,,,Functor,,0,,,,"we have an object rejection issue with latest version of common collection for the class InstantiateFactory
+
+we have set system property to enable unsafe serialization= true but still we have object rejection for org.apache.commons.collections.functors.InstantiateFactory.
+
+can you please help us to resolve the issue.
+
+Error log:
+
+DOMAIN] > <BEA-000000> <ObjectInputFilter REJECTED: class org.apache.commons.collections.functors.InstantiateFactory, array length: -1, nRefs: 3, depth: 2, bytes: 229, ex: n/a>
+
+####<May 8, 2019 1:08:43,859 PM EDT> <Error> <RJVM> <nygindapnp613.us.db.com> <MS1> <ExecuteThread: '2' for queue: 'weblogic.socket.Muxer'> <<WLS Kernel>> <> <a8f22bc1-d077-4f1b-be08-7677cfc592c6-00000005> <1557335323859> <[severity-value: 8] [rid: 0] [partition-id: 0] [partition-name: DOMAIN] > <BEA-000503> <Incoming message header or abbreviation processing failed.
+
+ java.io.InvalidClassException: filter status: REJECTED
+
+java.io.InvalidClassException: filter status: REJECTED
+
+        at java.io.ObjectInputStream.filterCheck(ObjectInputStream.java:1255)
+
+        at java.io.ObjectInputStream.readNonProxyDesc(ObjectInputStream.java:1878)
+
+        at java.io.ObjectInputStream.readClassDesc(ObjectInputStream.java:1751)
+
+        at java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1560)
+
+        at java.io.ObjectInputStream.readObject(ObjectInputStream.java:431)
+
+        at weblogic.rjvm.ClassTableEntry.readExternal(ClassTableEntry.java:106)
+
+        at java.io.ObjectInputStream.readExternalData(ObjectInputStream.java:2118)
+
+        at java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:2067)
+
+        at java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1573)
+
+        at java.io.ObjectInputStream.readObject(ObjectInputStream.java:431)
+
+        at weblogic.rjvm.InboundMsgAbbrev.readObject(InboundMsgAbbrev.java:73)
+
+        at weblogic.rjvm.InboundMsgAbbrev.read(InboundMsgAbbrev.java:45)
+
+        at weblogic.rjvm.MsgAbbrevJVMConnection.readMsgAbbrevs(MsgAbbrevJVMConnection.java:324)
+
+        at weblogic.rjvm.MsgAbbrevInputStream.init(MsgAbbrevInputStream.java:219)
+
+        at weblogic.rjvm.MsgAbbrevJVMConnection.dispatch(MsgAbbrevJVMConnection.java:556)
+
+        at weblogic.rjvm.t3.MuxableSocketT3.dispatch(MuxableSocketT3.java:658)
+
+        at weblogic.socket.BaseAbstractMuxableSocket.dispatch(BaseAbstractMuxableSocket.java:397)
+
+        at weblogic.socket.SocketMuxer.readReadySocketOnce(SocketMuxer.java:981)
+
+        at weblogic.socket.SocketMuxer.readReadySocket(SocketMuxer.java:917)
+
+        at weblogic.socket.PosixSocketMuxer.processSockets(PosixSocketMuxer.java:171)
+
+        at weblogic.socket.SocketReaderRequest.run(SocketReaderRequest.java:30)
+
+        at weblogic.socket.SocketReaderRequest.execute(SocketReaderRequest.java:43)
+
+        at weblogic.kernel.ExecuteThread.execute(ExecuteThread.java:147)
+
+      at weblogic.kernel.ExecuteThread.run(ExecuteThread.java:119)",WebLogic 12.2.1.3 server,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-07-05 15:24:52.46,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Jul 05 15:24:52 UTC 2019,,,,,,,"0|z02uxs:",9223372036854775807,,,,,,,,,,,,,,,,"05/Jul/19 15:24;ggregory;[~kirubakaran] Please provide a unit test in a GitHub PR so we can reproduce.",,,,,,,
+ListUtils.partition potential integer overflow,COLLECTIONS-673,13135817,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Fixed,,jmark,jmark,02/Feb/18 17:18,12/Jun/18 21:45,23/Mar/20 17:29,12/Jun/18 21:45,4.1,,,4.2,List,,0,,,,"When calling {{ListUtils.partition()}} with a large size and large list, it is possible that an integer overflow will occur in the {{size()}} method that causes incorrect behavior. This will occur when using a size that, when added to list.size() will be larger than {{Integer.MAX_VALUE}}
+
+Current version of Guava's {{Lists.partition()}} handle this correctly, so perhaps the code for {{ListUtils.partition()}} needs to be updated based on the latest Guava code.
+
+A simple illustration of this:
+{code}
+List<String> aList = Arrays.asList(""1"", ""2"", ""3"", ""4"", ""5"");
+List<List<String>> partitioned = ListUtils.partition(aList, Integer.MAX_VALUE);
+System.out.println(""Number of partitions: "" + partitioned.size());
+for(List<String> l : partitioned)  {
+     System.out.println(l);
+}
+{code}
+
+The above code works correctly when using Guava's {{Lists.partition()}} instead.",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2018-02-03 01:03:04.001,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Jun 12 21:45:28 UTC 2018,,,,,,,"0|i3ppz3:",9223372036854775807,,,,,,,,,,,,,,,,"03/Feb/18 01:03;ggregory;Thank for your report [~jmark].
+
+We welcome patches, with unit tests of course! :)","09/Jun/18 17:33;githubbot;GitHub user sfuhrm opened a pull request:
+
+    https://github.com/apache/commons-collections/pull/37
+
+    COLLECTIONS-673: Fix inspired by the Guava partition() implementation
+
+    A fix for the COLLECTIONS-673 bug and a unit test proving the fix for the shown defect.
+    
+    See https://issues.apache.org/jira/browse/COLLECTIONS-673
+
+You can merge this pull request into a Git repository by running:
+
+    $ git pull https://github.com/sfuhrm/commons-collections COLLECTIONS-673
+
+Alternatively you can review and apply these changes as the patch at:
+
+    https://github.com/apache/commons-collections/pull/37.patch
+
+To close this pull request, make a commit to your master/trunk branch
+with (at least) the following in the commit message:
+
+    This closes #37
+    
+----
+commit faf27f611f4429c77a800124b5fb6f641f871c0f
+Author: Stephan Fuhrmann <s@...>
+Date:   2018-06-09T17:30:13Z
+
+    COLLECTIONS-673: Fix inspired by the Guava partition() implementation
+
+----
+","09/Jun/18 17:33;githubbot;GitHub user sfuhrm opened a pull request:
+
+    https://github.com/apache/commons-collections/pull/37
+
+    COLLECTIONS-673: Fix inspired by the Guava partition() implementation
+
+    A fix for the COLLECTIONS-673 bug and a unit test proving the fix for the shown defect.
+    
+    See https://issues.apache.org/jira/browse/COLLECTIONS-673
+
+You can merge this pull request into a Git repository by running:
+
+    $ git pull https://github.com/sfuhrm/commons-collections COLLECTIONS-673
+
+Alternatively you can review and apply these changes as the patch at:
+
+    https://github.com/apache/commons-collections/pull/37.patch
+
+To close this pull request, make a commit to your master/trunk branch
+with (at least) the following in the commit message:
+
+    This closes #37
+    
+----
+commit faf27f611f4429c77a800124b5fb6f641f871c0f
+Author: Stephan Fuhrmann <s@...>
+Date:   2018-06-09T17:30:13Z
+
+    COLLECTIONS-673: Fix inspired by the Guava partition() implementation
+
+----
+","09/Jun/18 17:37;githubbot;Github user coveralls commented on the issue:
+
+    https://github.com/apache/commons-collections/pull/37
+  
+    
+    [![Coverage Status](https://coveralls.io/builds/17407790/badge)](https://coveralls.io/builds/17407790)
+    
+    Coverage increased (+0.007%) to 86.582% when pulling **faf27f611f4429c77a800124b5fb6f641f871c0f on sfuhrm:COLLECTIONS-673** into **13ba1cc91ea441ab012fa4e9724fbca397f1b1cf on apache:master**.
+
+","12/Jun/18 21:44;githubbot;Github user asfgit closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/37
+","12/Jun/18 21:44;githubbot;Github user asfgit closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/37
+","12/Jun/18 21:45;ggregory;Thank you for your patch, please verify and close.",
+Intermittent test failures in Windows for HashSetValuedHashMap,COLLECTIONS-661,13106660,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Fixed,kinow,kinow,kinow,03/Oct/17 09:54,12/Oct/17 06:31,23/Mar/20 17:29,12/Oct/17 06:31,4.1,,,4.2,Map,,0,,,,"The collection HashSetValuedHashMap was added in 4.1. On Windows, test failures are not so common on JVM 8. But on Linux they are harder to happen (but still do [1], [2]).
+
+When using Windows and JVM 8, running tests on Eclipse, or Maven fail. But debugging on Windows with Eclipse sometimes work. Indicating it may be due to a concurrency issue, where debugging adds some extra time hiding the real issue.
+
+I have a few ideas of where/why it could be happening, but am without a Windows box for a few days as I'm travelling. I'm reading the codebase in the meantime, but if anybody feels like working on it, feel free to chime in and suggest a fix/patch.
+
+[1] https://travis-ci.org/apache/commons-collections/jobs/282169803
+[2] http://markmail.org/thread/exwm7ggjtxzbtlkd",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-10-03 18:37:16.012,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Oct 12 06:29:56 UTC 2017,,,,,,,"0|i3kthr:",9223372036854775807,,,,,,,,,,,,,,,,"03/Oct/17 18:37;ggregory;Could this be related to this note in {{Object.hashCode(Object)}}:
+{code:java}
+     * <li>It is <em>not</em> required that if two objects are unequal
+     *     according to the {@link java.lang.Object#equals(java.lang.Object)}
+     *     method, then calling the {@code hashCode} method on each of the
+     *     two objects must produce distinct integer results.  However, the
+     *     programmer should be aware that producing distinct integer results
+     *     for unequal objects may improve the performance of hash tables.
+{code}
+","11/Oct/17 07:37;githubbot;GitHub user kinow opened a pull request:
+
+    https://github.com/apache/commons-collections/pull/28
+
+    COLLECTIONS-661: fix for concurrency issue in HashSetValuedHashMapTest
+
+    The `getMap()` method, when testing a `HashSetValuedHashMap`, would return an object of this type. Which is an instance of `SetValuedMap`.
+    
+    Running it in debug mode would - most of the times - run the tests and succeed. Running normally - especially on Windows - would result in intermittent, but very frequent, failures.
+    
+    The `getMap()` method sometimes, depending on the order and execution of tests, will be null. So the collection added to the map will be either a `Hashset`, or a `Arrays$ArrayList`. When the types are different, `hashCode()` and `equals()` calls return incorrect values, resulting in the errors we have seen in COLLECTIONS-661.
+    
+    A good solution would be to re-design the tests. The `TestMultiValuedMapAsMap` is testing `MultiValuedMap`'s, which include `HashSetValuedHashMap`. However, some of its methods contain extra logic for when the type under test has some characteristics like being an instance of `SetValuedMap`.
+    
+    It might be possible to come up with a better design, where there are multiple test classes, for `MultiValuedMap`'s that use `SetValuedMap`'s; `MultieValuedMap`'s that use `List`'s, and so it goes.
+    
+    Or we could add a class to the parent class, with a flag defining the type under test. For now, I have used the `makeObject()` method, which returns the collection under test. Then I validate its instance type. There is also a comment above the code to indicate why we are using `makeObject()` and not `getMap()`.
+    
+    It was a fun ticket. Happy to get feedback on better solutions, or feel free to edit this pull request if you have right to it, or merge if you are happy and it has gathered some consensus.
+    
+    Cheers,
+    Bruno
+
+You can merge this pull request into a Git repository by running:
+
+    $ git pull https://github.com/kinow/commons-collections COLLECTIONS-661
+
+Alternatively you can review and apply these changes as the patch at:
+
+    https://github.com/apache/commons-collections/pull/28.patch
+
+To close this pull request, make a commit to your master/trunk branch
+with (at least) the following in the commit message:
+
+    This closes #28
+    
+----
+commit 6e8951ed0325abe3e07e32aded0b27aacdbc1011
+Author: Bruno P. Kinoshita <brunodepaulak@yahoo.com.br>
+Date:   2017-10-11T07:27:25Z
+
+    COLLECTIONS-661: fix for concurrency issue in HashSetValuedHashMapTest
+
+----
+","11/Oct/17 07:37;githubbot;GitHub user kinow opened a pull request:
+
+    https://github.com/apache/commons-collections/pull/28
+
+    COLLECTIONS-661: fix for concurrency issue in HashSetValuedHashMapTest
+
+    The `getMap()` method, when testing a `HashSetValuedHashMap`, would return an object of this type. Which is an instance of `SetValuedMap`.
+    
+    Running it in debug mode would - most of the times - run the tests and succeed. Running normally - especially on Windows - would result in intermittent, but very frequent, failures.
+    
+    The `getMap()` method sometimes, depending on the order and execution of tests, will be null. So the collection added to the map will be either a `Hashset`, or a `Arrays$ArrayList`. When the types are different, `hashCode()` and `equals()` calls return incorrect values, resulting in the errors we have seen in COLLECTIONS-661.
+    
+    A good solution would be to re-design the tests. The `TestMultiValuedMapAsMap` is testing `MultiValuedMap`'s, which include `HashSetValuedHashMap`. However, some of its methods contain extra logic for when the type under test has some characteristics like being an instance of `SetValuedMap`.
+    
+    It might be possible to come up with a better design, where there are multiple test classes, for `MultiValuedMap`'s that use `SetValuedMap`'s; `MultieValuedMap`'s that use `List`'s, and so it goes.
+    
+    Or we could add a class to the parent class, with a flag defining the type under test. For now, I have used the `makeObject()` method, which returns the collection under test. Then I validate its instance type. There is also a comment above the code to indicate why we are using `makeObject()` and not `getMap()`.
+    
+    It was a fun ticket. Happy to get feedback on better solutions, or feel free to edit this pull request if you have right to it, or merge if you are happy and it has gathered some consensus.
+    
+    Cheers,
+    Bruno
+
+You can merge this pull request into a Git repository by running:
+
+    $ git pull https://github.com/kinow/commons-collections COLLECTIONS-661
+
+Alternatively you can review and apply these changes as the patch at:
+
+    https://github.com/apache/commons-collections/pull/28.patch
+
+To close this pull request, make a commit to your master/trunk branch
+with (at least) the following in the commit message:
+
+    This closes #28
+    
+----
+commit 6e8951ed0325abe3e07e32aded0b27aacdbc1011
+Author: Bruno P. Kinoshita <brunodepaulak@yahoo.com.br>
+Date:   2017-10-11T07:27:25Z
+
+    COLLECTIONS-661: fix for concurrency issue in HashSetValuedHashMapTest
+
+----
+","11/Oct/17 07:40;githubbot;Github user coveralls commented on the issue:
+
+    https://github.com/apache/commons-collections/pull/28
+  
+    
+    [![Coverage Status](https://coveralls.io/builds/13663731/badge)](https://coveralls.io/builds/13663731)
+    
+    Coverage increased (+0.008%) to 85.126% when pulling **6e8951ed0325abe3e07e32aded0b27aacdbc1011 on kinow:COLLECTIONS-661** into **1d21a49c27d9eab8d02785a783fcfba387a3e8e1 on apache:master**.
+
+","12/Oct/17 06:29;githubbot;Github user kinow commented on the issue:
+
+    https://github.com/apache/commons-collections/pull/28
+  
+    Merged inhttps://github.com/apache/commons-collections/commit/eed8a7adb3de7441751e846f4a75d110dd205f23. Closing it.
+","12/Oct/17 06:29;githubbot;Github user kinow closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/28
+","12/Oct/17 06:29;githubbot;Github user kinow closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/28
+",
+PatriciaTrie prefixMap clear throws NullPointerException,COLLECTIONS-586,12958267,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Fixed,,shailender.bathula@tvnz.co.nz,shailender.bathula@tvnz.co.nz,12/Apr/16 21:59,18/Jul/17 18:56,23/Mar/20 17:29,04/Aug/16 17:33,4.1,,,,,,0,,,,"Clearing all entries of a prefixMap returned by PatriciaTrie using the {{clear}} method throws a NullPointerException. The workaround of removing each entry using the {{remove}} method seems to work.
+
+Here are the test cases for the bug and the workaround:
+
+{code:java}
+public class PatriciaTrieTest {
+
+    private Trie<String, Integer> trie;
+
+    @Before
+    public void setUp() {
+        trie = new PatriciaTrie<Integer>();
+        trie.put(""Anna"", 1);
+        trie.put(""Anael"", 2);
+        trie.put(""Analu"", 3);
+        trie.put(""Andreas"", 4);
+        trie.put(""Andrea"", 5);
+        trie.put(""Andres"", 6);
+        trie.put(""Anatole"", 7);
+    }
+
+    @Test
+    public void testPrefixMapClear() {
+        SortedMap<String, Integer> prefixMap = trie.prefixMap(""And"");
+        assertEquals(new HashSet<>(Arrays.asList(""Andrea"", ""Andreas"", ""Andres"")), prefixMap.keySet());
+        assertEquals(Arrays.asList(5, 4, 6), new ArrayList<>(prefixMap.values()));
+
+        prefixMap.clear();
+        assertTrue(prefixMap.keySet().isEmpty());
+        assertTrue(prefixMap.values().isEmpty());
+        assertEquals(new HashSet<>(Arrays.asList(""Anael"", ""Analu"", ""Anatole"", ""Anna"")), trie.keySet());
+        assertEquals(Arrays.asList(2, 3, 7, 1), new ArrayList<>(trie.values()));
+    }
+
+    @Test
+    public void testPrefixMapClearUsingRemove() {
+        SortedMap<String, Integer> prefixMap = trie.prefixMap(""And"");
+        assertEquals(new HashSet<>(Arrays.asList(""Andrea"", ""Andreas"", ""Andres"")), prefixMap.keySet());
+        assertEquals(Arrays.asList(5, 4, 6), new ArrayList<>(prefixMap.values()));
+
+        Set<String> keys = new HashSet<String>(prefixMap.keySet());
+        for (final String key : keys) {
+            prefixMap.remove(key);
+        }
+        assertTrue(prefixMap.keySet().isEmpty());
+        assertTrue(prefixMap.values().isEmpty());
+        assertEquals(new HashSet<>(Arrays.asList(""Anael"", ""Analu"", ""Anatole"", ""Anna"")), trie.keySet());
+        assertEquals(Arrays.asList(2, 3, 7, 1), new ArrayList<>(trie.values()));
+    }
+
+}
+{code}
+
+The stacktrace of the NullPointerException thrown by the {{testPrefixMapClear}} test case is:
+{noformat}
+java.lang.NullPointerException
+	at org.apache.commons.collections4.trie.AbstractPatriciaTrie$PrefixRangeEntrySet$EntryIterator.remove(AbstractPatriciaTrie.java:2370)
+	at java.util.AbstractCollection.clear(AbstractCollection.java:432)
+	at java.util.AbstractMap.clear(AbstractMap.java:288)
+	at PatriciaTrieTest.testPrefixMapClear(PatriciaTrieTest.java:39)
+{noformat}",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-08-04 16:00:10.178,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Jul 18 18:56:02 UTC 2017,,,,,,,"0|i2w0vz:",9223372036854775807,,,,,,,,,,,,,,,,"04/Aug/16 16:00;githubbot;GitHub user marko-bekhta opened a pull request:
+
+    https://github.com/apache/commons-collections/pull/18
+
+    COLLECTIONS-586 PatriciaTrie prefixMap clear throws NullPointerException
+
+    added unit tests for the case mentioned in the issue and overrode clear method so it is not throwing exceptions
+
+You can merge this pull request into a Git repository by running:
+
+    $ git pull https://github.com/marko-bekhta/commons-collections trunk
+
+Alternatively you can review and apply these changes as the patch at:
+
+    https://github.com/apache/commons-collections/pull/18.patch
+
+To close this pull request, make a commit to your master/trunk branch
+with (at least) the following in the commit message:
+
+    This closes #18
+    
+----
+commit 3627b954830acbe45ea08e9e1be31738ee759422
+Author: marko.bekhta <markob@prykladna.lviv.ua>
+Date:   2016-08-04T15:58:18Z
+
+    COLLECTIONS-586 PatriciaTrie prefixMap clear throws NullPointerException
+    
+    added unit tests for the case mentioned in the issue and overrode clear method so it is not throwing exceptions
+
+----
+","04/Aug/16 17:33;ggregory;Please verify and close. This closes #18.","05/Aug/16 00:29;shailender.bathula@tvnz.co.nz;Closing based on the unit tests passing in https://github.com/marko-bekhta/commons-collections 
+
+Thanks","17/Jul/17 18:22;githubbot;Github user asfgit closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/18
+","17/Jul/17 18:22;githubbot;Github user asfgit closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/18
+","18/Jul/17 12:49;githubbot;Github user chtompki commented on the issue:
+
+    https://github.com/apache/commons-collections/pull/18
+  
+    @marko-bekhta - Do you mind rebasing to the `master` branch, and re-opening this pull request?
+","18/Jul/17 18:56;githubbot;Github user marko-bekhta commented on the issue:
+
+    https://github.com/apache/commons-collections/pull/18
+  
+    Hi @chtompki there seems nothing to rebase now. The patch was copied and applied here 
+    https://github.com/apache/commons-collections/commit/a270ff62852e62b5ac0f943a7e57292a72b77271
+    let me know if anything else is needed. Thanks!
+",
+ListOrderedSet remove(),COLLECTIONS-595,13007463,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Not A Bug,,maleven,maleven,25/Sep/16 21:08,24/May/17 09:52,23/Mar/20 17:29,24/May/17 09:52,4.1,,,,Set,,0,,,,"Hello Apache,
+
+I have a class which overrides equals() and hashCode().
+I create a ListOrderedSet<MyClass> mySet= new ListOrderedSet<MyClass>(), and add objects to it:
+mySet.add(obj1);
+etc.
+
+Each object is initialized in the constructor with two properties first. The other properties are set afterwards, when
+they are already contained in the ListOrderedSet. After I change/add some properties, then if I do mySet.contains(obj1), false is returned.
+I read about that when a hashmap is created with the objects inside and then changing the objects inside it does not change
+the hasmap's internal hashcode for the objects or something like that.
+
+These properties are found in the equals and hashcode. (When not there is no issue.).
+
+The following happens. If I still want to remove an object which was changed afterwards, in the method: public E remove(final int index),
+inside public E remove(final int index) false is returned. But the object is still removed and in the debugger the following can be seen:
+
+DEBUG Info:
+
+this.collections.map.size == 5 (internal HashMap)
+this.collections.setOrder.size == 4. (internal ArrayList)
+
+Afterwards if I print the list with the overrided toString() method IndexOutOfBoundsException is thrown when getting the size of mySet
+via mySet.size(), but not when I use an iterator to count the objects in the set.
+
+{code:java}
+    public int getSize() {
+    	
+    	OrderedIterator it = mySet.iterator();
+    	int i = 0;
+    	while(it.hasNext()){
+    		
+    		it.next();
+		i++;
+    		
+    	}
+//if i return i then the items are 4, when returning memorySet.size(), the items are 5.
+//    	return i;
+        return mySet.size();
+
+    }
+
+    @Override
+    public String toString() {
+
+        String toReturn = ""\n"";
+ 
+
+        for (int i = 0; i < getSize(); i++) {
+
+
+            toReturn = toReturn + mySet.get(i) + ""\n"";
+
+
+        }
+        return toReturn;
+
+    }
+{code}
+
+So my question is: is this a bug or is it because of my changing/updating the objects in the list, and why if it returns false when removing it got deleted anyway?
+Should it not got deleted to start with? 
+
+Thank you for your effort.
+
+P.S. I am a self taught programmer. It's my first time sending a bug issue, maybe it's a bit long or I did not send with it other information I should have.
+","Windows 10, Eclipse Neon Release (4.6.0)",,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-10-28 16:57:20.091,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Wed May 24 09:52:13 UTC 2017,,,,,,,"0|i34267:",9223372036854775807,,,,,,,,,,,,,,,,"28/Oct/16 16:57;Xaerxess;If I understand correctly, you modify elements of your type {{MyClass}} after putting them into set? If so, you're violating set contract[1], which expects immutable elements (or at least in terms of equals and hashCode):
+
+{quote}
+Note: Great care must be exercised if mutable objects are used as set elements. The behavior of a set is not specified if the value of an object is changed in a manner that affects equals comparisons while the object is an element in the set. A special case of this prohibition is that it is not permissible for a set to contain itself as an element.
+{quote}
+
+[1]: https://docs.oracle.com/javase/8/docs/api/java/util/Set.html","24/May/17 09:52;kinow;+1 to [~Xaerxess]'s comment. Also think it is not a bug in the code, but rather the way you are using the class.
+
+The class Javadoc also hints on that direction.
+
+>This class cannot implement the List interface directly as various interface methods (notably equals/hashCode) are incompatible with a set.
+
+Which indicates this class' behaviour is closer related to a Set, rather than a List.
+
+Marking as not a defect and resolving the issue.",,,,,,
+Deserializing an AbstractHashedMap expands the hash table exponentially,COLLECTIONS-584,12921732,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Major,Invalid,,orium,orium,14/Dec/15 18:08,14/Dec/15 22:49,23/Mar/20 17:29,14/Dec/15 18:51,4.1,,,,,,0,,,,"When deserializing an {{AbstractHashedMap}} the size of the hashtable will be doubled at each element inserted because {{threshold}} = 0, so this
+
+{code}
+protected void checkCapacity() {
+        if(this.size >= this.threshold) {
+            int newCapacity = this.data.length * 2;
+            if(newCapacity <= 1073741824) {
+                this.ensureCapacity(newCapacity);
+            }
+        }
+    }
+{code}
+
+will always expand the hashtable.",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-12-14 18:30:51.612,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Dec 14 22:49:10 UTC 2015,,,,,,,"0|i2pvan:",9223372036854775807,,,,,,,,,,,,,,,,"14/Dec/15 18:30;sebb;As far as I can tell, AbstractHashedMap does not support Serializable.
+
+Seems to me that any serialise/deserialise code should save the map size as part of the serialisation data, in which case the map can be created with the correct size initially.
+
+But perhaps I'm missing something here.","14/Dec/15 18:51;tn;The threshold is a transient field that is either provided or calculated from the intialCapacity. Concrete implementations of AbstractHashedMap are required to create a proper instance during de-serialization.","14/Dec/15 19:59;orium;In my scenario the problem is in the {{AbstractHashedMap}} itself: the {{calculateThreshold()}} can return 0 (I'm seeing a load factor of almost zero: 10⁻⁴¹).","14/Dec/15 20:15;tn;The AbstractHashedMap class is not serializable. Could you please provide a test case illustrating the problem you are facing?","14/Dec/15 20:20;tn;the load factor is a *parameter* provided to the AbstractHashedMap. If you see a value like this, your de-serialization code in the derived class is broken.","14/Dec/15 22:48;orium;This was after all a bug in RuedigerMoeller/fast-serialization, where a float was incorrectly serialized, making the load factor ~= 0, leading to a threshould of zero.
+","14/Dec/15 22:49;orium;See comment.",
+More uniform safe-null methods in CollectionUtils,COLLECTIONS-604,13075163,Bug,Open,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,,kinow,kinow,kinow,26/May/17 12:41,12/Nov/19 08:27,23/Mar/20 17:29,,4.1,,,,Collection,,1,,,,"Currently, there are 65 public methods in `CollectionUtils`. And 53 without the deprecated ones. Out of these, 24 handle `null` arguments. The remaining methods throw a `NullPointerException` (NPE) at some part of its code.
+
+The methods that handle nulls, throw NPE, or return empty columns, boolean values, or just doesn't do anything.
+
+As a user of the API, I would expect a more uniform behaviour across the methods of `CollectionUtils`. COLLECTIONS-600 address one of these methods.
+
+`removeAll` (2x) and `retainAll` (2x) both state that a NPE will be thrown if either parameter is `null`. However, they never check if the values are null, and instead allow the code to run until a NPE is thrown.
+
+And the following code shows that `isEmpty` and `isFull` behave differently too.
+
+{code:java}
+Collection<String> c = null;
+System.out.println(CollectionUtils.isEmpty(c)); // return true
+System.out.println(CollectionUtils.isFull(c));  // throws a NPE
+{code}
+
+If I don't have to worry about `null`s with `#isEmpty`, I would expect the same from its related-method `#isFull`.
+
+What would be a good approach for it? Define a behaviour to all methods? Or leave as is, but add more documentation?
+
+There are a few methods that can easily be updated to check for `null` values. Others would require a bit more thinking. An example if the method in question for COLLECTIONS-600. It checks equality of collections, and when both collections are `null`, it says that they are equals. Google Guava [Iterables#elementsEqual|https://github.com/google/guava/blob/312aeb938bd35b5b7c8930e19ff5d1ca38e49424/guava/src/com/google/common/collect/Iterables.java#L232] and [Iterators#elementsEqual|https://github.com/google/guava/blob/312aeb938bd35b5b7c8930e19ff5d1ca38e49424/guava/src/com/google/common/collect/Iterators.java#L274] do not check for null values, for what it is worth.",,,,,,,,,,,,,"26/May/17 12:51;kinow;COLLECTIONS-604.csv;https://issues.apache.org/jira/secure/attachment/12870066/COLLECTIONS-604.csv",,1.0,,,,,,,,,,,,,,,,,,,,2017-05-28 14:00:17.185,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Nov 12 08:27:41 UTC 2019,,,,,,,"0|i3fipr:",9223372036854775807,,,,,,,,,,,,,,,,"26/May/17 12:51;kinow;CSV file used for this issue.","28/May/17 14:00;jholtkamp;A good comparison for {{null}}-behaviour would be a look to {{StringUtils}} et. al. in my mind, because 
+a) {{StringUtils}} handles {{null}} values reasonably and
+b) that would align behaviours across the different Commons libraries","05/Jun/17 18:00;jholtkamp;As [~britter] writes on the Mailing List:
+{quote}Nobody seems to have an opinion on this issue so you should start implementing your preference.{quote}
+Should we design an approach together or what is your favourite way of implementing this here?","06/Jun/17 10:05;kinow;Hi [~jholtkamp],
+
+>Should we design an approach together
+
++1
+
+> or what is your favourite way of implementing this here?
+
+I liked your arguments for an approach that follows the behaviour in `StringUtils`.
+
+[~tn], any feedback on this? We might change some JavaDocs, and make it null-safe in some cases, without breaking binary compatibility, but still changing the behaviour. I was reading the last updates in the tickets, and I think we drove the design of many changes in 4.x. So if you have anything in mind I'd appreciate any feedback before we start changing the code. Later we may look at other classes to make this behaviour consistent across the whole [collections] component.
+
+Cheers
+Bruno ","28/Jun/17 10:05;jholtkamp;[~kinow] No feedback from his side, so I'd start implementing some example cases on the weekend.","29/Jun/17 00:44;kinow;Sounds like a good idea [~jholtkamp]!","05/Jul/19 15:46;ggregory;Is there a PR coming?","12/Nov/19 08:27;Guoping1;Refer to java.util.Objects.requireNonNull?"
+MultiSet.Entry::getCount() isn't 0 after removing the last element,COLLECTIONS-709,13210557,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,Fixed,,CasualSuperman,CasualSuperman,19/Jan/19 23:30,20/Jan/19 17:41,23/Mar/20 17:29,20/Jan/19 15:06,4.1,4.2,,4.3,,,0,,,,"Removing the final element(s) in a MultiSet doesn't set the count on a MultiSet.Entry to zero.
+{code:java}
+protected int getCountAfterRemoval(MultiSet<String> multiset) {
+  MultiSet.Entry<String> entry = multiset.entrySet().iterator().next();
+  entry.getCount(); // = 2
+  multiset.remove(entry.getElement());
+  entry.getCount(); // = 1
+  multiset.remove(entry.getElement());
+  return entry.getCount(); // Still = 1, should be 0
+}
+{code}",,"CasualSuperman commented on pull request #66: COLLECTIONS-709 Set Entry count to 0 after remove
+URL: https://github.com/apache/commons-collections/pull/66
+ 
+ 
+   After removing the last element of a MultiSet, the Entry doesn't have a count of 0. This makes the count accurate after removing the last item of a MultiSet.
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;19/Jan/19 23:34;githubbot;600","grimreaper commented on issue #66: COLLECTIONS-709 Set Entry count to 0 after remove
+URL: https://github.com/apache/commons-collections/pull/66#issuecomment-455824429
+ 
+ 
+   This seems reasonable to me.
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;19/Jan/19 23:40;githubbot;600","CasualSuperman commented on pull request #66: COLLECTIONS-709 Set Entry count to 0 after remove
+URL: https://github.com/apache/commons-collections/pull/66
+ 
+ 
+   
+ 
+----------------------------------------------------------------
+This is an automated message from the Apache Git Service.
+To respond to the message, please log on GitHub and use the
+URL above to go to the specific comment.
+ 
+For queries about this service, please contact Infrastructure at:
+users@infra.apache.org
+;20/Jan/19 15:15;githubbot;600",,0,1800,,,0,1800,,,,0.0,,,,,,,,,,,,,,,,,,,,2019-01-20 15:06:17.674,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Sun Jan 20 17:41:14 UTC 2019,,,,,,,"0|yi03i8:",9223372036854775807,,,,,,,,,,,,,,,,"19/Jan/19 23:35;CasualSuperman;Pull request created with a fix: https://github.com/apache/commons-collections/pull/66","20/Jan/19 15:06;ggregory;In git master now. Please verify and close this ticket and the PR.","20/Jan/19 17:41;CasualSuperman;Just realized the commit message says COMMONS-706 instead of COMMONS-709. Not sure how important that is to fix.",,,,,
+Uncomment test in AbstractMapTest regarding LRUMap equals,COLLECTIONS-660,13106652,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,Fixed,kinow,kinow,kinow,03/Oct/17 09:41,04/Oct/17 04:44,23/Mar/20 17:29,04/Oct/17 04:39,4.1,,,4.2,Map,,0,,,,"AbstractMapTest has a [commented out|https://github.com/apache/commons-collections/blob/c8bdf60d1d0be609094e14054be0b9af0fb05521/src/test/java/org/apache/commons/collections4/map/AbstractMapTest.java#L1959] line, with a comment as follows:
+
+{quote}his fails for LRUMap because confirmed.equals() somehow modifies map, causing concurrent modification exceptions.{quote}
+
+While working on another test failing on Windows, I believe I've found the why for that comment, and how to fix it. Just need to finish debugging another part, and find a good Internet connection to push the fix.",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,Patch,,,,,,,,9223372036854775807,,,Wed Oct 04 04:44:06 UTC 2017,,,,,,,"0|i3ktfz:",9223372036854775807,,,,,,,,,,,,,,,,"04/Oct/17 04:40;kinow;Due to the order of the arguments of the assertEquals, we were calling TreeMap#equals, which would create a normal iterator instead of calling mapIterator().
+
+This would change the modCount in the parent, resulting finally in the concurrent modification exception.","04/Oct/17 04:44;kinow;Fixed in 9d4f2ba886b003980f2c37a4de7a3e6c3c701820, and changes.xml entry in 1d21a49c27d9eab8d02785a783fcfba387a3e8e1",,,,,,
+Fix site build on Java 8,COLLECTIONS-656,13101595,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,Fixed,kinow,kinow,kinow,12/Sep/17 10:42,13/Sep/17 07:52,23/Mar/20 17:29,13/Sep/17 07:52,4.1,,,4.2,,,0,documentation,site,,"Building the current master branch from git fails with
+
+{noformat}
+[INFO] Generating ""FindBugs"" report             --- findbugs-maven-plugin:2.5.5:findbugs
+[INFO] Locale is en
+[INFO] Fork Value is true
+     [java] The following errors occurred during analysis:
+     [java]   Error scanning java/util/Map$Entry for referenced classes
+     [java]     java.lang.ArrayIndexOutOfBoundsException: 5735
+     [java]       At org.objectweb.asm.ClassReader.readClass(Unknown Source)
+     [java]       At org.objectweb.asm.ClassReader.accept(Unknown Source)
+     [java]       At edu.umd.cs.findbugs.asm.FBClassReader.accept(FBClassReader.java:44)
+     [java]       At org.objectweb.asm.ClassReader.accept(Unknown Source)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassParserUsingASM.parse(ClassParserUsingASM.java:110)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassParserUsingASM.parse(ClassParserUsingASM.java:587)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine.analyze(ClassInfoAnalysisEngine.java:76)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine.analyze(ClassInfoAnalysisEngine.java:38)
+     [java]       At edu.umd.cs.findbugs.classfile.impl.AnalysisCache.getClassAnalysis(AnalysisCache.java:268)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.buildReferencedClassSet(FindBugs2.java:891)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.execute(FindBugs2.java:222)
+     [java]       At edu.umd.cs.findbugs.FindBugs.runMain(FindBugs.java:393)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.main(FindBugs2.java:1317)
+     [java]   Error scanning java/util/Comparator for referenced classes
+     [java]     java.lang.ArrayIndexOutOfBoundsException: 1320
+     [java]       At org.objectweb.asm.ClassReader.readClass(Unknown Source)
+     [java]       At org.objectweb.asm.ClassReader.accept(Unknown Source)
+     [java]       At edu.umd.cs.findbugs.asm.FBClassReader.accept(FBClassReader.java:44)
+     [java]       At org.objectweb.asm.ClassReader.accept(Unknown Source)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassParserUsingASM.parse(ClassParserUsingASM.java:110)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassParserUsingASM.parse(ClassParserUsingASM.java:587)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine.analyze(ClassInfoAnalysisEngine.java:76)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine.analyze(ClassInfoAnalysisEngine.java:38)
+     [java]       At edu.umd.cs.findbugs.classfile.impl.AnalysisCache.getClassAnalysis(AnalysisCache.java:268)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.buildReferencedClassSet(FindBugs2.java:891)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.execute(FindBugs2.java:222)
+     [java]       At edu.umd.cs.findbugs.FindBugs.runMain(FindBugs.java:393)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.main(FindBugs2.java:1317)
+     [java]   Unable to get XClass for java/util/AbstractMap$SimpleEntry
+     [java]     java.lang.ArrayIndexOutOfBoundsException: 5735
+     [java]       At org.objectweb.asm.ClassReader.readClass(Unknown Source)
+     [java]       At org.objectweb.asm.ClassReader.accept(Unknown Source)
+     [java]       At edu.umd.cs.findbugs.asm.FBClassReader.accept(FBClassReader.java:44)
+     [java]       At org.objectweb.asm.ClassReader.accept(Unknown Source)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassParserUsingASM.parse(ClassParserUsingASM.java:110)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassParserUsingASM.parse(ClassParserUsingASM.java:587)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine.analyze(ClassInfoAnalysisEngine.java:76)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine.analyze(ClassInfoAnalysisEngine.java:38)
+     [java]       At edu.umd.cs.findbugs.classfile.impl.AnalysisCache.getClassAnalysis(AnalysisCache.java:268)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.buildReferencedClassSet(FindBugs2.java:891)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.execute(FindBugs2.java:222)
+     [java]       At edu.umd.cs.findbugs.FindBugs.runMain(FindBugs.java:393)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.main(FindBugs2.java:1317)
+     [java]   Unable to get XClass for org/apache/commons/collections4/map/StaticBucketMap$Node
+     [java]     java.lang.ArrayIndexOutOfBoundsException: 5735
+     [java]       At org.objectweb.asm.ClassReader.readClass(Unknown Source)
+     [java]       At org.objectweb.asm.ClassReader.accept(Unknown Source)
+     [java]       At edu.umd.cs.findbugs.asm.FBClassReader.accept(FBClassReader.java:44)
+     [java]       At org.objectweb.asm.ClassReader.accept(Unknown Source)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassParserUsingASM.parse(ClassParserUsingASM.java:110)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassParserUsingASM.parse(ClassParserUsingASM.java:587)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine.analyze(ClassInfoAnalysisEngine.java:76)
+     [java]       At edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine.analyze(ClassInfoAnalysisEngine.java:38)
+     [java]       At edu.umd.cs.findbugs.classfile.impl.AnalysisCache.getClassAnalysis(AnalysisCache.java:268)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.buildReferencedClassSet(FindBugs2.java:891)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.execute(FindBugs2.java:222)
+     [java]       At edu.umd.cs.findbugs.FindBugs.runMain(FindBugs.java:393)
+     [java]       At edu.umd.cs.findbugs.FindBugs2.main(FindBugs2.java:1317)
+...
+{noformat}
+
+Tested locally, and updating the commons-parent version to 42, and specifying the findbugs version from the parent property seems to fix the issue. As it could affect other parts of the build/release artefacts, I'll send a pull request to allow others to review before the parent is updated.",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-09-12 22:45:57.451,,,false,,,,,,,,,,Patch,,,,,,,,9223372036854775807,,,Tue Sep 12 22:45:57 UTC 2017,,,,,,,"0|i3jyhr:",9223372036854775807,,,,,,,,,,,,,,,,"12/Sep/17 22:45;githubbot;Github user kinow commented on the issue:
+
+    https://github.com/apache/commons-collections/pull/26
+  
+    Fixed in 1081b725bea339fcda33d70c71b9eb1859d60d8f and 6a10051a7b5b3c615180413fe116c61780754969. Thanks to @garydgregory !
+","12/Sep/17 22:45;githubbot;Github user kinow closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/26
+","12/Sep/17 22:45;githubbot;Github user kinow closed the pull request at:
+
+    https://github.com/apache/commons-collections/pull/26
+",,,,,
+Deletions/insertions get lost in the ReplacementsFinder if they're at the end of the compared sequences,COLLECTIONS-592,12980680,Bug,Open,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,,,Unda,Unda,19/Jun/16 22:19,20/Jun/16 07:31,23/Mar/20 17:29,,4.0,4.1,,,,,0,,,,"In the {{sequence}} package, when comparing 2 lists with a {{SequencesComparator}} and visiting the {{EditScript}} with a {{ReplacementsFinder}}, pending deletions and insertions get lost in the {{ReplacementsFinder}} when they're at the end of the sequences.
+
+The {{ReplacementsFinder}} stores the deletions and insertions until it encounters a {{KeepCommand}}, when it flushes the pending commands by triggering the {{handleReplacement}} method of its {{ReplacementHandler}}.
+
+The problem is, when edit commands are at the end of the sequences, the {{ReplacementsFinder}} will never encounter a {{KeepCommand}} to flush them, so they're stuck here and will never be handed over the {{ReplacementHandler}}.
+
+To fix this behavior in client code, one can manually call {{ReplacementsFinder.visitKeepCommand(null)}} after the {{EditScript.visit()}} call.
+
+I patched this bug in the library by adding a {{CommandVisitor.endOfVisit}} method and calling it at the end of the {{EditScript.visit}} method, so it allows to flush the pending deletions/insertions in the {{ReplacementsFinder}} when the end of the {{EditScript}} is reached.",,,,,,,,,,,,,"19/Jun/16 22:20;Unda;ReplacementsFinder.patch;https://issues.apache.org/jira/secure/attachment/12811732/ReplacementsFinder.patch",,1.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,Patch,,,,,,,,9223372036854775807,,,2016-06-19 22:19:09.0,,,,,,,"0|i2zpnr:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,
+NullPointerException in CollectionUtils.partition,COLLECTIONS-554,12775406,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,Invalid,,mjkim0324,mjkim0324,16/Feb/15 16:33,27/Nov/15 21:47,23/Mar/20 17:29,07/Apr/15 12:41,4.1,,,,Collection,,0,,,,"NullPointerException (NPE) is not suitably handled in CollectionUtils.partition. With a nullFactory, partitions.get(numberOfPredicates) can be null at line partitions.get(numberOfPredicates).add(element);.
+
+Stack trace:
+{code}
+test(Test)java.lang.NullPointerException
+        at org.apache.commons.collections4.CollectionUtils.partition(CollectionUtils.java:1187)
+        at Test.test(Test.java:18)
+{code}
+
+Test case:
+{code}
+public void test() {
+  Collection input = CollectionUtils.permutations((java.util.Collection)new CircularFifoQueue(10));
+  Factory factory = FactoryUtils.nullFactory();
+  NullIsFalsePredicate p = new NullIsFalsePredicate(NullPredicate.nullPredicate());
+  Predicate[] predicates = p.getPredicates();
+  CollectionUtils.<java.lang.Object,java.util.Collection>partition((java.lang.Iterable)input, factory, predicates);
+}
+
+
+{code}",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-02-16 18:56:58.284,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Apr 07 12:41:10 UTC 2015,,,,,,,"0|i25opb:",9223372036854775807,,,,,,,,,,,,,,,,"16/Feb/15 18:56;tn;It is mandatory that the provided factory create non-null collections, anything else is not meaningful.
+
+Would do you suggest shall happen in this case other than a NullPointerException?","17/Feb/15 14:42;mjkim0324;Yes, when I call 
+CollectionUtils.<java.util.Collection>partition((java.lang.Iterable)input, predicates); without a factory argument,
+I get a ClassCastException: org.apache.commons.collections4.multimap.MultiValuedHashMap cannot be cast to java.util.Collection with the same arguments.
+","07/Apr/15 12:41;tn;Providing a factory that returns null objects does not make sense, and throwing a NPE in this case is reasonable imho.
+
+The second comment: a MultiValuedHashMap is *not* a java.util.Collection, thus can not be used for the partition method.",,,,,
+Undefined NullPointerException in TreeBag.java,COLLECTIONS-555,12775413,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Minor,Fixed,,mjkim0324,mjkim0324,16/Feb/15 17:03,27/Nov/15 21:11,23/Mar/20 17:29,17/Feb/15 22:03,4.1,,,4.1,Bag,,0,,,,"In add(final E object) method of TreeBag.java, the parameter object is not null-checked in throw IlligalArgumentException statement. Thus, it crashes with an inappropriate type of exceptions when the parameter, object is null. object can be null from the argument, transform(object) in TransformedCollection.add(final E object).
+I think object ==null should be added in the predicate of the throw IlligalArgumentException statement like below.
+
+{code}
+    public boolean add(final E object) {
+        if((object==null) || (comparator() == null && !(object instanceof Comparable))) {
+            throw new IllegalArgumentException(""Objects of type "" + object.getClass() + "" cannot be added to "" +
+                                               ""a naturally ordered TreeBag as it does not implement Comparable"");
+        }
+        return super.add(object);
+    }
+{code}",,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-02-17 22:03:17.244,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Feb 17 22:03:17 UTC 2015,,,,,,,"0|i25oqv:",9223372036854775807,,,,,,,,,,,,,,,,"17/Feb/15 22:03;tn;Updated javadoc in r1660515.
+
+Thanks for the report!",,,,,,,
+Correction of Javadoc for org.apache.commons.collections4.functors.CatchAndRethrowClosure,COLLECTIONS-597,13013873,Bug,Resolved,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Trivial,Fixed,ggregory,sadguten,sadguten,20/Oct/16 13:47,21/Oct/16 05:53,23/Mar/20 17:29,21/Oct/16 05:53,4.0,4.1,,4.2,Functor,,0,documentation,,,"Correct the javadoc for org.apache.commons.collections4.functors.CatchAndRethrowClosure, replacing:
+CollctionUtils.forAllDo(strList, writer);
+by:
+CollectionUtils.forAllDo(strList, writer);
+",,,,,300,300,,0%,300,300,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-10-21 05:53:34.639,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Fri Oct 21 05:53:34 UTC 2016,,,,,,,"0|i355kf:",9223372036854775807,,,,,,,,,,,,,,,,"21/Oct/16 05:53;ggregory;In SVN trunk.",,,,,,,
+Undocumented performance issue in the retainAll method in CollectionUtils ,COLLECTIONS-544,12766767,Bug,Closed,COLLECTIONS,Commons Collections,software,issues@commons.apache.org,,http://commons.apache.org/collections/,Trivial,Fixed,,oswaldo_o,oswaldo_o,12/Jan/15 05:55,27/Nov/15 21:11,23/Mar/20 17:29,12/Jan/15 14:06,4.1,,,4.1,Collection,,0,Collections,documentaion,performance,"The method {{retainAll}} in {{CollectionUtils}} is inefficient when the parameter collection has a slow containment method.
+
+The following is the current implementation with its documentation:
+
+{noformat}
+ /**
+     * Returns a collection containing all the elements in <code>collection</code>
+     * that are also in <code>retain</code>. The cardinality of an element <code>e</code>
+     * in the returned collection is the same as the cardinality of <code>e</code>
+     * in <code>collection</code> unless <code>retain</code> does not contain <code>e</code>, in which
+     * case the cardinality is zero. This method is useful if you do not wish to modify
+     * the collection <code>c</code> and thus cannot call <code>c.retainAll(retain);</code>.
+     *
+     * @param <C>  the type of object the {@link Collection} contains
+     * @param collection  the collection whose contents are the target of the #retailAll operation
+     * @param retain  the collection containing the elements to be retained in the returned collection
+     * @return a <code>Collection</code> containing all the elements of <code>collection</code>
+     * that occur at least once in <code>retain</code>.
+     * @throws NullPointerException if either parameter is null
+     * @since 3.2
+     */
+    public static <C> Collection<C> retainAll(final Collection<C> collection, final Collection<?> retain) {
+        return ListUtils.retainAll(collection, retain);
+    }
+{noformat}
+
+We can notice the inefficiency by looking at the {{retainAll}} method in {{ListUtils}}.
+
+The {{retainAll}} method from {{ListUtils}} is implemented and documented as follows:
+
+{noformat}
+  /**
+     * Returns a List containing all the elements in <code>collection</code>
+     * that are also in <code>retain</code>. The cardinality of an element <code>e</code>
+     * in the returned list is the same as the cardinality of <code>e</code>
+     * in <code>collection</code> unless <code>retain</code> does not contain <code>e</code>, in which
+     * case the cardinality is zero. This method is useful if you do not wish to modify
+     * the collection <code>c</code> and thus cannot call <code>collection.retainAll(retain);</code>.
+     * <p>
+     * This implementation iterates over <code>collection</code>, checking each element in
+     * turn to see if it's contained in <code>retain</code>. If it's contained, it's added
+     * to the returned list. As a consequence, it is advised to use a collection type for
+     * <code>retain</code> that provides a fast (e.g. O(1)) implementation of
+     * {@link Collection#contains(Object)}.
+     *
+     * @param <E>  the element type
+     * @param collection  the collection whose contents are the target of the #retailAll operation
+     * @param retain  the collection containing the elements to be retained in the returned collection
+     * @return a <code>List</code> containing all the elements of <code>c</code>
+     * that occur at least once in <code>retain</code>.
+     * @throws NullPointerException if either parameter is null
+     * @since 3.2
+     */
+    public static <E> List<E> retainAll(final Collection<E> collection, final Collection<?> retain) {
+        final List<E> list = new ArrayList<E>(Math.min(collection.size(), retain.size()));
+
+        for (final E obj : collection) {
+            if (retain.contains(obj)) {
+                list.add(obj);
+            }
+        }
+        return list;
+    }
+{noformat}
+
+In the case of {{ListUtils#retainAll}}, the inefficiency is properly documented.
+
+Perhaps the disclaimer about potential inefficiencies depending on the type 
+of the parameter collection in ListUtils:retainAll should also be included in {{CollectionUtils#retainAll}}.",Ubuntu 14.04,,,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2015-01-12 12:02:05.299,,,false,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Jan 12 14:06:25 UTC 2015,,,,,,,"0|i248x3:",9223372036854775807,,,,,,,,,,,,,,,,"12/Jan/15 12:02;kinow;Updated the issue formatting code.","12/Jan/15 14:06;tn;Documented in r1651098.
+
+Thanks for the report!",,,,,,

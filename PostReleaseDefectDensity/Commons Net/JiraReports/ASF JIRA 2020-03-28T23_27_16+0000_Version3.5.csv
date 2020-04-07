@@ -1,0 +1,1064 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project description,Project url,Priority,Resolution,Assignee,Reporter,Creator,Created,Updated,Last Viewed,Resolved,Affects Version/s,Affects Version/s,Affects Version/s,Affects Version/s,Fix Version/s,Component/s,Due Date,Votes,Labels,Labels,Description,Environment,Original Estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Attachment,Attachment,Custom field (Affects version (Component)),Custom field (Attachment count),Custom field (Blog - New Blog Administrators),Custom field (Blog - New Blog PMC),Custom field (Blog - Write access),Custom field (Blog Administrator?),Custom field (Blogs - Admin for blog),Custom field (Blogs - Email Address),Custom field (Blogs - Existing Blog Access Level),Custom field (Blogs - Existing Blog Name),Custom field (Blogs - New Blog Write Access),Custom field (Blogs - Username),Custom field (Bug Category),Custom field (Bugzilla - Email Notification Address),Custom field (Bugzilla - List of usernames),Custom field (Bugzilla - PMC Name),Custom field (Bugzilla - Project Name),Custom field (Bugzilla Id),Custom field (Bugzilla Id),Custom field (Change Category),Custom field (Complexity),Custom field (Date of First Response),Custom field (Discovered By),Custom field (Docs Text),Custom field (Enable Automatic Patch Review),Custom field (Epic Link),Custom field (Estimated Complexity),Custom field (Evidence Of Open Source Adoption),Custom field (Evidence Of Registration),Custom field (Evidence Of Use On World Wide Web),Custom field (Existing GitBox Approval),Custom field (External issue ID),Custom field (External issue URL),Custom field (Fix version (Component)),Custom field (Flags),Custom field (Flags),Custom field (Git Notification Mailing List),Custom field (Git Repository Import Path),Custom field (Git Repository Name),Custom field (Git Repository Type),Custom field (GitHub Options),Custom field (Github Integration),Custom field (Github Integrations - Other),Custom field (Global Rank),Custom field (INFRA - Subversion Repository Path),Custom field (Initial Confluence Contributors),Custom field (Last public comment date),Custom field (Level of effort),Custom field (Machine Readable Info),Custom field (New-TLP-TLPName),Custom field (Priority),Custom field (Project),Custom field (Protected Branch),Custom field (Rank),Custom field (Rank (Obsolete)),Custom field (Review Date),Custom field (Reviewer),Custom field (Severity),Custom field (Severity),Custom field (Skill Level),Custom field (Skill Level),Custom field (Source Control Link),Custom field (Space Description),Custom field (Space Key),Custom field (Space Name),Custom field (Tags),Custom field (Test and Documentation Plan),Custom field (Testcase included),Custom field (Tester),Custom field (Workaround),Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment,Comment
+plainSocket in FTPSClient is never closed,NET-592,12973826,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Critical,Fixed,,massfords,massfords,29/May/16 19:12,14/Feb/17 22:22,28/Mar/20 23:27,14/Jul/16 14:03,3.4,3.5,,,3.6,FTP,,0,,,"The plainSocket field in the FTPSClient is never closed. Over time, this will lead to an IOException with ""too many open files"".
+
+To recreate this, try the following in a loop:
+
+- create an FTPSClient
+- call the login
+- upload a file
+- download the file
+- call logout
+- disconnect within a finally block
+
+I would expect the disconnect call would release all of the file descriptors but if you set a breakpoint you'll notice that this socket remains open.
+
+In my test driver, this eventually fails after 8,000 iterations until it hits the max file descriptors for the test process. 
+
+If I use some reflection code and force FTPSClient.plainSocket to be accessible so I can close it, then everything works. ",,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-06-11 00:58:42.524,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Jun 16 03:56:36 UTC 2016,,,,,,,"0|i2yo5j:",9223372036854775807,,,,,,,,,,,,,,,,"11/Jun/16 00:58;sebb;Thanks for the report.
+
+Hopefully fixed in the following commit:
+
+URL: http://svn.apache.org/viewvc?rev=1747829&view=rev
+Log:
+NET-592 plainSocket in FTPSClient is never closed
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPSClient.java
+
+
+Would you be able to confirm whether or not this has worked OK?","16/Jun/16 03:56;massfords;This is pretty much what I'm doing through reflection right now and it fixes my problem.",,,,,,,,,,,,
+Strict CRLF handling in Commons-NET FTP breaks compatibility with some FTP servers,NET-620,13047689,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Abandoned,,Unsta,Unsta,02/Mar/17 14:24,08/Feb/18 11:13,28/Mar/20 23:27,08/Feb/18 11:13,3.3,3.4,3.5,3.6,,FTP,,0,,,"The fix for FTP.java in NET-401 to switch from using BufferedReader to CRLFLineReader breaks the ability to connect to servers that have varying LF and CRLF line termination in the banner.
+
+I've run into 2 different cases with slightly different banner configs, one where you end up hung indefinitely by not reading far enough (this is the sigquit from when it is hung):
+
+1. Thread=FTP Provider Protocol Provider Thread: class com.xxxx.xxxxx.xxx (00007F35A1AF4A00) Status=Running
+       at java/net/SocketInputStream.socketRead0(Ljava/io/FileDescriptor;[BIII)I (Native Method)
+       at java/net/SocketInputStream.read([BIII)I (SocketInputStream.java:164) (Compiled Code)
+       at java/net/SocketInputStream.read([BII)I (SocketInputStream.java:134) (Compiled Code)
+       at sun/nio/cs/StreamDecoder.readBytes()I (StreamDecoder.java:323) (Compiled Code)
+       at sun/nio/cs/StreamDecoder.implRead([CII)I (StreamDecoder.java:365) (Compiled Code)
+       at sun/nio/cs/StreamDecoder.read([CII)I (StreamDecoder.java:211) (Compiled Code)
+       at java/io/InputStreamReader.read([CII)I (InputStreamReader.java:206) (Compiled Code)
+       at java/io/BufferedReader.fill()V (BufferedReader.java:166) (Compiled Code)
+       at java/io/BufferedReader.read()I (BufferedReader.java:187) (Compiled Code)
+       at org/apache/commons/net/io/CRLFLineReader.readLine()Ljava/lang/String; (CRLFLineReader.java:58)
+       at org/apache/commons/net/ftp/FTP.__getReply(Z)V (FTP.java:357)
+       at org/apache/commons/net/ftp/FTP.__getReply()V (FTP.java:300)
+       at org/apache/commons/net/ftp/FTP._connectAction_(Ljava/io/Reader;)V (FTP.java:438)
+       at org/apache/commons/net/ftp/FTPClient._connectAction_(Ljava/io/Reader;)V (FTPClient.java:962)
+       at org/apache/commons/net/ftp/FTPClient._connectAction_()V (FTPClient.java:950)
+       at org/apache/commons/net/SocketClient._connect(Ljava/net/InetAddress;ILjava/net/InetAddress;I)V (SocketClient.java:244)
+       at org/apache/commons/net/SocketClient.connect(Ljava/net/InetAddress;I)V (SocketClient.java:181)
+
+
+2. And one where you error out by reading too far and getting a null back:
+
+Caused by:
+org.apache.commons.net.ftp.FTPConnectionClosedException: Connection closed without indication.
+    at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:317)
+    at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:294)
+    at org.apache.commons.net.ftp.FTP.sendCommand(FTP.java:483)
+    at org.apache.commons.net.ftp.FTP.sendCommand(FTP.java:608)
+    at org.apache.commons.net.ftp.FTP.user(FTP.java:753)
+    at org.apache.commons.net.ftp.FTPClient.login(FTPClient.java:1034)
+
+I do have hex data available to show the source data, but the end result is there's a mix of 0d0a (CRLF) and 0a (LF) termination in the FTP banner (220-)
+
+I can modify the library to undo the NET-401 change, but ideally it'd be nice to have a strictNewline type of setting you could set on the FTPClient object to decide if you want to be ultra-strict, or ultra compatible. I will be filing a defect with Cisco about this as well, but it would be great if the FTPClient had the option to handle it instead of forced compatibility with no options to relax it.
+
+This is kind of hinted at in one of the comments on NET-402 by Bogdan Drozdowski on 12/Apr/11
+""So, on one hand, we stop supporting non-conforming servers (which could mean that we're supporting less servers now), but on the other hand we're fixing a bug that someone has found in a real-life system.""
+
+Giving users the option to relax the conformity requirements (but strict by default) would allow the end user to choose the option.
+
+Any thoughts on this?",Java RHEL Linux,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-03-02 15:16:51.615,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Apr 04 13:09:59 UTC 2017,,,,,,,"0|i3aus7:",9223372036854775807,,,,,,,,,,,,,,,,"02/Mar/17 15:16;sebb;The proper fix for this is for servers to abide by the RFC and send CRLF as the line terminator.
+
+Reverting NET-401 may cause problems with well-behaved servers so is not acceptable.
+
+An option to allow less strict behaviour might be feasible.
+However this will have to be carefully done to ensure EOL is not detected incorrectly.
+
+===
+
+It looks as though it might be possible to override 
+protected void _connectAction_()
+and have it call
+protected void _connectAction_(Reader)
+
+where the Reader is defined as
+new InputStreamReaderFixEOL(_input_, getControlEncoding())
+
+InputStreamReaderFixEOL would have to convert bare LF to CRLF
+This could probably be derived from ToNetASCIIInputStream
+
+The net result would be that the CRLF reader would only see CRLFs
+","02/Mar/17 19:49;Unsta;So I was hoping originally to be able to just use the library as-is and extend FTPClient in my code and override _connectAction_ but to recreate it and use a different reader as it is I couldn't as __initDefaults() and  __autodetectEncoding are both private and not accessible by subclasses. Maybe I'm just missing something here but it doesn't seem possible with the current code.
+
+(from commons-net-3.3)
+
+{noformat}
+    protected void _connectAction_() throws IOException
+    {
+        super._connectAction_(); // sets up _input_ and _output_
+        __initDefaults();
+        // must be after super._connectAction_(), because otherwise we get an
+        // Exception claiming we're not connected
+        if ( __autodetectEncoding )
+        {
+            ArrayList<String> oldReplyLines = new ArrayList<String> (_replyLines);
+            int oldReplyCode = _replyCode;
+            if ( hasFeature(""UTF8"") || hasFeature(""UTF-8"")) // UTF8 appears to be the default
+            {
+                 setControlEncoding(""UTF-8"");
+                 _controlInput_ =
+                     new BufferedReader(new InputStreamReader(_input_, getControlEncoding())); //Changed from CRLFLineReader for my purposes
+                 _controlOutput_ =
+                    new BufferedWriter(new OutputStreamWriter(_output_, getControlEncoding()));
+            }
+            // restore the original reply (server greeting)
+            _replyLines.clear();
+            _replyLines.addAll(oldReplyLines);
+            _replyCode = oldReplyCode;
+        }
+    }
+{noformat}
+At least then I can choose to use the BufferedReader instead and deal with whatever issues I hit.
+
+So I'm 100% not saying the CRLFLineReader should be reverted, I'm asking if we can look at a way of having the strictness be optional. Even restructuring to allow someone to override a method that lets you pass in your reader would suffice but a property that allows you to toggle it would certainly be more user-friendly similar to what setStrictMultilineParsing(boolean strictMultilineParsing) allows you to do currently.","02/Mar/17 21:52;sebb;Code it as follows:
+
+{code}
+    protected void _connectAction_() throws IOException
+    {
+        _connectAction_(new InputStreamReaderFixEOL(input, getControlEncoding()));
+    }
+{code}
+
+No need to rewrite the method, just provide a Reader that adds CRs as necessary.","02/Mar/17 23:06;Unsta;This would still require modifying the commons-net library though would it not? If I have to modify commons-net for my own purposes I've certainly got lots of options but ideally if I could extend a class in my own code and override a method to make it work then I *should* be able to drop any future version of commons-net in without modification (unless something major changes).
+
+So am I missing something here? Just want to make sure the above change would still require a modified version of the current (or 3.3 in my case) release.
+
+If there's no way to extend and override in the currently released code I'll need to ship a modified version with our production code and maintain that while we work to get functionality added to the released version (by contribution or helping in some way).
+
+I appreciate the assistance and the quick response, many thanks!
+
+
+
+","02/Mar/17 23:24;sebb;You should be able to subclass FTPClient and override the method.
+No need to edit the code.
+
+BTW 3.6 was released recently and my suggestion is based on the current code, but I don't think that area has changed much.","02/Mar/17 23:34;Unsta;Aha moment... 3.6 has this method:
+
+{noformat}
+    protected void _connectAction_(Reader socketIsReader) throws IOException
+{noformat}
+
+3.3 does not.
+
+I'll go down that road and since it's available now you might as well close this issue out unless you think you'd like to make it easier for someone to toggle this behaviour via a property (like strictReplyParsing and strictMultilineParsing). It'd certainly be nice to be able to just call a method on the FTPClient object and toggle it!
+
+Thanks again for the help Sebb and I'll post back here with a success/fail.
+
+-Chris","03/Mar/17 00:43;Unsta;So rather than bothering with an extra class in my code I'm just going to handle it like this:
+
+{noformat}
+public class FTPClient extends org.apache.commons.net.ftp.FTPClient
+{
+    /**
+     * Overridden version of org.apache.commons.net.ftp.FTPClient to convert all
+     * line termination to CRLF regardless of source for compatibility with non-conforming
+     * FTP servers.
+     */
+    @Override
+    protected void _connectAction_() throws IOException
+    {
+    	ToNetASCIIInputStream toNetAsciiIs = new ToNetASCIIInputStream(_input_);
+    	InputStreamReader isr = new InputStreamReader(toNetAsciiIs, getControlEncoding());
+    	_connectAction_(isr);
+    }	
+}
+
+{noformat}
+
+This should handle it in-line, I'll give this a go later and see how I make out. Thanks for the tip and hopefully the *very* useful referral to ToNetASCIIInputStream.","03/Mar/17 03:36;Unsta;Well it definitely used it upon connection, but gets an NPE on the reader.
+
+{noformat}
+java.lang.NullPointerException
+   at org.apache.commons.net.io.ToNetASCIIInputStream.available(ToNetASCIIInputStream.java:177)
+   at org.apache.commons.net.io.ToNetASCIIInputStream.read(ToNetASCIIInputStream.java:139)
+   at sun.nio.cs.StreamDecoder.readBytes(StreamDecoder.java:323)
+   at sun.nio.cs.StreamDecoder.implRead(StreamDecoder.java:365)
+   at sun.nio.cs.StreamDecoder.read(StreamDecoder.java:211)
+   at java.io.InputStreamReader.read(InputStreamReader.java:206)
+   at java.io.BufferedReader.fill(BufferedReader.java:166)
+   at java.io.BufferedReader.read(BufferedReader.java:187)
+   at org.apache.commons.net.io.CRLFLineReader.readLine(CRLFLineReader.java:58)
+   at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:321)
+   at org.apache.commons.net.ftp.FTP.__getReply(FTP.java:300)
+   at org.apache.commons.net.ftp.FTP._connectAction_(FTP.java:438)
+   at org.apache.commons.net.ftp.FTPClient._connectAction_(FTPClient.java:962)
+   at com.q1labs.semsources.sources.remote.transferprotocol.ftp.FTPClient._connectAction_(FTPClient.java:28)
+   at org.apache.commons.net.SocketClient._connect(SocketClient.java:244)
+   at org.apache.commons.net.SocketClient.connect(SocketClient.java:181)
+{noformat}
+
+ToNetASCIIInputStream.java:177 is 
+{noformat}
+        result = in.available();
+{noformat}
+
+Having a look through though \_input\_ is initialized in SocketClient \_connectAction\_ which is called by FTP.java \_connectAction\_ which is called by FTPClient.java \_connectAction\_ so it presumably should be populated.
+
+So the inputStream must be null at that point, but I'll have to remote debug it to dig further.","03/Mar/17 13:17;Unsta;Ok, so it appears that the breaking up of \_connectAction\_() and \_connectAction\_(Reader reader) was done to re-use existing readers when possible instead of creating new ones, but doesn't allow you do define your own reader and pass it in.
+
+This appears to be due to \_input\_ not being initialized until SocketClient.\_connectAction\_ is called through the chain mentioned in the previous comment. I thought that maybe ToNetASCIIInputStream might get \_input\_ initialized if the inputstream was passed by reference but it doesn't appear to. Through remote debugging I can clearly see that when the reader is passed in FTP.\_\_getReply:321 is definitely working on a null InputStream within the InputStreamReader. If I reformat FTPClient.\_connectAction\_ like this for testing purposes everything works fine including the newlines getting fixed:
+
+{noformat}
+    protected void _connectAction_(Reader socketIsReader) throws IOException {
+        super._connectAction_(); // sets up _input_ and _output_
+        if(socketIsReader == null) {
+            _controlInput_ =
+                    new CRLFLineReader(new InputStreamReader(new ToNetASCIIInputStream(_input_), getControlEncoding()));
+        } else {
+            _controlInput_ = new CRLFLineReader(socketIsReader);
+        }
+{noformat}
+
+This shows that wrapping the InputStream in ToNetASCIIInputStream does in fact fix my issue, so maybe I'm back to making a strictNewlineProcessing option that can be set and create the reader accordingly.
+
+Looking at these results and how things are organized and where initializations happen does this Null InputStream make sense to you as well Sebb?","13/Mar/17 11:51;Unsta;Does anyone have any other ideas or am I best to work out a solution that allows configuration on which reader to use based on a parameter and then submit a patch for consideration?","04/Apr/17 13:09;Unsta;If there's no other methods to extend or override that have visibility into the variables/methods needed then I'll have to move forward with putting in a submission to allow the strict CR/LF handling to be a parameter that can be toggled by the client.",,,
+FTPSClient forces IP in SubjectAlternativeNames field for server certificate validation instead of hostname,NET-605,13027445,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Resolved,,adam.lynam.dwp,adam.lynam.dwp,12/Dec/16 13:17,01/Mar/17 15:49,28/Mar/20 23:27,01/Mar/17 15:49,3.5,,,,,FTP,,0,,,"We have an FTP Server with a signed certificate, with both CN and SAN DNS entries set to the respective hostname of the machine.
+
+When attempting to connect using FTPSClient, we get java.security.cert.CertificateException: No subject alternative names matching IP address x.x.x.x found. The FTPSClient appears to resolve the IP address and pass that through the SSLSocket where it eventually raises the exception.
+
+While we initially encountered the error against our internal FTP server, we have confirmed the same issue against a public FTP server. ftps://demo:password@test.rebex.net.",,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-02-07 20:18:42.204,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Wed Mar 01 15:40:26 UTC 2017,,,,,,,"0|i37hbb:",9223372036854775807,,,,,,,,,,,,,,,,"12/Dec/16 13:18;adam.lynam.dwp;This was likely introduced by the patch in this issue: https://issues.apache.org/jira/browse/NET-579","12/Dec/16 13:26;adam.lynam.dwp;The answer to this is probably setting the original hostname, instead of the IP (held in the host variable), when creating the SSLSocket inside FTPSClient on line 268:
+
+SSLSocket socket =
+            (SSLSocket) ssf.createSocket(_socket_, host, port, false);
+
+I am not sure what other impact this might have though.","07/Feb/17 20:18;sebb;What is the code that you are using? Simplest possible exampe please.","01/Mar/17 12:26;adam.lynam.dwp;{code:title=FTPSClientIPRequiredExample.java|borderStyle=solid}
+import org.apache.commons.net.ftp.FTPSClient;
+
+import java.io.IOException;
+
+public class FTPSClientIPRequiredExample {
+    private static final boolean IS_IMPLICIT = true;
+    private static final String SERVER_ADDRESS = ""test.rebex.net"";
+    private static final int DEFAULT_FTPS_PORT = 990;
+
+    public static void main(String[] args) throws IOException {
+        FTPSClient client = new FTPSClient(IS_IMPLICIT);
+        client.setEndpointCheckingEnabled(true);
+        client.connect(SERVER_ADDRESS, DEFAULT_FTPS_PORT);
+    }
+}
+{code}","01/Mar/17 12:27;adam.lynam.dwp;The above gives me:
+
+Exception in thread ""main"" javax.net.ssl.SSLHandshakeException: java.security.cert.CertificateException: No subject alternative names matching IP address 195.144.107.198 found
+	at sun.security.ssl.Alerts.getSSLException(Alerts.java:192)
+	at sun.security.ssl.SSLSocketImpl.fatal(SSLSocketImpl.java:1949)
+	at sun.security.ssl.Handshaker.fatalSE(Handshaker.java:302)
+	at sun.security.ssl.Handshaker.fatalSE(Handshaker.java:296)
+	at sun.security.ssl.ClientHandshaker.serverCertificate(ClientHandshaker.java:1514)
+	at sun.security.ssl.ClientHandshaker.processMessage(ClientHandshaker.java:216)
+	at sun.security.ssl.Handshaker.processLoop(Handshaker.java:1026)
+	at sun.security.ssl.Handshaker.process_record(Handshaker.java:961)
+	at sun.security.ssl.SSLSocketImpl.readRecord(SSLSocketImpl.java:1062)
+	at sun.security.ssl.SSLSocketImpl.performInitialHandshake(SSLSocketImpl.java:1375)
+	at sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:1403)
+	at sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:1387)
+	at org.apache.commons.net.ftp.FTPSClient.sslNegotiation(FTPSClient.java:289)
+	at org.apache.commons.net.ftp.FTPSClient._connectAction_(FTPSClient.java:220)
+	at org.apache.commons.net.SocketClient.connect(SocketClient.java:189)
+	at org.apache.commons.net.SocketClient.connect(SocketClient.java:209)
+	at FTPSClientIPRequiredExample.main(FTPSClientIPRequiredExample.java:13)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.intellij.rt.execution.application.AppMain.main(AppMain.java:147)
+Caused by: java.security.cert.CertificateException: No subject alternative names matching IP address 195.144.107.198 found
+	at sun.security.util.HostnameChecker.matchIP(HostnameChecker.java:167)
+	at sun.security.util.HostnameChecker.match(HostnameChecker.java:93)
+	at sun.security.ssl.X509TrustManagerImpl.checkIdentity(X509TrustManagerImpl.java:455)
+	at sun.security.ssl.AbstractTrustManagerWrapper.checkAdditionalTrust(SSLContextImpl.java:1018)
+	at sun.security.ssl.AbstractTrustManagerWrapper.checkServerTrusted(SSLContextImpl.java:985)
+	at sun.security.ssl.ClientHandshaker.serverCertificate(ClientHandshaker.java:1496)
+	... 17 more
+
+Process finished with exit code 1","01/Mar/17 13:24;sebb;Works OK for me using NET trunk code, which is basically the same as 3.6 at present.
+Have you tried using 3.6?","01/Mar/17 15:40;adam.lynam.dwp;[~sebb@apache.org] nice, that does seem to have fixed it!
+
+Shall I mark the Bug as closed?",,,,,,,
+FTPClient.mlistFile incorrectly handles MLST reply,NET-610,13040594,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,xuthus,xuthus,06/Feb/17 10:50,14/Feb/17 22:22,28/Mar/20 23:27,07/Feb/17 15:40,3.5,,,,3.6,FTP,,0,easyfix,patch,"By RFC 3659 server must start fact with space character. But some inaccurate realisations reply without starting space.
+But org.apache.commons.net.ftp.FTPClient.mlistFile() skips leading character even it is not a space:
+    public FTPFile mlistFile(String pathname) throws IOException
+    {
+        boolean success = FTPReply.isPositiveCompletion(sendCommand(FTPCmd.MLST, pathname));
+        if (success){
+            String entry = getReplyStrings()[1].substring(1); // skip leading space for parser
+            return MLSxEntryParser.parseEntry(entry);
+        } else {
+            return null;
+        }
+    }
+
+
+I think it is wrong. The method should throw exception, if first character is not a space. Or does not remove starting char (and should be some option responsible for that behaviour) if it is not a space.
+
+my workaround in overriden method:
+    public FTPFile mlistFile(String pathname) throws IOException {
+        final boolean success = FTPReply.isPositiveCompletion(sendCommand(FTPCmd.MLST, pathname));
+        if (success) {
+            final String reply = getReplyStrings()[1];
+            final String entry = reply.charAt(0) == ' ' ? reply.substring(1) : reply;
+            return MLSxEntryParser.parseEntry(entry);
+        } else {
+            return null;
+        }
+    }
+",using some FTP-server incorrectly releasing RFC 3659. For example xlight ftp server (https://www.xlightftpd.com/),86400,86400,,0%,86400,86400,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-02-06 16:04:22.99,,,false,,,,,,,,,,Important,Patch,,,,,,,,9223372036854775807,,,Tue Feb 07 15:40:46 UTC 2017,,,,,,,"0|i39nnr:",9223372036854775807,,,,,,,,,,,,,,,,"06/Feb/17 16:04;sebb;Is there a public server that can be used to test any changes against?","07/Feb/17 09:41;xuthus;No, I used FTPClient to internal work, in production it works fine, in local (home) environment I used the first available free FTP server - XLight in my case (https://www.xlightftpd.com/). It is very simple to install and configure. I can help if necessary.","07/Feb/17 10:07;sebb;AFAICT XLight is Windows-only; I don't use that any more.
+
+I suggest you contact the XLight producers and report the bug.
+
+I'm not sure it's a good idea to permit non-conforming behaviour here.
+However it probably would be worth throwing an Exception.","07/Feb/17 10:56;xuthus;I wrote XLight authors already.
+
+And I agree, throwing an exception is BETTER than just skipping first character without check if it is a space indeed. That's what I wrote earlier exactly :)","07/Feb/17 12:06;sebb;-Closing this issue in favour of NET-611 which adds generic reply checking-","07/Feb/17 12:19;xuthus;Sebb, are you sure NET-611 covers NET-610? I wrote about space preceding line containig facts about file (MLST command). NET-611 is about spaces between code and text...
+
+Again with a sample:
+250- Begin
+size=30;type=file;modify=20170205062802; /archive/2017/02/06/mfcrevise/1.txt
+250 End
+
+I talked about second line (""size=..."") that by RFC should start from space and FTPClient skips first character without checking if it is a space really.
+
+RFC requires such a reply:
+250- Begin
+<space>size=30;type=file;modify=20170205062802; /archive/2017/02/06/mfcrevise/1.txt
+250 End","07/Feb/17 15:05;sebb;Sorry, I misunderstood the problem.
+
+(I think I can see why they may have omitted the space: RFC 959 says that a space must precede a number for multi-line responses. However RFC 3659, which defines the MLST command, says that there must be a space before non-numerics as well.)","07/Feb/17 15:40;sebb;Author: sebb
+Date: Tue Feb  7 15:33:35 2017
+New Revision: 1782012
+
+URL: http://svn.apache.org/viewvc?rev=1782012&view=rev
+Log:
+NET-610 FTPClient.mlistFile incorrectly handles MLST reply
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClient.java
+",,,,,,
+DefaultUnixFTPFileEntryParserFactory Issue (leading spaces removal configuration),NET-609,13032524,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,Tqup3,Tqup3,06/Jan/17 11:14,14/Feb/17 22:22,28/Mar/20 23:27,06/Feb/17 16:45,3.4,3.5,,,3.6,FTP,,0,,,"I have an issue when calling listFiles() method on a FTP server.
+The FTPFileEntry parser fail to parse the entry by adding a non existing leading space in the filename.
+
+In the FTP library, a boolean field is existing to remove the leading spaces and needs to be set to true (in my case).
+
+The issue is in the file DefaultUnixFTPFileEntryParserFactory.java (L124-L128) :
+{code:java}
+if (parser == null) { // Now try for aliases
+            String ukey = key.toUpperCase(java.util.Locale.ENGLISH);
+            if (ukey.indexOf(FTPClientConfig.SYST_UNIX) >= 0)
+            { // FTPClientConfig.SYST_UNIX = ""UNIX""
+                parser = new UnixFTPEntryParser(config, false);
+            }
+            else if  (ukey.indexOf(FTPClientConfig.SYST_UNIX_TRIM_LEADING) >= 0)
+            { // FTPClientConfig.SYST_UNIX_TRIM_LEADING = ""UNIX_LTRIM""
+                parser = new UnixFTPEntryParser(config, true);
+            }
+            // ...
+}
+{code}
+
+I think the issue is that the else if condition is unreachable because if second condition is true, the first condition is matching too :
+FTPClientConfig.SYST_UNIX = ""UNIX""
+FTPClientConfig.SYST_UNIX_TRIM_LEADING = ""UNIX_LTRIM""
+
+I think the issue is related to the commit on NET-566 (commit: http://svn.apache.org/viewvc?view=revision&revision=1652696)",,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-02-06 16:45:44.634,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Feb 06 16:45:44 UTC 2017,,,,,,,"0|i38cmn:",9223372036854775807,,,,,,,,,,,,,,,,"06/Feb/17 16:45;sebb;Thanks for the report - silly mistake, need to check longer string first:
+
+URL: http://svn.apache.org/viewvc?rev=1781925&view=rev
+Log:
+NET-609 - DefaultUnixFTPFileEntryParserFactory Issue (leading spaces removal configuration)
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/DefaultFTPFileEntryParserFactory.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/UnixFTPEntryParser.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ftp/parser/DefaultFTPFileEntryParserFactoryTest.java
+
+",,,,,,,,,,,,,
+NullPointerException when disconnecting TelnetClient twice with JDK 7,NET-596,12986816,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,vicente69,vicente69,05/Jul/16 13:55,14/Feb/17 22:22,28/Mar/20 23:27,07/Feb/17 23:53,3.5,,,,3.6,Telnet,,0,,,"When using the TelnetClient class, a {{NullPointerException}} may occur when calling the {{disconnect}} method twice, in the {{_closeOutputStream}} method called under the hood, if the Telnet connection is lost (for instance, server is hardly shut down).
+
+1. The first call to {{disconnect}} resets completely the TelnetClient instance.
+2. The second call to {{disconnect}} leads to the NPE exception, because the {{\_output\_}} property is {{null}}, in the {{_closeOutputStream}} method.
+
+*NOTE: the NPE does not occur with JDK 8, because, the first call to {{disconnect}} throws an I/O exception (socket is closed), leaving the TelnetClient instance with a non-null {{\_output\_}} property. Then a second call to disconnect does not throw a NPE. It seems the JDK 8 behaves differently when a client socket loses a connection. So there is also a bug with JDK 8, as disconnection shall close quietly resources without an I/O exception, and without leaving non-null resources, and then disconnect the client socket. The {{SocketClient.disconnect}} is a good implementation to start with.*
+
+The problem is that the TelnetOutputStream class closes the Socket output stream under the hood, but doesn't check if it is null and doesn't reset it to null once done. _The implementation of the TelnetOutputStream is quite strange, as there is a cycling dependency between this class and the TelnetClient class. The {{TelnetClient}} class shall handle itself the close of its internal resources, and disconnect the client socket. But this responsibility is delegates to the TelnetOutputStream._
+
+Here's the stack trace of the NPE exception:
+{quote}
+|java.lang.NullPointerException
+     at org.apache.commons.net.telnet.TelnetClient._closeOutputStream(TelnetClient.java:83)
+      at org.apache.commons.net.telnet.TelnetOutputStream.close(TelnetOutputStream.java:163)
+      at org.apache.commons.net.telnet.TelnetClient.disconnect(TelnetClient.java:124)
+{quote}
+
+A way to workaround this bug, is to always check if the {{TelnetClient}} instance is connected, before calling the {{disconnect}} method.
+","Both telnet client & server with JDK 7.
+Bug not reproduced with JDK 8 (there's another bug with this JDK though, as mentioned in the description).",,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-07-05 17:57:55.219,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Feb 07 23:53:22 UTC 2017,,,,,,,"0|i30jdr:",9223372036854775807,,,,,,,,,,,,,,,,"05/Jul/16 17:57;ggregory;How about something like:
+
+{code:java}
+### Eclipse Workspace Patch 1.0
+#P commons-net
+Index: src/main/java/org/apache/commons/net/telnet/TelnetClient.java
+===================================================================
+--- src/main/java/org/apache/commons/net/telnet/TelnetClient.java	(revision 1751512)
++++ src/main/java/org/apache/commons/net/telnet/TelnetClient.java	(working copy)
+@@ -80,7 +80,10 @@
+     }
+     void _closeOutputStream() throws IOException
+     {
+-        _output_.close();
++        if (_output_!= null) 
++        {
++            _output_.close();
++        }
+     }
+ 
+     /***
+@@ -120,9 +123,11 @@
+         try {
+             if (__input != null) {
+                 __input.close();
++                __input = null;
+             }
+             if (__output != null) {
+                 __output.close();
++                __output = null;
+             }
+         } finally { // NET-594
+             super.disconnect();
+{code}","05/Jul/16 19:40;vicente69;I would set the {{\_output\_}} property to {{null}} in a {{finally}} block, to ensure we don't close twice a stream whose first close has failed:
+{noformat}
+void _closeOutputStream() throws IOException
+{
+    if (_output_ != null) {
+        try {
+            _output_.close();
+        } catch (IOException e) {
+            // Shall this exception be ignored, or let it be managed by the caller?
+        } finally {
+            // Whatever happens, the stream is considered closed.
+            _output_ = null;
+        }
+    }
+}
+{noformat}
+
+For the second fix you proposed, which is not related to the issue I created, a {{try-finally}} block must also surround each {{close}} call, to ensure we attempt to close everything properly, like this:
+{noformat}
+public void disconnect() throws IOException
+{
+    if (__input != null) {
+        try {
+            __input.close();
+        } catch (IOException e) {
+            // Shall this exception be ignored, or let it be managed by the caller?
+        } finally {
+            // Whatever happens, the stream is considered closed.
+            __input = null;
+        }
+    }
+    if (__output != null) {
+        try {
+            __output.close();
+        } catch (IOException e) {
+            // Shall this exception be ignored, or let it be managed by the caller?
+        } finally {
+            // Whatever happens, the stream is considered closed.
+            __output = null;
+        }
+    }
+    super.disconnect();
+}
+{noformat}
+
+To me, I would catch IOExceptions and hide them. I consider at this moment that, whatever happens, the client must be closed. But, whatever the final policy is, the most important is to keep the client in a reusable state I guess. As I mentioned, the {{SocketClient.disconnect}} method is a good example. The doc comments shall also be updated to explain clearly when exceptions may be thrown, and the behaviour of consecutive calls.
+Thanks for your answer!","07/Feb/17 23:53;sebb;URL: http://svn.apache.org/viewvc?rev=1782091&view=rev
+Log:
+NET-596 NullPointerException when disconnecting TelnetClient twice with JDK 7
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/telnet/TelnetClient.java
+
+",,,,,,,,,,,
+"Failure to parse times from SYST_L8 systems that report as ""WINDOWS Type: L8""",NET-602,13003735,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Fixed,,rossb,rossb,09/Sep/16 02:32,14/Feb/17 22:22,28/Mar/20 23:27,07/Feb/17 23:24,3.3,3.5,,,3.6,FTP,,0,,,"When getting file entries from a Type: L8 system running on a Windows server the code cannot extract the timestamp of the file correctly (it returns null).
+
+The entry format returned by the server is as follows:
+-rwxrwxrwx    1 user     group             2490 Sep    7 2016 file.txt
+
+The reason for this appears to be a bug in the way the DefaultFTPFileEntryParserFactory constructs the CompositeFileEntryParser (createNTFTPEntryParser method), as when it passes the config object through to the NTFTPEntryParser first, the config passed through is updated with the Default timestamp format for Windows FTP servers ""MM-dd-yy hh:mma"", and then when the same config object is passed to the UnixFTPEntryParser it picks up this default and tries to use it instead of what it should be which is ""MMM d yyyy"".
+
+Not sure when this bug was introduced but it is at least present in 3.3 and 3.5.
+
+The problem may also be present for the createOS400FTPEntryParser, though I have not confirmed this.
+
+Potential Solution:
+When passing the config through to the parsers for each part of the CompositeFileEntryParser they should be using a clone of the original to avoid this kind of cross-contamination between different parser types.",Windows Type: L8 FTP servers,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-02-07 23:24:34.019,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Feb 07 23:24:34 UTC 2017,,,,,,,"0|i33f7j:",9223372036854775807,,,,,,,,,,,,,,,,"07/Feb/17 23:24;sebb;URL: http://svn.apache.org/viewvc?rev=1782089&view=rev
+Log:
+NET-602 Failure to parse times from SYST_L8 systems that report as ""WINDOWS Type: L8""
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/FTPClientConfig.java
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/DefaultFTPFileEntryParserFactory.java
+",,,,,,,,,,,,,
+"IMAPClient.select cannot select mailbox in some cases with æøå, spaces and sub-folders",NET-601,12999168,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,yggdrasild,yggdrasild,23/Aug/16 09:53,14/Feb/17 15:30,28/Mar/20 23:27,,3.5,,,,,IMAP,,0,,,"Partial response from LIST:
+
+{code}
+AAAB LIST  """" ""*""
+* LIST (\HasNoChildren) ""\\"" ""Backup log""
+* LIST (\Noinferiors \HasNoChildren) ""\\"" Inbox
+* LIST (\HasNoChildren) ""\\"" M&APg-ter
+* LIST (\HasChildren) ""\\"" Presis
+* LIST (\HasNoChildren) ""\\"" {24}
+Presis\Bod&APg- Industri
+* LIST (\HasNoChildren) ""\\"" {11}
+Presis\Done
+* LIST (\HasNoChildren) ""\\"" {15}
+Presis\id filer
+{code}
+
+Trying to select Presis\Bodø Industri fails like this
+AAAB SELECT ""Presis\Bod&APg- Industri""
+AAAB NO SELECT failure, cannot select mailbox: Folder not found in IMAP name space
+
+And trying to select Presis\id filer fails like this
+AAAB SELECT ""Presis\id filer""
+AAAB NO SELECT failure, cannot select mailbox: Folder not found in IMAP name space
+
+So far it seems like select fails when folder has more than one:
+* none US-ASCII
+* space
+* sub-folder separator",eclipse on ubuntu workstation and ibm domino server on ubuntu server. Connecting to IMAP on an IBM Domino server.,,,,,,,,,"10/Feb/17 09:01;yggdrasild;import_startssl_to_javahome.windows.zip;https://issues.apache.org/jira/secure/attachment/12852022/import_startssl_to_javahome.windows.zip","28/Aug/16 14:16;yggdrasild;testCommonsNetIMAPselect.java;https://issues.apache.org/jira/secure/attachment/12825906/testCommonsNetIMAPselect.java",,2.0,,,,,,,,,,,,,,,,,,,,2016-08-26 20:01:12.148,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Feb 14 15:30:50 UTC 2017,,,,,,,"0|i32n2f:",9223372036854775807,,,,,,,,,,,,,,,,"26/Aug/16 20:01;sebb;Can you provide sample code which exhibits the problem?
+
+Encoding issues are tricky to test and fix because they depend on exactly how the program is coded.","28/Aug/16 14:12;yggdrasild;Sebb - Here's test-code
+
+Comments: 
+* the config is up and running, so it can be used for testing purposes.
+* problematic folders have been created.
+* In production BASE64MailboxEncoder and BASE64MailboxDecoder from javamail have been used to encode and decode foldernames.
+* The test routine:
+  - logs on, 
+  - gets the list of folders
+  - tries to select some folders using the encoder
+  - finally tries to select all the folders as returned from LIST
+
+The formatting on web seems weird, so source is also attached.
+
+{code:java}
+public static void test(){
+	// config
+	String host = ""munin02.prpr.no"";
+	String user = ""tte"";
+	String password = ""g6o623ds"";
+	// login
+	AuthenticatingIMAPClient imapClient = new AuthenticatingIMAPClient(/*getProtocol(), */true);		// implicit
+	// listener -> System.out
+	final PrintCommandListener listener = new PrintCommandListener(System.out, true) {
+		@Override
+		public void protocolReplyReceived(ProtocolCommandEvent event) {
+
+			if (event.getReplyCode() != IMAPReply.PARTIAL){ // This is dealt with by the chunk listener
+				super.protocolReplyReceived(event);
+			}
+		}
+	};
+	imapClient.addProtocolCommandListener(listener);
+	try {
+		imapClient.connect(host);
+		// Try oauth = e.g. gmail 
+		((AuthenticatingIMAPClient) imapClient).authenticate(AuthenticatingIMAPClient.AUTH_METHOD.PLAIN, user, password);
+	} catch (IOException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+		out(""Error.connect: "" + e.getMessage());
+		throw new RuntimeException(""Could not connect to server. "" + e.getMessage(), e);
+	}
+	// get Folders
+	String[] folders = getFoldersAsArray(imapClient);
+
+	// try selected folders
+	testFolder(imapClient, ""Backup log"", true);				// ok
+	testFolder(imapClient, ""Møter"", true);					// ok
+	testFolder(imapClient, ""Presis\\Bank2"", true);			// ok
+	testFolder(imapClient, ""Presis\\Bodø Industri"", true);
+	testFolder(imapClient, ""Presis\\Done"", true);			// ok
+	testFolder(imapClient, ""Presis\\id filer"", true);
+	testFolder(imapClient, ""Sendte elementer"", true);		// ok
+	
+	// try all folders
+	for(String folder: folders){
+		testFolder(imapClient, folder, false);
+	}
+}
+private static void testFolder(AuthenticatingIMAPClient imapClient, String folder, boolean convertFoldername){
+// select folder
+	try {
+		String fName = convertFoldername ? BASE64MailboxEncoder.encode(folder) : folder.trim();
+		if (((!fName.equals(folder)) || (fName.contains("" ""))) && (!fName.startsWith(""\"""")) ) {
+			fName = ""\"""" + fName + ""\"""";
+		}
+		out(""imapFoldername: "" + folder + "" -> "" + fName);
+
+		out(folder  + "": "" + String.valueOf(imapClient.select(fName)));
+
+	} catch (NumberFormatException | IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+
+}
+private static String[] getFoldersAsArray(AuthenticatingIMAPClient imapClient) {
+	String[] result = null;
+	try {
+			imapClient.sendCommand(""LIST \""\"" \""*\"""");
+			String[] folders = imapClient.getReplyStrings();
+			List<String> folderList = new ArrayList<String>();
+			boolean acceptNext = false;;
+			for (int i = 0; i < folders.length; i++) {
+				out(folders[i]);
+				String line = folders[i];
+				if (! acceptNext) {
+					if (line.startsWith(""* LIST"")) {
+						int delTo = line.indexOf(""\""\\\\\"""");	// domino format
+						int delCount = 5;
+						if (delTo == -1) {
+							delTo = line.indexOf(""\""/\"""");		// microsoft format
+							delCount = 4;
+						}
+						if (delTo > 0) {
+							line = line.substring(delTo + delCount);
+						} else {
+						}
+						if (line.startsWith(""{"") && (line.endsWith(""}""))) {
+							acceptNext = true;
+							line = """";
+						}
+					} else if (line.indexOf(""OK LIST"") > 0) {
+						line = """";
+					}
+				}
+				if (! line.isEmpty()) {
+//						line = BASE64MailboxDecoder.decode(line);
+					folderList.add(line);
+					acceptNext = false;
+				}
+			}
+			result = folderList.toArray(new String[0]);
+	} catch (IOException | RuntimeException e) {
+		e.printStackTrace();
+	}		
+	return result;
+}
+{code}","09/Feb/17 23:28;sebb;Sorry, only just got around to running the code.
+Could not connect to the demo.","10/Feb/17 09:01;yggdrasild;Tested the code this morning. Connected ok.
+
+My guess is that this has to do with certificates installed in cacerts. This server uses startssl. On Ubuntu I run:
+
+sudo keytool -import -file /etc/ssl/certs/StartCom_Certification_Authority.pem -keystore $JAVA_HOME/jre/lib/security/cacerts
+
+If you run on windows I have attached a batch-file and the certificate. It expects JAVA_HOME to be defined.","13/Feb/17 13:42;sebb;Thanks, I have managed to login now.
+
+I had to use Java 1.7 as well as add the cert (I added that locally, and defined javax.net.ssl.trustStore as I don't want to change the default Java store)","13/Feb/17 15:03;sebb;I can reproduce the problems.
+
+There does not seem to be a sub-folder with a non-ascii name and with no space - would it be possible to set one up?
+","13/Feb/17 16:10;sebb;I don't get the same problem when using IMAP with Yahoo. I've not tried non-ASCII, but spaces in sub-folders work fine.
+Likewise with GMail, though that is not true IMAP.","13/Feb/17 17:31;yggdrasild;Have create 2 subfolders:
+Presis\\asciiOnly
+Presis\\ascii subfolder with spaces
+
+Sorry, that I didn't test against other servers. Have tested against outlook.com. Seems to work without any flaws.
+
+The server with issues runs IBM Domino. I will configure server, add some more debug-information, and see if it will shed some light to the problem.","13/Feb/17 17:46;yggdrasild;Even at highest debug-verbose level there was no information at the server log when failing to select a folder.","13/Feb/17 18:54;yggdrasild;Configured Thunderbird to maximum verbose level. (since it works).
+
+Looking at the log I found that in some cases the transferred foldername used \\ as folder -  subfolder separator. In other cases Thunderbird transferred \\\\ as folder - subfolder separator. So rewriting folder-select routine seems to work:
+
+{code}
+if (!imapClient.select(fName)){
+	fName = fName.replace(""\\"", ""\\\\"");
+	imapClient.select(fName));
+} 
+{code}
+","14/Feb/17 10:03;sebb;It looks as though Domino wants backslashes to be doubled if they are in a quoted string.
+
+{code}
+Presis\Done - works
+""Precis\Done"" - fails
+""Presis\\Done"" - works
+{code}
+
+(Of course in Java you have to double-up the backslashes in strings)
+
+This may be a bug in IBM Domino - it certainly seems odd to have to do this.
+However Thunderbird obviously does it; this could either be a specific workround for Domino, or maybe it really is a requirement of the IMAP standard.
+It would be useful to know which.
+
+In the meantime it is of course possible to work round the issue in user code.","14/Feb/17 10:29;sebb;I think I have found the reference:
+
+https://tools.ietf.org/html/rfc2683#section-3.4.2
+
+In which case, Domino is correct.
+The problems do not arise with GMail and Yahoo because they use / as the folder separator.","14/Feb/17 11:54;yggdrasild;Tried rewriting the selectFolder in my mail-object:
+
+{code}
+// encode foldername without quotes
+String fName = BASE64MailboxEncoder.encode(StringFormatNO.removeQuotes(getFolderName()));
+// escape quotes and \\
+fName = fName.replace(""\"""", ""\\\"""").replace(""\\"", ""\\\\"");
+// add quotes
+fName = ""\"""" + fName + ""\"""";
+
+result = imapClient.select(fName);
+{code}
+
+Works with the samples tested. i.e both with/without spaces and with/without æøå.","14/Feb/17 15:30;sebb;Good to know.
+
+Regarding the test code: as far as I know, you don't need to enclose mailbox names in quotes unless they contain a space.
+
+For example, this works:
+
+{code}
+AAAB SELECT M&APg-ter
+{code}
+
+However, it does seem to be necessary to quote-wrap names containing double-quotes.
+
+As you suggest in the previous comment, one way to simplify the code is to always quote the mailbox name.
+
+However, both the following are valid mailbox names:
+
+Unquoted
+""Quoted""
+
+So in general it's not possible to determine whether or not a string representing a mailbox name has already been quoted.
+The application must keep track of the quoted status separately.
+"
+TFTPClient assumes that lastBlock == 0 only once,NET-613,13041781,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,sebb,sebb,09/Feb/17 17:37,09/Feb/17 17:38,28/Mar/20 23:27,,3.5,,,,,TFTP,,0,,,"TFTPClient assumes that lastBlock == 0 only once.
+
+However, that is not the case.
+It may become 0 if the block count wraps round or the server sends a packet with it set to 0.",,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,2017-02-09 17:37:48.0,,,,,,,"0|i39uzj:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ftps.listfiles hangs,NET-595,12982134,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,,,bragu@hotmail.com,bragu@hotmail.com,22/Jun/16 22:36,08/Feb/17 00:14,28/Mar/20 23:27,,3.5,,,,,FTP,,0,,,"Trying to connect to a FTPS server, protocol TLS thru socksproxyhost. Data connections is encrypted. When i run using JVM arg -DsocksProxyHost=proxy it works fine. But when i set the proxy host and port using ftps.setproxy it hangs at listfiles command.
+
+220 (vsFTPd 2.2.2)
+AUTH TLS
+234 Proceed with negotiation.
+Connected to ftp.mySite.com
+PROT P
+200 PROT now Private.
+USER myUser
+331 Please specify the password.
+PASS myPwd
+230 Login successful.
+SYST
+215 UNIX Type: L8
+Remote system is UNIX Type: L8
+TYPE I
+200 Switching to Binary mode.
+PASV
+227 Entering Passive Mode
+
+And it hangs here.",Windows 7 Enterprise. Java 1.8. commons-net-3.5,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,2016-06-22 22:36:59.0,,,,,,,"0|i2zxtj:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+FTPClient.rename() doesn't work well for a Linux FTP,NET-600,12994043,Bug,Closed,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Major,Not A Bug,,stevezhuang,stevezhuang,01/Aug/16 17:58,01/Aug/16 19:52,28/Mar/20 23:27,01/Aug/16 19:52,3.5,,,,,FTP,,0,,,"FTPClient.rename() API doesn't work well for a Linux FTP, especially for setting a user directory as its root directory case,
+For example, for a ubuntu vsftpd, which is having ""/home/user1"" as its root directory, when renaming ""/test1.txt"" to ""/test2.txt"", it will return false, because those paths are not the full path.
+In this case, it should consider the workingDirectory(would be ""/home/user1"") together and append it to the from/to path to make the API work.",ubuntu vsftpd,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2016-08-01 18:57:23.068,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Mon Aug 01 19:51:57 UTC 2016,,,,,,,"0|i31rg7:",9223372036854775807,,,,,,,,,,,,,,,,"01/Aug/16 18:57;b.eckenfels;Can you Show sample Code? ""/test1.txt"" is an absolute filename, I would not expect it to rename the files in the current Directory.","01/Aug/16 19:51;stevezhuang;Actually I am using the VFS to invoke the FTPClient API, looks like it is more of a VFS issue, I will close this issue here and report another issue to them.
+Sorry for the inconvenience caused. ",,,,,,,,,,,,
+FTPSClient not using the Socks Proxy when opening passive data connection,NET-637,13076598,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,,,segantim,segantim,01/Jun/17 18:05,08/Feb/18 14:15,28/Mar/20 23:27,,3.5,3.6,,,,FTP,,0,,,"I'm routing FTPS traffic through a SOCKS proxy host.  I setup the proxy using: 
+
+FTPSClient ftps = new FTPSClient(""TLS"", false);
+InetSocketAddress sa = new InetSocketAddress(proxyHost,proxyPort);
+Proxy proxy = new Proxy(Proxy.Type.SOCKS, sa);
+System.out.println(""Using Proxy Server: "" + proxy);
+ftps.setProxy(proxy);
+...
+ftps.enterLocalPassiveMode();
+for (FTPFile f : ftps.listFiles()) {
+	System.out.println(f.getRawListing());
+}
+
+When establishing the connection, the above code does go through the proxy and I'm able to login.  When I try to do anything, say listFiles, It does the SYST and then attempts to enter passive mode, but the connection times out:
+227 Entering Passive Mode (123,45,678,9,11,243)
+java.net.ConnectException: Connection timed out: connect
+	at java.net.DualStackPlainSocketImpl.connect0(Native Method)
+	at java.net.DualStackPlainSocketImpl.socketConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.doConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connect(Unknown Source)
+	at java.net.PlainSocketImpl.connect(Unknown Source)
+	at java.net.SocksSocketImpl.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at sun.security.ssl.SSLSocketImpl.connect(Unknown Source)
+	at org.apache.commons.net.ftp.FTPClient._openDataConnection_(FTPClient.java:920)
+	at org.apache.commons.net.ftp.FTPSClient._openDataConnection_(FTPSClient.java:627)
+	at org.apache.commons.net.ftp.FTPClient._openDataConnection_(FTPClient.java:785)
+	at org.apache.commons.net.ftp.FTPClient.initiateListParsing(FTPClient.java:3409)
+	at org.apache.commons.net.ftp.FTPClient.initiateListParsing(FTPClient.java:3339)
+	at org.apache.commons.net.ftp.FTPClient.listFiles(FTPClient.java:3016)
+	at gov.nyc.ftputils.FTPConnection.listFiles(FTPConnection.java:1270)
+	at gov.nyc.ftputils.FTPClientUtil.main(FTPClientUtil.java:572)
+
+I then comment out the proxy code and added: 
+
+System.getProperties().put( ""socksProxyPort"", proxyPort);
+System.getProperties().put( ""socksProxyHost"" ,proxyHost);
+
+And then I'm able to get the listing, get files, etc.
+
+Adding -DsocksProxyHost=myproxy.host to the java command line also works.  
+",Windows,,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,2017-06-01 18:05:18.0,,,,,,,"0|i3frkn:",9223372036854775807,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Exception when using addProtocolCommandListener with library org.apache.commons.net.telnet.TelnetClient,NET-608,13031814,Bug,Resolved,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,Not A Problem,,anthony.kearns,anthony.kearns,03/Jan/17 23:48,07/Feb/17 19:35,28/Mar/20 23:27,07/Feb/17 19:35,3.5,,,,,Telnet,,0,newbie,,"According to the API documentation for WhoisClient and FTPClient these commands appear to support inherited functionality of addProtocolCommandListener.
+
+However, when i used this as follows....i get exceptions raised for TelnetClient and WhoisClient but not the FTPClient.
+
+Is this a bug or as designed? Or am I missing something ?
+
+   import org.apache.commons.net.*;
+   import org.apache.commons.net.ProtocolCommandListener;
+   import org.apache.commons.net.ftp.FTPClient;
+   import org.apache.commons.net.telnet.TelnetClient;
+   import org.apache.commons.net.whois.WhoisClient;
+   import java.io.PrintWriter;
+
+   public class WhoisExample
+   {
+       public static void main(String args[])
+       {
+           try {
+               WhoisClient whoisClient = new WhoisClient();
+               whoisClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out)));
+           }
+           catch(Exception e) {
+               System.out.println(""whois client exception"" + e);
+           }
+
+           try {
+               TelnetClient telnetClient = new TelnetClient();
+               telnetClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out)));
+           }
+           catch(Exception e) {
+               System.out.println(""telnet client exception"" + e);
+           }
+
+           try {
+               FTPClient ftpClient = new FTPClient();
+               ftpClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out)));
+
+               System.out.println(""no ftp client exception here !"");
+           }
+           catch(Exception e)
+           {
+               System.out.println(""ftp client exception"" + e);
+           }
+       }
+   }
+
+
+I get the following exception....
+
+Caught: java.lang.NullPointerException Disconnected from the target VM, address: '127.0.0.1:3140', transport: 'socket' java.lang.NullPointerException at org.apache.commons.net.SocketClient.addProtocolCommandListener(SocketClient.java:772) at org.apache.commons.net.SocketClient$addProtocolCommandListener.call(Unknown Source)","Windows 7, Java JDK 1.8, ",,,,,,,,,,,,0.0,,,,,,,,,,,,,,,,,,,,2017-02-07 19:35:20.265,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Tue Feb 07 19:35:20 UTC 2017,,,,,,,"0|i3888v:",9223372036854775807,,,,,,,,,,,,,,,,"07/Feb/17 19:35;sebb;Some clients don't currently support the ProtocolCommand Listener.
+
+I don't think it would make sense for the TelnetClient in any case, as that is not a command-response protocol like most of the others.
+TelnetClient offers registerSpyStream() etc instead.
+
+Nor does it really make much sense for the WhoisClient as that is so simple.",,,,,,,,,,,,,
+FTP fails to parse listings for Solaris 10 FTPd in Japanese,NET-597,12987388,Bug,Open,NET,Commons Net,software,issues@commons.apache.org,,http://commons.apache.org/net/,Minor,,,htaniura,htaniura,07/Jul/16 06:56,28/Jul/16 02:34,28/Mar/20 23:27,,3.4,3.5,,,,FTP,,0,,,"Commons Net lists no files for Solaris 10 FTPd (or WU-FTPD) when the server language is Japanese.
+
+Here is the result of the sample client.
+{panel}
+java -jar commons-net-examples-3.5.jar FTPClientExample -l 192.168.2.160 root password
+220 unknown FTP server ready.
+Connected to 192.168.2.160 on 21
+USER *******
+331 Password required for root.
+PASS *******
+230 User root logged in.
+SYST
+215 UNIX Type: L8 Version: SUNOS
+Remote system is UNIX Type: L8 Version: SUNOS
+TYPE A
+200 Type set to A.
+PASV
+227 Entering Passive Mode (192,168,2,160,235,174)
+LIST
+150 Opening ASCII mode data connection for /bin/ls.
+226 Transfer complete.
+NOOP
+200 NOOP command successful.
+QUIT
+221-You have transferred 0 bytes in 0 files.
+221-Total traffic for this session was 3426 bytes in 1 transfers.
+221-Thank you for using the FTP service on unknown.
+221 Goodbye.
+{panel}
+
+I identified the cause in the source code. I'm attaching a patch later.
+
+On Japanese Solaris 10, the result of ""ls -l"" is like below;
+{panel}
+drwxrwxrwt  10 root     sys          875  7月  7日  14:18 tmp
+drwxr-xr-x  40 root     sys         1024  6月 13日 2014年 usr
+drwxr-xr-x  47 root     sys         1024  6月 13日 2014年 var
+dr-xr-xr-x   6 root     root         512  2月 25日  15:11 vol
+{panel}
+As you can see, the timestamp has the postfixes of ""month"", ""date"", and ""year"" in Japanese.
+The current REGEX of UnixFTPEntryParser doesn't work for it because of the Japanese postfixes.","Server: Solaris 10 Japanese
+Client: Windows 7",,,,,,,,,"07/Jul/16 07:07;htaniura;ParseJapanese.patch;https://issues.apache.org/jira/secure/attachment/12816579/ParseJapanese.patch",,,1.0,,,,,,,,,,,,,,,,,,,,2016-07-14 11:39:43.696,,,false,,,,,,,,,,,,,,,,,,,9223372036854775807,,,Thu Jul 28 02:34:23 UTC 2016,,,,,,,"0|i30mwv:",9223372036854775807,,,,,,,,,,,,,,,,"07/Jul/16 07:07;htaniura;Here is the patch to parse the Japanese timestamp.
+After applying it, the sample client lists the files.
+{panel}
+220 unknown FTP server ready.
+Connected to 192.168.2.160 on 21
+USER *******
+331 Password required for root.
+PASS *******
+230 User root logged in.
+SYST
+215 UNIX Type: L8 Version: SUNOS
+Remote system is UNIX Type: L8 Version: SUNOS
+TYPE A
+200 Type set to A.
+PASV
+227 Entering Passive Mode (192,168,2,160,8,40)
+LIST
+150 Opening ASCII mode data connection for /bin/ls.
+226 Transfer complete.
+-rw-------   1 root     root         848  2・? 25??  15:57 .ICEauthority
+-rw-------    1 root     root          848 .ICEauthority
+drwx------   3 root     root         512  6・? 13?? 2014?￣ .Trash
+drwx------    3 root     root          512 .Trash
+-rw-------   1 root     root         150  2・? 25??  15:57 .Xauthority
+-rw-------    1 root     root          150 .Xauthority
+drwxr-xr-x   9 root     root         512  2・? 25??  15:57 .dt
+drwxr-xr-x    9 root     root          512 .dt
+-rwxr-xr-x   1 root     root        5111  6・? 13?? 2014?￣ .dtprofile
+-rwxr-xr-x    1 root     root         5111 .dtprofile
+-rw-------   1 root     root          16  6・? 13?? 2014?￣ .esd_auth
+-rw-------    1 root     root           16 .esd_auth
+drwx------   4 root     root         512  2・? 25??  15:57 .gconf
+drwx------    4 root     root          512 .gconf
+drwx------   2 root     root         512  7・?  7??  15:53 .gconfd
+drwx------    2 root     root          512 .gconfd
+drwx------   4 root     root         512  6・? 13?? 2014?￣ .gnome
+drwx------    4 root     root          512 .gnome
+drwx------   7 root     root         512  2・? 25??  15:57 .gnome2
+drwx------    7 root     root          512 .gnome2
+drwx------   2 root     root         512  6・? 13?? 2014?￣ .gnome2_private
+drwx------    2 root     root          512 .gnome2_private
+drwxr-xr-x   2 root     root         512  6・? 13?? 2014?￣ .gstreamer-0.8
+drwxr-xr-x    2 root     root          512 .gstreamer-0.8
+-rw-r--r--   1 root     root          77  6・? 13?? 2014?￣ .gtkrc-1.2-gnome2
+-rw-r--r--    1 root     root           77 .gtkrc-1.2-gnome2
+drwx------   3 root     root         512  6・? 13?? 2014?￣ .iiim
+drwx------    3 root     root          512 .iiim
+drwxr-xr-x   3 root     root         512  6・? 13?? 2014?￣ .java
+drwxr-xr-x    3 root     root          512 .java
+drwx------   3 root     root         512  6・? 13?? 2014?￣ .metacity
+drwx------    3 root     root          512 .metacity
+drwxr-xr-x   3 root     root         512  6・? 13?? 2014?￣ .nautilus
+drwxr-xr-x    3 root     root          512 .nautilus
+-rw-------   1 root     root         865  7・?  7??  14:30 .recently-used
+-rw-------    1 root     root          865 .recently-used
+drwxr-xr-x   3 root     root         512  6・? 13?? 2014?￣ .softwareupdate
+drwxr-xr-x    3 root     root          512 .softwareupdate
+drwx------   3 root     root         512  6・? 13?? 2014?￣ .thumbnails
+drwx------    3 root     root          512 .thumbnails
+drwxr-xr-x   4 root     root         512  2・? 25??  15:35 Desktop
+drwxr-xr-x    4 root     root          512 Desktop
+drwxr-xr-x   2 root     root         512  6・? 13?? 2014?￣ Documents
+drwxr-xr-x    2 root     root          512 Documents
+lrwxrwxrwx   1 root     root           9  6・? 13?? 2014?￣ bin -> ./usr/bin
+lrwxrwxrwx    1 root     root            9 bin
+drwxr-xr-x   8 root     sys          512  6・? 13?? 2014?￣ boot
+drwxr-xr-x    8 root     sys           512 boot
+drwxr-xr-x   3 root     nobody       512  6・? 13?? 2014?￣ cdrom
+drwxr-xr-x    3 root     nobody        512 cdrom
+drwxr-xr-x  19 root     sys         4608  2・? 25??  15:11 dev
+drwxr-xr-x   19 root     sys          4608 dev
+drwxr-xr-x   2 root     sys          512  2・? 25??  15:10 devices
+drwxr-xr-x    2 root     sys           512 devices
+drwxr-xr-x  90 root     sys         4608  2・? 25??  15:11 etc
+drwxr-xr-x   90 root     sys          4608 etc
+drwxr-xr-x   3 root     sys          512  6・? 13?? 2014?￣ export
+drwxr-xr-x    3 root     sys           512 export
+dr-xr-xr-x   1 root     root           1  2・? 25??  15:11 home
+dr-xr-xr-x    1 root     root            1 home
+drwxr-xr-x   3 root     root         512  6・? 14?? 2014?￣ home1
+drwxr-xr-x    3 root     root          512 home1
+drwxr-xr-x  20 root     sys          512  6・? 13?? 2014?￣ kernel
+drwxr-xr-x   20 root     sys           512 kernel
+drwxr-xr-x   8 root     bin         5632  6・? 13?? 2014?￣ lib
+drwxr-xr-x    8 root     bin          5632 lib
+drwx------   2 root     root        8192  6・? 13?? 2014?￣ lost+found
+drwx------    2 root     root         8192 lost+found
+drwxr-xr-x   2 root     sys          512  6・? 13?? 2014?￣ mnt
+drwxr-xr-x    2 root     sys           512 mnt
+dr-xr-xr-x   1 root     root           1  2・? 25??  15:11 net
+dr-xr-xr-x    1 root     root            1 net
+drwxr-xr-x   5 root     sys          512  6・? 13?? 2014?￣ opt
+drwxr-xr-x    5 root     sys           512 opt
+drwxr-xr-x   5 root     sys          512  6・? 13?? 2014?￣ platform
+drwxr-xr-x    5 root     sys           512 platform
+dr-xr-xr-x  89 root     root      457152  7・?  7??  16:04 proc
+dr-xr-xr-x   89 root     root       457152 proc
+drwxr-xr-x   2 root     sys         1024  6・? 13?? 2014?￣ sbin
+drwxr-xr-x    2 root     sys          1024 sbin
+drwxr-xr-x   4 root     root         512  6・? 13?? 2014?￣ system
+drwxr-xr-x    4 root     root          512 system
+drwxrwxrwt  10 root     sys          875  7・?  7??  15:08 tmp
+drwxrwxrwx   10 root     sys           875 tmp
+drwxr-xr-x  40 root     sys         1024  6・? 13?? 2014?￣ usr
+drwxr-xr-x   40 root     sys          1024 usr
+drwxr-xr-x  47 root     sys         1024  6・? 13?? 2014?￣ var
+drwxr-xr-x   47 root     sys          1024 var
+dr-xr-xr-x   6 root     root         512  2・? 25??  15:11 vol
+dr-xr-xr-x    6 root     root          512 vol
+NOOP
+200 NOOP command successful.
+QUIT
+221-You have transferred 0 bytes in 0 files.
+221-Total traffic for this session was 3423 bytes in 1 transfers.
+221-Thank you for using the FTP service on unknown.
+221 Goodbye.
+{panel}
+
+The timestamp listed is broken, but it is much better than not listing files at all.","14/Jul/16 11:39;sebb;Are the month and day always shown in the same order?
+And is the same character always used?
+As far as I can tell, they are the following Unicode characters in the examples you give:
+
+\u6708 = month
+\u65e5 = day
+\u5e74 = year
+
+Does that look right?
+I think it would be better to look for a specific match rather than just accepting an arbitrary suffix.","14/Jul/16 13:46;sebb;URL: http://svn.apache.org/viewvc?rev=1752661&view=rev
+Log:
+NET-597 FTP fails to parse listings for Solaris 10 FTPd in Japanese
+
+Modified:
+    commons/proper/net/trunk/src/changes/changes.xml
+    commons/proper/net/trunk/src/main/java/org/apache/commons/net/ftp/parser/UnixFTPEntryParser.java
+    commons/proper/net/trunk/src/test/java/org/apache/commons/net/ftp/parser/UnixFTPEntryParserTest.java","14/Jul/16 14:10;sebb;If you want to test this, the fixes will be included in the snapshot builds from 
+
+commons-net-3.6-20160714.135523-6
+
+onwards.
+
+Note that SNAPSHOT builds are not supported, have not been QAed, and should not be used in production.","28/Jul/16 02:34;htaniura;Thank you so much for fixing it. It works with ""-e EUC-JP"".
+However, I have 2 reasons why I accepted aribitary suffix in the attached patch.
+
+1. Other languages
+I don't know other languages, but some languages might have such suffix as well.
+
+2. Control encoding
+Wrong control encoding usually results in broken filenames and users realize they have to change encoding.
+However, in this case files are not listed at all and users might think there are no files.",,,,,,,,,

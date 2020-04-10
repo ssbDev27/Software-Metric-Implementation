@@ -1,11 +1,10 @@
 # MeasurementProject
 Team I
-Name=StudentId-Email-GitId
-Iknoor Singh Arora- 40082312-iknoorcan123@gmail.com
-Sukhpreet Singh Bhatia-40083564-sukhpreetbhatia025@gmail.com
-Aditi Bhayana-40083419-aditibhayana029@gmail.com-Aditi2904
-Aakash Ahuja-40082822-aakashahuja1993@gmail.com
-Ashmeet Singh-40070369-ashu6811singh@gmail.com
+Iknoor Singh Arora
+Sukhpreet Singh Bhatia
+Aditi Bhayana
+Aakash Ahuja
+Ashmeet Singh
 
 Directory Structure
 Post Release Defect Density

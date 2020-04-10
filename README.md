@@ -1,5 +1,5 @@
 # MeasurementProject
-##Team K
+**Team K**
 |       Name       | Email         | Git           | 
 | ---------------- | ------------- | ------------- | 
 | Iknoor Singh     | iknoorcan123@gmail.com  | Iknoor99  | 
@@ -8,7 +8,7 @@
 | Ashmeet Singh    | ashu6811singh@gmail.com  | ashu6811  | 
 | Sukhpreet Singh  | sukhpreetbhatia025@gmail.com  | ssbdev27  | 
 
-##Directory Structure
+**Directory Structure**
 
 Post Release Defect Density
 This folder contains all the data related to the test subjects and Metrics 6 . It contains data for all the 4 test subjects individually. For all the project there are two folders and one excel file. The first folder is named versions which contains data of different versions which were used for this metric. Second folder is named Jira_Reports which contains jira or github Reports about Metric 6.Defect Density Excel file conatins all the data for Metric 6 calculation.

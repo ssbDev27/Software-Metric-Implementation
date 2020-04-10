@@ -14,7 +14,7 @@ Configurations
 This folder contains all the information needed to configure the plugins we have used and commands to run the tools.
 
 Correlations
-This folder Correlations contains Python files to find out the correlations between individual metrics. All the correlations for Metrics are done in their specified folder starting with the metrics name and contains Python Script , csv file containg te results of the 
+This folder Correlations contains Python files to find out the correlations between individual metrics. All the correlations for Metrics are done in their specified folder starting with the metrics name and contains Python Script , csv file containing the results of the 
 metrics.
 
 

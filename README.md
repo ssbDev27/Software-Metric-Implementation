@@ -1,10 +1,12 @@
 # MeasurementProject
-Team I
-Iknoor Singh Arora
-Sukhpreet Singh Bhatia
-Aditi Bhayana
-Aakash Ahuja
-Ashmeet Singh
+Team K
+|       Name       | Email         | Git           | 
+| ---------------- | ------------- | ------------- | 
+| Iknoor Singh     | iknoorcan123@gmail.com  | Content Cell  | 
+| Aditi Bhayana    | aditibhayana029@gmail.com  | Aditi2904  | 
+| Akash Ahuja      | aakashahuja1993@gmail.com | Content Cell  | 
+| Ashmeet Singh    | ashu6811singh@gmail.com  | Content Cell  | 
+| Sukhpreet Singh  | sukhpreetbhatia025@gmail.com  | ssbdev27  | 
 
 Directory Structure
 

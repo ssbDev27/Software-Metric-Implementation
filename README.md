@@ -5,7 +5,7 @@ Team K
 | Iknoor Singh     | iknoorcan123@gmail.com  | Iknoor99  | 
 | Aditi Bhayana    | aditibhayana029@gmail.com  | Aditi2904  | 
 | Akash Ahuja      | aakashahuja1993@gmail.com | ahujakash  | 
-| Ashmeet Singh    | ashu6811singh@gmail.com  | Content Cell  | 
+| Ashmeet Singh    | ashu6811singh@gmail.com  | ashu6811  | 
 | Sukhpreet Singh  | sukhpreetbhatia025@gmail.com  | ssbdev27  | 
 
 Directory Structure

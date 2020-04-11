@@ -1,5 +1,5 @@
 # MeasurementProject
-**Team K**
+**Team I**
 |       Name       | Email         | Git           | 
 | ---------------- | ------------- | ------------- | 
 | Iknoor Singh     | iknoorcan123@gmail.com  | Iknoor99  | 
